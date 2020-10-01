@@ -1,0 +1,17 @@
+options:
+  buildHeader: [ "load(\"@io_bazel_rules_scala//scala:scala_import.bzl\", \"scala_import\")",
+    "load(\"@io_bazel_rules_scala//scala:scala.bzl\", \"scala_library\")" ]
+  languages: [ "java", "scala:2.12.12" ]
+  resolverType: "coursier"
+  resolvers:
+    - id: "mavencentral"
+      type: "default"
+      url: https://repo.maven.apache.org/maven2/
+  strictVisibility: true
+  transitivity: runtime_deps
+  versionConflictPolicy: highest
+dependencies:
+  com.google.guava:
+    guava:
+      version: "29.0-jre"
+      lang: java
