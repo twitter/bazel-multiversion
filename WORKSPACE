@@ -48,3 +48,10 @@ http_archive(
 # You may need to modify this if your project uses google_protobuf for other purposes.
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
+
+
+# For bazel-deps
+load("//3rdparty:workspace.bzl", "maven_dependencies")
+maven_dependencies()
+load("//3rdparty:target_file.bzl", "build_external_workspace")
+build_external_workspace(name = "third_party")
