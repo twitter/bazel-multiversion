@@ -75,6 +75,23 @@ def list_dependencies():
     {"artifact": "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava", "lang": "java", "sha1": "b421526c5f297295adef1c886e5246c39d4ac629", "sha256": "b372a037d4230aa57fbeffdef30fd6123f9c0c2db85d0aced00c91b974f33f99", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/com/google/guava/listenablefuture/9999.0-empty-to-avoid-conflict-with-guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar", "name": "com_google_guava_listenablefuture", "actual": "@com_google_guava_listenablefuture//jar", "bind": "jar/com/google/guava/listenablefuture"},
     {"artifact": "com.google.j2objc:j2objc-annotations:1.3", "lang": "java", "sha1": "ba035118bc8bac37d7eff77700720999acd9986d", "sha256": "21af30c92267bd6122c0e0b4d20cccb6641a37eaf956c6540ec471d584e64a7b", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3.jar", "source": {"sha1": "d26c56180205cbb50447c3eca98ecb617cf9f58b", "sha256": "ba4df669fec153fa4cd0ef8d02c6d3ef0702b7ac4cabe080facf3b6e490bb972", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/com/google/j2objc/j2objc-annotations/1.3/j2objc-annotations-1.3-sources.jar"} , "name": "com_google_j2objc_j2objc_annotations", "actual": "@com_google_j2objc_j2objc_annotations//jar", "bind": "jar/com/google/j2objc/j2objc_annotations"},
     {"artifact": "org.checkerframework:checker-qual:2.11.1", "lang": "java", "sha1": "8c43bf8f99b841d23aadda6044329dad9b63c185", "sha256": "015224a4b1dc6de6da053273d4da7d39cfea20e63038169fc45ac0d1dc9c5938", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/2.11.1/checker-qual-2.11.1.jar", "source": {"sha1": "81dbb91c8dc3c53ae7066ce9e70ed7efb0551261", "sha256": "7d3b990687be9b980a9dc7853f4b0f279eb437e28efe3c9903acaf20450f55b5", "repository": "https://repo.maven.apache.org/maven2/", "url": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/2.11.1/checker-qual-2.11.1-sources.jar"} , "name": "org_checkerframework_checker_qual", "actual": "@org_checkerframework_checker_qual//jar", "bind": "jar/org/checkerframework/checker_qual"},
+            {
+            "artifact": "com.google.guava:guava:25.0-jre",
+            "lang": "java",
+            "sha1": "7319c34fa5866a85b6bad445adad69d402323129",
+            "sha256": "3fd4341776428c7e0e5c18a7c10de129475b69ab9d30aeafbb5c277bb6074fa9",
+            "repository": "https://repo.maven.apache.org/maven2/",
+            "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava/25.0-jre/guava-25.0-jre.jar",
+            "source": {
+                "sha1": "030ade485699e7782cc2369b0e5d3d8e0bfc317c",
+                "sha256": "386e429ab4f9e511630038e7b7a331d3dca3931564f592e412ba47995fefd89b",
+                "repository": "https://repo.maven.apache.org/maven2/",
+                "url": "https://repo.maven.apache.org/maven2/com/google/guava/guava/25.0-jre/guava-25.0-jre-sources.jar",
+            },
+            "name": "com_google_guava_guava25",
+            "actual": "@com_google_guava_guava25//jar",
+            "bind": "jar/com/google/guava/guava",
+        },
     ]
 
 def maven_dependencies(callback = jar_artifact_callback):
