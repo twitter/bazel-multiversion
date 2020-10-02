@@ -12,7 +12,7 @@ scala_library(
         "Guava1.scala",
     ],
     deps=[
-        "//3rdparty/jvm/com/google/guava:guava",
+        "//3rdparty/jvm/com/google/guava",
     ],
 )
 
@@ -22,6 +22,6 @@ scala_library(
         "Guava2.scala",
     ],
     deps=[
-        "//3rdparty/jvm/com/google/guava:guava25",
+        "//3rdparty/jvm/com/google/guava",
     ],
 )
