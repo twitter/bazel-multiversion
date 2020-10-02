@@ -30,6 +30,24 @@ java_library(
     ]
 )
 
+java_library(
+    name = "guava25",
+    exports = [
+        "//external:jar/com/google/guava/guava25"
+    ],
+    runtime_deps = [
+        "//3rdparty/jvm/com/google/code/findbugs:jsr305",
+        "//3rdparty/jvm/com/google/errorprone:error_prone_annotations",
+        "//3rdparty/jvm/com/google/j2objc:j2objc_annotations",
+        "//3rdparty/jvm/org/checkerframework:checker_qual",
+        ":failureaccess",
+        ":listenablefuture"
+    ],
+    visibility = [
+        "//visibility:public"
+    ]
+)
+
 
 
 java_library(
