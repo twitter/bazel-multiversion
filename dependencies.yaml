@@ -13,5 +13,5 @@ options:
 dependencies:
   com.google.guava:
     guava:
-      version: "25.0-jre"
+      version: "29.0-jre"
       lang: java
