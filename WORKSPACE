@@ -56,3 +56,8 @@ maven_dependencies()
 load("//3rdparty:target_file.bzl", "build_external_workspace")
 build_external_workspace(name = "third_party")
 
+load("//:deps.bzl", "all_deps")
+all_deps()
+load("@maven//:deps.bzl", "load_http_files")
+load_http_files()
+

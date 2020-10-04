@@ -98,7 +98,7 @@ object Multideps {
             s"""|http_file(
                 |  name = "${name}_jar",
                 |  urls = ["${a.url}"],
-                |  shas = ["${sha}"],
+                |  sha256 = "${sha}",
                 |)
                 |java_import(
                 |  name = ["${name}"],
