@@ -1,5 +1,6 @@
 # Do not edit. bazel-deps autogenerates this file from dependencies.yaml.
 def _jar_artifact_impl(ctx):
+    print(ctx)
     jar_name = "%s.jar" % ctx.name
     ctx.download(
         output=ctx.path("jar/%s" % jar_name),
@@ -53,7 +54,6 @@ jar_artifact = repository_rule(
     },
     implementation=_jar_artifact_impl,
 )
-
 
 def jar_artifact_callback(hash):
     src_urls = []

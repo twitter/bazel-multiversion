@@ -1,7 +1,7 @@
 package multideps
 
-import com.google.common.hash.BloomFilter
+import org.mockito.Mockito._
 
 object Guava1 {
-  val x = ""
+  doReturn(???)
 }

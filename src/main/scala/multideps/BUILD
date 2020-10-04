@@ -1,9 +1,4 @@
-load(
-    "@io_bazel_rules_scala//scala:scala.bzl",
-    "scala_library",
-    "scala_binary",
-    "scala_test",
-)
+load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library")
 
 
 scala_library(
@@ -12,16 +7,6 @@ scala_library(
         "Guava1.scala",
     ],
     deps=[
-        "//3rdparty/jvm/com/google/guava:guava",
-    ],
-)
-
-scala_library(
-    name="Guava2",
-    srcs=[
-        "Guava2.scala",
-    ],
-    deps=[
-        "//3rdparty/jvm/com/google/guava:guava25",
+        "//3rdparty/jvm/org/mockito:org_mockito_mockito_all_1_10_19",
     ],
 )

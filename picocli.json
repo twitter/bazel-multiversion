@@ -1,0 +1,12 @@
+{
+  "conflict_resolution": {},
+  "dependencies": [
+    {
+      "coord": "info.picocli:picocli:3.9.6",
+      "file": "/Users/lgeirsson/Library/Caches/Coursier/v1/https/repo1.maven.org/maven2/info/picocli/picocli/3.9.6/picocli-3.9.6.jar",
+      "directDependencies": [],
+      "dependencies": []
+    }
+  ],
+  "version": "0.1.0"
+}
