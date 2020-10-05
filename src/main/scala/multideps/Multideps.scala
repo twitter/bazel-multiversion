@@ -15,6 +15,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.URI
 import java.nio.file.Paths
+import org.scalameta.bazel_multideps.Build.Target.Discriminator
 
 object Multideps {
   val picocli = Module(
@@ -68,6 +69,37 @@ object Multideps {
         s"mockito-core and mockito-all can't be on the resolution. To fix this problem, ..."
       ) {}
   def main(args: Array[String]): Unit = {
+    val cwd = Paths.get(".").toAbsolutePath().normalize()
+    val command = List(
+      "bazel",
+      "query",
+      "--notool_deps",
+      "--noimplicit_deps",
+      "deps(tricky/user/src/main/scala/bincompat:NeedsVersion1)",
+      "--output=proto"
+    )
+    val x = os.proc(command).call(cwd = os.Path(cwd))
+    val query =
+      org.scalameta.bazel_multideps.Build.QueryResult.parseFrom(x.out.bytes)
+    import scala.collection.JavaConverters._
+    val names = query
+      .getTargetList()
+      .asScala
+      .filter(_.getType() == Discriminator.RULE)
+      .map(t =>
+        t.getRule().getName() -> t
+          .getRule()
+          .getAttributeList()
+          .asScala
+          .filter(_.getName() == "deps")
+          .flatMap(_.getStringListValueList().asScala)
+      )
+    pprint.log(names)
+    // scala.sys.process.Process(command, cwd = Some(cwd.toFile()))
+    // val queryProcess =
+    //   new ProcessBuilder(command.toArray: _*).directory(cwd.toFile()).start()
+  }
+  def app(): Unit = {
     val jars = coursier
       .Resolve()
       .addDependencies(

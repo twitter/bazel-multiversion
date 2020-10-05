@@ -1,5 +1,5 @@
 package bincompat
 
-object NeedsVersion 2 extends App {
+object NeedsVersion3 extends App {
   new CrossBuild().run()
 }

@@ -6,7 +6,9 @@ inThisBuild(
 
 libraryDependencies ++= List(
   "io.get-coursier" %% "coursier" % "2.0.0",
+  "com.lihaoyi" %% "os-lib" % "0.7.1",
   "com.lihaoyi" %% "pprint" % "0.6.0",
   "com.lihaoyi" %% "requests" % "0.6.5",
   "org.mockito" % "mockito-all" % "1.10.19"
 )
+enablePlugins(ProtobufPlugin)
