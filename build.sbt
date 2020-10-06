@@ -31,12 +31,14 @@ lazy val multideps = project
   .in(file("multideps"))
   .settings(
     moduleName := "bazel-multideps",
+    mainClass.in(Compile) := Some("multideps.Multideps"),
     libraryDependencies ++= List(
       "io.get-coursier" %% "coursier" % "2.0.0",
       "org.scalameta" %% "moped" % "0.1.2",
       "com.lihaoyi" %% "os-lib" % "0.7.1",
+      "com.lihaoyi" %% "fansi" % "0.2.9",
       "com.lihaoyi" %% "pprint" % "0.6.0",
       "com.lihaoyi" %% "requests" % "0.6.5"
     )
   )
-  .enablePlugins(ProtobufPlugin)
+  .enablePlugins(ProtobufPlugin, NativeImagePlugin)
