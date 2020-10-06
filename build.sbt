@@ -42,3 +42,13 @@ lazy val multideps = project
     )
   )
   .enablePlugins(ProtobufPlugin, NativeImagePlugin)
+
+lazy val tests = project
+  .in(file("tests"))
+  .settings(
+    testFrameworks := List(new TestFramework("munit.Framework")),
+    libraryDependencies ++= List(
+      "org.scalameta" %% "munit" % "0.7.13"
+    )
+  )
+  .dependsOn(multideps)

@@ -19,7 +19,6 @@ object Multideps {
     val query =
       org.scalameta.bazel_multideps.Build.QueryResult.parseFrom(x.out.bytes)
     import scala.collection.JavaConverters._
-    pprint.log(query)
     val names = query
       .getTargetList()
       .asScala
