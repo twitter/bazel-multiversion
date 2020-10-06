@@ -3,7 +3,7 @@ package multideps.config
 import moped.json.JsonCodec
 
 final case class WorkspaceConfig(
-    dependencies: DependenciesConfig = DependenciesConfig()
+    dependencies: List[DependencyConfig] = List()
 )
 
 object WorkspaceConfig {

@@ -6,12 +6,10 @@ final case class DependencyConfig(
     organization: String = "",
     artifact: String = "",
     modules: List[String] = Nil,
-    lang: String = "",
+    lang: LanguagesConfig = JavaLanguagesConfig,
     exports: List[String] = Nil,
-    version: List[VersionConfig] = Nil
-) {
-  def defaultVersion: String = version.find(_.label == "default").get.version
-}
+    version: VersionsConfig = VersionsConfig()
+)
 
 object DependencyConfig {
   val default = DependencyConfig()
