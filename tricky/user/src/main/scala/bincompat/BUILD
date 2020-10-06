@@ -6,7 +6,11 @@ cross_scala_library(
   srcs = ["CrossBuild.scala"],
   deps = ["//tricky/{lib}/src/main/scala/bincompat:LibraryTrait"],
   exports = ["//tricky/{lib}/src/main/scala/bincompat:LibraryTrait"],
-  cross_build = [{"lib": "v1"}, {"lib": "v2"}],
+  # cross_build = cross_matrix({"lib": ["v1", "v2"], "guava": ["20", "30"]}),
+  cross_build = [
+    {"lib": "v1"},
+    {"lib": "v2"},
+  ],
 )
 
 scala_binary(
@@ -24,7 +28,7 @@ scala_binary(
 )
 
 scala_binary(
-  name = "illegal",
+  name = "NeedsVersion3",
   srcs = ["NeedsVersion3.scala"],
   deps = [":CrossBuild-lib_v2", ":CrossBuild-lib_v1"],
   main_class = "bincompat.NeedsVersion3",
