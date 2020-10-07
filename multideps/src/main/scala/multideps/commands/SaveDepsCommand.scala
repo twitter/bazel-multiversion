@@ -7,6 +7,8 @@ import scala.collection.mutable
 import coursier.Resolve
 import coursier.core.Module
 import coursier.core.Resolution
+import coursier.params.ResolutionParams
+import moped.annotations.CommandName
 import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
@@ -17,8 +19,6 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import multideps.configs.ResolutionOutput
 import multideps.configs.WorkspaceConfig
-import moped.annotations.CommandName
-import coursier.params.ResolutionParams
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -58,9 +58,21 @@ case class SaveDepsCommand(
       workspace: WorkspaceConfig
   ): DecodingResult[List[Resolution]] = {
     pprint.log(workspace)
-    val results = workspace.coursierDependencies.map { dep =>
+    val results = for {
+      dep <- workspace.dependencies
+      cdep <- dep.coursierDependencies(workspace.scala)
+    } yield {
+      val forceVersions = dep.forceVersions.overrides.map {
+        case (module, version) =>
+          workspace.depsByModule.get(module.coursierModule) match {
+            case Some(config) =>
+              ValueResult(config.coursierModule(workspace.scala))
+            case None =>
+              ErrorResult(Diagnostic.error(""))
+          }
+      }
       val resolve = Resolve()
-        .addDependencies(dep)
+        .addDependencies(cdep)
         .withResolutionParams(
           ResolutionParams().addForceVersion(
           )

@@ -15,6 +15,8 @@ final case class VersionsConfig(
     default: JsonString = JsonString(""),
     extras: Map[String, JsonString] = Map.empty
 ) {
+  def binaryVersion: String =
+    default.value.split('.').take(2).mkString(".")
   def allVersions: List[String] =
     (Iterator(default) ++ extras.valuesIterator)
       .map(_.value)

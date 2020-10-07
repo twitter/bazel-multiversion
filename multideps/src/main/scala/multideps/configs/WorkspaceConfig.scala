@@ -1,5 +1,7 @@
 package multideps.configs
 
+import coursier.core.Dependency
+import coursier.core.Module
 import moped.json.DecodingContext
 import moped.json.DecodingResult
 import moped.json.JsonCodec
@@ -11,12 +13,12 @@ final case class WorkspaceConfig(
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
 ) {
-  def scalaFullVersion = scala.default.value
-  def scalaBinaryVersion = scala.default.value.split('.').take(2).mkString(".")
-  def coursierDependencies =
-    dependencies.flatMap(
-      _.coursierDependencies(scalaBinaryVersion, scalaFullVersion)
-    )
+  val depsByModule: Map[Module, DependencyConfig] =
+    dependencies.groupBy(_.coursierModule(scala)).collect {
+      case (m, d :: _) => m -> d
+    }
+  def coursierDependencies: List[Dependency] =
+    dependencies.flatMap(_.coursierDependencies(scala))
 }
 
 object WorkspaceConfig {

@@ -10,10 +10,10 @@ import moped.json.DecodingContext
 import moped.json.DecodingResult
 import moped.json.JsonCodec
 import moped.json.JsonElement
+import moped.json.JsonObject
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.macros.ClassShape
-import moped.json.JsonObject
 
 final case class DependencyConfig(
     organization: String = "",
@@ -26,23 +26,17 @@ final case class DependencyConfig(
     name: String = ""
 ) {
   val crossBuildName: String = if (name.isEmpty()) artifact else name
-  def coursierModule(
-      scalaBinaryVersion: String,
-      scalaFullVersion: String
-  ): Module = {
+  def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
       case JavaLanguagesConfig => ""
-      case ScalaLanguagesConfig => "_" + scalaBinaryVersion
-      case ScalaCompilerLanguagesConfig => "_" + scalaFullVersion
+      case ScalaLanguagesConfig => "_" + scalaVersion.binaryVersion
+      case ScalaCompilerLanguagesConfig => "_" + scalaVersion.default
     }
     Module(Organization(organization), ModuleName(artifact + suffix), Map.empty)
   }
-  def coursierDependencies(
-      scalaBinaryVersion: String,
-      scalaFullVersion: String
-  ): List[Dependency] =
+  def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] =
     version.allVersions.map { version =>
-      Dependency(coursierModule(scalaBinaryVersion, scalaFullVersion), version)
+      Dependency(coursierModule(scalaVersion), version)
     }
 }
 
