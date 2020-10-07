@@ -1,4 +1,4 @@
-package multideps.config
+package multideps.configs
 
 import moped.json.DecodingContext
 import moped.json.DecodingResult

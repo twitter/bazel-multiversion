@@ -1,4 +1,4 @@
-package multideps.config
+package multideps.configs
 
 import coursier.core.Repository
 import coursier.maven.MavenRepository

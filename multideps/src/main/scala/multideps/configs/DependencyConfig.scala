@@ -1,4 +1,4 @@
-package multideps.config
+package multideps.configs
 
 import moped.json.JsonCodec
 import coursier.core.Dependency
