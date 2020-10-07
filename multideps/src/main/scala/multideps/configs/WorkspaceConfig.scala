@@ -10,7 +10,14 @@ final case class WorkspaceConfig(
     repositories: List[RepositoryConfig] = List(),
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
-)
+) {
+  def scalaFullVersion = scala.default.value
+  def scalaBinaryVersion = scala.default.value.split('.').take(2).mkString(".")
+  def coursierDependencies =
+    dependencies.flatMap(
+      _.coursierDependencies(scalaBinaryVersion, scalaFullVersion)
+    )
+}
 
 object WorkspaceConfig {
   def parse(input: Input): DecodingResult[WorkspaceConfig] = {

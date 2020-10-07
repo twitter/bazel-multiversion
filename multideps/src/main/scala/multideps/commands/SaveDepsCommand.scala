@@ -17,7 +17,9 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import multideps.configs.ResolutionOutput
 import multideps.configs.WorkspaceConfig
+import moped.annotations.CommandName
 
+@CommandName("save")
 case class SaveDepsCommand(
     app: Application
 ) extends Command {
@@ -54,22 +56,19 @@ case class SaveDepsCommand(
   def resolveDependencies(
       workspace: WorkspaceConfig
   ): DecodingResult[List[Resolution]] = {
-    DecodingResult.fromResults {
-      for {
-        dep <- workspace.dependencies
-        coursierDep <- dep.coursierDependencies
-      } yield {
-        val resolve = Resolve()
-          .addDependencies(coursierDep)
-          .addRepositories(
-            workspace.repositories.flatMap(_.coursierRepository): _*
-          )
-        resolve.either() match {
-          case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
-          case Right(value) => ValueResult(value)
-        }
+    pprint.log(workspace)
+    val results = workspace.coursierDependencies.map { dep =>
+      val resolve = Resolve()
+        .addDependencies(dep)
+        .addRepositories(
+          workspace.repositories.flatMap(_.coursierRepository): _*
+        )
+      resolve.either() match {
+        case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
+        case Right(value) => ValueResult(value)
       }
     }
+    DecodingResult.fromResults(results)
   }
 
   def unifyDependencies(
