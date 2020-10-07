@@ -1,4 +1,7 @@
-def scala212 = "2.12.12"
+lazy val V = new {
+  def scala212 = "2.12.12"
+  def moped = "0.1.2"
+}
 inThisBuild(
   List(
     organization := "org.scalameta",
@@ -14,7 +17,7 @@ inThisBuild(
         url("https://geirsson.com")
       )
     ),
-    scalaVersion := scala212,
+    scalaVersion := V.scala212,
     scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.4.2",
     scalafixCaching := true,
     semanticdbEnabled := true,
@@ -26,6 +29,8 @@ inThisBuild(
   )
 )
 
+disablePlugins(BloopPlugin)
+
 lazy val multideps = project
   .in(file("multideps"))
   .settings(
@@ -34,22 +39,27 @@ lazy val multideps = project
     libraryDependencies ++= List(
       "io.get-coursier" %% "coursier" % "2.0.0",
       "org.typelevel" %% "paiges-core" % "0.3.2",
-      "org.scalameta" %% "moped" % "0.1.2",
-      "org.scalameta" %% "moped-yaml" % "0.1.2",
+      "org.scalameta" %% "moped" % V.moped,
+      "org.scalameta" %% "moped-yaml" % V.moped,
       "com.lihaoyi" %% "os-lib" % "0.7.1",
       "com.lihaoyi" %% "fansi" % "0.2.9",
       "com.lihaoyi" %% "pprint" % "0.6.0",
       "com.lihaoyi" %% "requests" % "0.6.5"
+    ),
+    buildInfoPackage := "multideps",
+    buildInfoKeys := Seq[BuildInfoKey](
+      version
     )
   )
-  .enablePlugins(ProtobufPlugin, NativeImagePlugin)
+  .enablePlugins(ProtobufPlugin, NativeImagePlugin, BuildInfoPlugin)
 
 lazy val tests = project
   .in(file("tests"))
   .settings(
     testFrameworks := List(new TestFramework("munit.Framework")),
     libraryDependencies ++= List(
-      "org.scalameta" %% "munit" % "0.7.13"
+      "org.scalameta" %% "munit" % "0.7.13",
+      "org.scalameta" %% "testkit" % V.moped
     )
   )
   .dependsOn(multideps)

@@ -3,8 +3,24 @@ package multideps
 import java.nio.file.Paths
 
 import org.scalameta.bazel_multideps.Build.Target.Discriminator
+import moped.cli.Application
+import moped.commands.VersionCommand
+import moped.commands.HelpCommand
+import multideps.commands.DepsCommand
+import moped.commands.CompletionsCommand
+import moped.cli.CommandParser
 
 object Multideps {
+  val app = Application.fromName(
+    "bm",
+    BuildInfo.version,
+    List(
+      CommandParser[VersionCommand],
+      CommandParser[HelpCommand],
+      CommandParser[DepsCommand],
+      CommandParser[CompletionsCommand]
+    )
+  )
   def main(args: Array[String]): Unit = {
     val cwd = Paths.get(".").toAbsolutePath().normalize()
     val command = List(

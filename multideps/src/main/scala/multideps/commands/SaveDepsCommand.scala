@@ -1,7 +1,6 @@
 package multideps.commands
 
 import java.nio.file.Files
-import java.nio.file.Path
 
 import coursier.Resolve
 import coursier.core.Resolution
@@ -15,6 +14,8 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import multideps.configs.ResolutionOutput
 import multideps.configs.WorkspaceConfig
+import scala.collection.mutable
+import coursier.core.Module
 
 case class SaveDepsCommand(
     app: Application
@@ -22,8 +23,8 @@ case class SaveDepsCommand(
   def run(): Int = {
     val result = for {
       workspace <- parseWorkspaceConfig()
-      resolutions <- resolveDependencies(workspace)
-      output <- unifyDependencies(workspace, resolutions)
+      input <- resolveDependencies(workspace)
+      output <- unifyDependencies(workspace, input)
     } yield 0
 
     result match {
@@ -36,7 +37,7 @@ case class SaveDepsCommand(
   }
 
   def parseWorkspaceConfig(): DecodingResult[WorkspaceConfig] = {
-    val configPath: Path =
+    val configPath =
       app.env.workingDirectory.resolve("dependencies.yaml")
     if (!Files.isRegularFile(configPath)) {
       ErrorResult(
@@ -55,10 +56,10 @@ case class SaveDepsCommand(
     DecodingResult.fromResults {
       for {
         dep <- workspace.dependencies
-        cdep <- dep.coursierDependencies
+        coursierDep <- dep.coursierDependencies
       } yield {
         val resolve = Resolve()
-          .addDependencies(cdep)
+          .addDependencies(coursierDep)
           .addRepositories(
             workspace.repositories.flatMap(_.coursierRepository): _*
           )
@@ -74,9 +75,20 @@ case class SaveDepsCommand(
       workspace: WorkspaceConfig,
       resolutions: List[Resolution]
   ): DecodingResult[ResolutionOutput] = {
-    ???
+    val artifacts = mutable.Map.empty[Module, mutable.LinkedHashSet[String]]
+    for {
+      resolution <- resolutions
+      (dependency, publication, artifact) <- resolution.dependencyArtifacts()
+    } {
+      val versions = artifacts.getOrElseUpdate(
+        dependency.module,
+        mutable.LinkedHashSet.empty
+      )
+      versions += dependency.version
+    }
+    pprint.log(artifacts)
+    ErrorResult(Diagnostic.error("not implemented yet"))
   }
-
 }
 
 object SaveDepsCommand {
