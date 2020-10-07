@@ -1,3 +1,6 @@
 package tests
 
-abstract class BaseSuite extends munit.FunSuite {}
+import moped.testkit.MopedSuite
+import multideps.Multideps
+
+abstract class BaseSuite extends MopedSuite(Multideps.app) {}

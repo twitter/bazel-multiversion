@@ -2,7 +2,10 @@ package multideps.commands
 
 import java.nio.file.Files
 
+import scala.collection.mutable
+
 import coursier.Resolve
+import coursier.core.Module
 import coursier.core.Resolution
 import moped.cli.Application
 import moped.cli.Command
@@ -14,8 +17,6 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import multideps.configs.ResolutionOutput
 import multideps.configs.WorkspaceConfig
-import scala.collection.mutable
-import coursier.core.Module
 
 case class SaveDepsCommand(
     app: Application

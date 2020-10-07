@@ -10,7 +10,7 @@ import moped.reporters.Input
 import multideps.configs._
 import munit.TestOptions
 
-class WorkspaceConfigSuite extends tests.BaseSuite {
+class WorkspaceConfigSuite extends munit.FunSuite {
   val out = new ByteArrayOutputStream()
   val reporter: ConsoleReporter = ConsoleReporter(new PrintStream(out))
   private def parseConfig(
