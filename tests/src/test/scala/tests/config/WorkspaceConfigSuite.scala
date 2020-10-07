@@ -14,22 +14,56 @@ import munit.TestOptions
 class WorkspaceConfigSuite extends BaseSuite {
   val out = new ByteArrayOutputStream()
   val reporter: ConsoleReporter = ConsoleReporter(new PrintStream(out))
+  private def parseConfig(
+      name: TestOptions,
+      text: String,
+      onSuccess: WorkspaceConfig => Unit,
+      onError: String => Unit
+  ): Unit = {
+    out.reset()
+    reporter.reset()
+    WorkspaceConfig.parse(
+      Input.filename(name.name + ".yaml", text)
+    ) match {
+      case ValueResult(value) => onSuccess(value)
+      case ErrorResult(error) =>
+        reporter.log(error)
+        onError(out.toString())
+    }
+  }
   def check(
       name: TestOptions,
       original: String,
       expected: WorkspaceConfig
   )(implicit loc: munit.Location): Unit = {
     test(name) {
-      reporter.reset()
-      WorkspaceConfig.parse(
-        Input.filename(name.name + ".yaml", original)
-      ) match {
-        case ValueResult(obtained) =>
-          assertEquals(obtained, expected)
-        case ErrorResult(error) =>
-          reporter.log(error)
-          fail(out.toString())
-      }
+      parseConfig(
+        name,
+        original,
+        onSuccess = { obtained => assertEquals(obtained, expected) },
+        onError = { error =>
+          fail(error)
+        }
+      )
+    }
+  }
+
+  def checkError(
+      name: TestOptions,
+      original: String,
+      expected: String
+  )(implicit loc: munit.Location): Unit = {
+    test(name) {
+      parseConfig(
+        name,
+        original,
+        onSuccess = { obtained =>
+          fail(s"expected an error but parsed successfully:\n$obtained")
+        },
+        onError = { obtained =>
+          assertNoDiff(obtained, expected)
+        }
+      )
     }
   }
 
@@ -73,5 +107,18 @@ class WorkspaceConfigSuite extends BaseSuite {
         )
       )
     )
+  )
+
+  checkError(
+    "typo",
+    """|deps:
+       |  - organization: org.scalameta
+       |    artifact: munit
+       |    version: "0.7.13"
+       |    lang: scala
+       |""".stripMargin,
+    // TODO(olafur): fix position of object keys
+    """|error: unknown field name 'deps'
+       |""".stripMargin
   )
 }

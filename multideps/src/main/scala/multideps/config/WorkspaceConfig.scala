@@ -13,7 +13,11 @@ final case class WorkspaceConfig(
 
 object WorkspaceConfig {
   def parse(input: Input): DecodingResult[WorkspaceConfig] = {
-    YamlParser.parse(input).flatMap(json => codec.decode(DecodingContext(json)))
+    YamlParser
+      .parse(input)
+      .flatMap(json =>
+        codec.decode(DecodingContext(json).withFatalUnknownFields(true))
+      )
   }
   val default: WorkspaceConfig = WorkspaceConfig()
   implicit val codec: JsonCodec[WorkspaceConfig] =
