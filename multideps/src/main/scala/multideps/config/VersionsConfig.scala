@@ -14,7 +14,13 @@ import moped.json.JsonEncoder
 final case class VersionsConfig(
     default: JsonString = JsonString(""),
     extras: Map[String, JsonString] = Map.empty
-)
+) {
+  def allVersions: List[String] =
+    (Iterator(default) ++ extras.valuesIterator)
+      .map(_.value)
+      .filter(_.nonEmpty)
+      .toList
+}
 
 object VersionsConfig {
   def apply(default: String): VersionsConfig =
@@ -39,7 +45,14 @@ object VersionsConfig {
                   case (label, version: JsonString) =>
                     ValueResult(label -> version)
                   case (label, other) =>
-                    ErrorResult(Diagnostic.typeMismatch("String", context))
+                    ErrorResult(
+                      Diagnostic.typeMismatch(
+                        "String",
+                        context.withCursor(
+                          SelectMemberCursor(label).withParent(context.cursor)
+                        )
+                      )
+                    )
                 }
                 DecodingResult.fromResults(results).map { extras =>
                   VersionsConfig(default, extras.toMap)

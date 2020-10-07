@@ -7,6 +7,7 @@ import moped.parsers.YamlParser
 import moped.reporters.Input
 
 final case class WorkspaceConfig(
+    repositories: List[RepositoryConfig] = List(),
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
 )
