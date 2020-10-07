@@ -33,6 +33,7 @@ lazy val multideps = project
     mainClass.in(Compile) := Some("multideps.Multideps"),
     libraryDependencies ++= List(
       "io.get-coursier" %% "coursier" % "2.0.0",
+      "org.typelevel" %% "paiges-core" % "0.3.2",
       "org.scalameta" %% "moped" % "0.1.2",
       "org.scalameta" %% "moped-yaml" % "0.1.2",
       "com.lihaoyi" %% "os-lib" % "0.7.1",

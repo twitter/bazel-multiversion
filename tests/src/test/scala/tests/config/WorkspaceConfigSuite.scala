@@ -2,22 +2,33 @@ package tests.config
 
 import munit.TestOptions
 import multideps.config.WorkspaceConfig
-import moped.parsers.YamlParser
 import moped.reporters.Input
-import moped.json.DecodingContext
 import multideps.config._
+import moped.json.ValueResult
+import moped.json.ErrorResult
+import moped.reporters.ConsoleReporter
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 
 class WorkspaceConfigSuite extends BaseSuite {
+  val out = new ByteArrayOutputStream()
+  val reporter = ConsoleReporter(new PrintStream(out))
   def check(
       name: TestOptions,
       original: String,
       expected: WorkspaceConfig
-  ): Unit = {
+  )(implicit loc: munit.Location): Unit = {
     test(name) {
-      val json =
-        YamlParser.parse(Input.filename(name.name + ".yaml", original)).get
-      val obtained = WorkspaceConfig.codec.decode(DecodingContext(json)).get
-      assertEquals(obtained, expected)
+      reporter.reset()
+      WorkspaceConfig.parse(
+        Input.filename(name.name + ".yaml", original)
+      ) match {
+        case ValueResult(obtained) =>
+          assertEquals(obtained, expected)
+        case ErrorResult(error) =>
+          reporter.log(error)
+          fail(out.toString())
+      }
     }
   }
 
@@ -30,7 +41,7 @@ class WorkspaceConfigSuite extends BaseSuite {
        |    lang: scala
        |""".stripMargin,
     WorkspaceConfig(
-      List(
+      dependencies = List(
         DependencyConfig(
           organization = "org.scalameta",
           artifact = "munit",
@@ -52,7 +63,7 @@ class WorkspaceConfigSuite extends BaseSuite {
        |    lang: scala
        |""".stripMargin,
     WorkspaceConfig(
-      List(
+      dependencies = List(
         DependencyConfig(
           organization = "org.scalameta",
           artifact = "munit",
