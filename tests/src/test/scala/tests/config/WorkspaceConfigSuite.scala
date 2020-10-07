@@ -69,13 +69,15 @@ class WorkspaceConfigSuite extends BaseSuite {
 
   check(
     "basic",
-    """|dependencies:
+    """|scala: 2.12.12
+       |dependencies:
        |  - organization: org.scalameta
        |    artifact: munit
-       |    version: "0.7.13"
+       |    version: 0.7.13
        |    lang: scala
        |""".stripMargin,
     WorkspaceConfig(
+      scala = VersionsConfig("2.12.12"),
       dependencies = List(
         DependencyConfig(
           organization = "org.scalameta",

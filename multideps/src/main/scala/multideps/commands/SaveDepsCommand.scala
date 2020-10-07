@@ -6,6 +6,7 @@ import moped.cli.CommandParser
 import multideps.config.WorkspaceConfig
 import moped.json.DecodingResult
 import coursier.core.Resolution
+import coursier.Resolve
 
 case class SaveDepsCommand(
     bm: MultidepsApplication
@@ -19,7 +20,7 @@ case class SaveDepsCommand(
     }
   }
 
-  def resolve(workspace: WorkspaceConfig): DecodingResult[Resolution] = {
+  def resolve(workspace: WorkspaceConfig): DecodingResult[List[Resolution]] = {
     ???
   }
 }
