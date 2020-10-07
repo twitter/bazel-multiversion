@@ -1,8 +1,8 @@
 package multideps.commands
 
+import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
-import moped.cli.Application
 
 case class SaveDepsCommand(
     app: Application
@@ -15,5 +15,6 @@ case class SaveDepsCommand(
 
 object SaveDepsCommand {
   val default = new SaveDepsCommand(Application.default)
-  implicit val parser = CommandParser.derive[SaveDepsCommand](default)
+  implicit val parser: CommandParser[SaveDepsCommand] =
+    CommandParser.derive[SaveDepsCommand](default)
 }

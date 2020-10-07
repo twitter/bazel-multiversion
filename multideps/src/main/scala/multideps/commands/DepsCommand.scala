@@ -1,7 +1,7 @@
 package multideps.commands
 
-import moped.commands.NestedCommand
 import moped.annotations.Subcommand
+import moped.commands.NestedCommand
 
 @Subcommand(SaveDepsCommand.parser)
 class DepsCommand extends NestedCommand {

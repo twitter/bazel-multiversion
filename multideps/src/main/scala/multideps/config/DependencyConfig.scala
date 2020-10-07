@@ -12,7 +12,7 @@ final case class DependencyConfig(
 )
 
 object DependencyConfig {
-  val default = DependencyConfig()
+  val default: DependencyConfig = DependencyConfig()
   implicit val codec: JsonCodec[DependencyConfig] =
     moped.macros.deriveCodec(default)
 }

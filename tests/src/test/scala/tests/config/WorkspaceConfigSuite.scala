@@ -1,18 +1,19 @@
 package tests.config
 
-import munit.TestOptions
-import multideps.config.WorkspaceConfig
-import moped.reporters.Input
-import multideps.config._
-import moped.json.ValueResult
-import moped.json.ErrorResult
-import moped.reporters.ConsoleReporter
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
+import moped.json.ErrorResult
+import moped.json.ValueResult
+import moped.reporters.ConsoleReporter
+import moped.reporters.Input
+import multideps.config.WorkspaceConfig
+import multideps.config._
+import munit.TestOptions
+
 class WorkspaceConfigSuite extends BaseSuite {
   val out = new ByteArrayOutputStream()
-  val reporter = ConsoleReporter(new PrintStream(out))
+  val reporter: ConsoleReporter = ConsoleReporter(new PrintStream(out))
   def check(
       name: TestOptions,
       original: String,

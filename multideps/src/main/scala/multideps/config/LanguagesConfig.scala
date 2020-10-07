@@ -1,9 +1,9 @@
 package multideps.config
 
 import moped.json.JsonDecoder
+import moped.json.JsonEncoder
 import moped.json.JsonString
 import moped.json.ValueResult
-import moped.json.JsonEncoder
 
 sealed abstract class LanguagesConfig(val value: String)
     extends Product
@@ -14,11 +14,12 @@ case object ScalaCompilerLanguagesConfig
     extends LanguagesConfig("scala-compiler")
 
 object LanguagesConfig {
-  implicit val decoder = JsonDecoder.fromJson("java | scala | scala-compiler") {
-    case JsonString("java") => ValueResult(JavaLanguagesConfig)
-    case JsonString("scala") => ValueResult(ScalaLanguagesConfig)
-    case JsonString("scala-compiler") => ValueResult(ScalaLanguagesConfig)
-  }
-  implicit val encoder =
+  implicit val decoder: JsonDecoder[LanguagesConfig] =
+    JsonDecoder.fromJson("java | scala | scala-compiler") {
+      case JsonString("java") => ValueResult(JavaLanguagesConfig)
+      case JsonString("scala") => ValueResult(ScalaLanguagesConfig)
+      case JsonString("scala-compiler") => ValueResult(ScalaLanguagesConfig)
+    }
+  implicit val encoder: JsonEncoder[LanguagesConfig] =
     JsonEncoder.stringJsonEncoder.contramap[LanguagesConfig](_.value)
 }
