@@ -65,25 +65,47 @@ case class SaveDepsCommand(
       val forceVersions = dep.forceVersions.overrides.map {
         case (module, version) =>
           workspace.depsByModule.get(module.coursierModule) match {
-            case Some(config) =>
-              ValueResult(config.coursierModule(workspace.scala))
+            case Some(depsConfig) =>
+              depsConfig.version.get(version) match {
+                case Some(forcedVersion) =>
+                  ValueResult(
+                    depsConfig.coursierModule(
+                      workspace.scala
+                    ) -> forcedVersion
+                  )
+                case None =>
+                  // TODO: report "did you mean?"
+                  ErrorResult(
+                    Diagnostic.error(
+                      s"version '$version' not found",
+                      module.moduleName.position
+                    )
+                  )
+              }
             case None =>
-              ErrorResult(Diagnostic.error(""))
+              ErrorResult(
+                Diagnostic.error(
+                  s"module '${module.repr}' not found",
+                  module.moduleName.position
+                )
+              )
           }
       }
-      val resolve = Resolve()
-        .addDependencies(cdep)
-        .withResolutionParams(
-          ResolutionParams().addForceVersion(
+      for {
+        forceVersions <- DecodingResult.fromResults(forceVersions)
+        resolve = Resolve()
+          .addDependencies(cdep)
+          .withResolutionParams(
+            ResolutionParams().addForceVersion(forceVersions: _*)
           )
-        )
-        .addRepositories(
-          workspace.repositories.flatMap(_.coursierRepository): _*
-        )
-      resolve.either() match {
-        case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
-        case Right(value) => ValueResult(value)
-      }
+          .addRepositories(
+            workspace.repositories.flatMap(_.coursierRepository): _*
+          )
+        result <- resolve.either() match {
+          case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
+          case Right(value) => ValueResult(value)
+        }
+      } yield result
     }
     coursier.core.Version("1.0.0")
     DecodingResult.fromResults(results)
