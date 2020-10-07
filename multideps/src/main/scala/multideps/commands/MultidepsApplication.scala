@@ -3,7 +3,7 @@ package multideps.commands
 import moped.cli.Application
 import java.nio.file.Path
 import moped.json.DecodingResult
-import multideps.config.WorkspaceConfig
+import multideps.configs.WorkspaceConfig
 import java.nio.file.Files
 import moped.json.ErrorResult
 import moped.reporters.Diagnostic

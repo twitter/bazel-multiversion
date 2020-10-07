@@ -2,7 +2,7 @@ package multideps.commands
 
 import moped.cli.Command
 import moped.cli.CommandParser
-import multideps.config.WorkspaceConfig
+import multideps.configs.WorkspaceConfig
 import moped.json.DecodingResult
 import coursier.core.Resolution
 import coursier.Resolve

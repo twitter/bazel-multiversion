@@ -1,3 +1,3 @@
-package tests.config
+package tests
 
 abstract class BaseSuite extends munit.FunSuite {}
