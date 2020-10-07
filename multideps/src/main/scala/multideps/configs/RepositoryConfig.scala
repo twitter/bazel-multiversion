@@ -2,6 +2,7 @@ package multideps.configs
 
 import coursier.core.Repository
 import coursier.maven.MavenRepository
+import moped.json.JsonCodec
 
 final case class RepositoryConfig(
     name: String = "",
@@ -13,6 +14,7 @@ final case class RepositoryConfig(
 }
 
 object RepositoryConfig {
-  val default = RepositoryConfig()
-  implicit val codec = moped.macros.deriveCodec(default)
+  val default: RepositoryConfig = RepositoryConfig()
+  implicit val codec: JsonCodec[RepositoryConfig] =
+    moped.macros.deriveCodec(default)
 }

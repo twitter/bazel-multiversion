@@ -4,12 +4,12 @@ import moped.json.DecodingContext
 import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.JsonDecoder
+import moped.json.JsonEncoder
 import moped.json.JsonObject
 import moped.json.JsonString
 import moped.json.SelectMemberCursor
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
-import moped.json.JsonEncoder
 
 final case class VersionsConfig(
     default: JsonString = JsonString(""),

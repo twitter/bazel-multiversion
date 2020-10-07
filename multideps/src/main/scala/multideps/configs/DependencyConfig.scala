@@ -1,10 +1,10 @@
 package multideps.configs
 
-import moped.json.JsonCodec
 import coursier.core.Dependency
 import coursier.core.Module
-import coursier.core.Organization
 import coursier.core.ModuleName
+import coursier.core.Organization
+import moped.json.JsonCodec
 
 final case class DependencyConfig(
     organization: String = "",
@@ -15,10 +15,10 @@ final case class DependencyConfig(
     exports: List[String] = Nil,
     version: VersionsConfig = VersionsConfig()
 ) {
-  val crossBuildName = if (name.isEmpty()) artifact else name
-  val coursierModule =
+  val crossBuildName: String = if (name.isEmpty()) artifact else name
+  val coursierModule: Module =
     Module(Organization(organization), ModuleName(artifact), Map.empty)
-  val coursierDependencies =
+  val coursierDependencies: List[Dependency] =
     version.allVersions.map { version =>
       Dependency(coursierModule, version)
     }

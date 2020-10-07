@@ -1,35 +1,57 @@
 package multideps.commands
 
+import java.nio.file.Files
+import java.nio.file.Path
+
+import coursier.Resolve
+import coursier.core.Resolution
+import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
-import multideps.configs.WorkspaceConfig
 import moped.json.DecodingResult
-import coursier.core.Resolution
-import coursier.Resolve
-import coursier.util.Task
-import moped.reporters.Diagnostic
-import moped.json.ValueResult
 import moped.json.ErrorResult
+import moped.json.ValueResult
+import moped.reporters.Diagnostic
+import moped.reporters.Input
+import multideps.configs.ResolutionOutput
+import multideps.configs.WorkspaceConfig
 
 case class SaveDepsCommand(
-    bm: MultidepsApplication
+    app: Application
 ) extends Command {
   def run(): Int = {
-    bm.run {
-      for {
-        workspace <- bm.workspaceConfig
-        resolutions <- resolve(workspace)
-      } yield 0
+    val result = for {
+      workspace <- parseWorkspaceConfig()
+      resolutions <- resolveDependencies(workspace)
+      output <- unifyDependencies(workspace, resolutions)
+    } yield 0
+
+    result match {
+      case ValueResult(exit) =>
+        exit
+      case ErrorResult(error) =>
+        app.reporter.log(error)
+        1
     }
   }
 
-  def unify(
-      workspace: WorkspaceConfig,
-      resolutions: List[Resolution]
-  ): DecodingResult[List[Resolution]] = {
-    ???
+  def parseWorkspaceConfig(): DecodingResult[WorkspaceConfig] = {
+    val configPath: Path =
+      app.env.workingDirectory.resolve("dependencies.yaml")
+    if (!Files.isRegularFile(configPath)) {
+      ErrorResult(
+        Diagnostic.error(
+          s"no such file: $configPath\n\tTo fix this problem, change your working directory or create this file"
+        )
+      )
+    } else {
+      WorkspaceConfig.parse(Input.path(configPath))
+    }
   }
-  def resolve(workspace: WorkspaceConfig): DecodingResult[List[Resolution]] = {
+
+  def resolveDependencies(
+      workspace: WorkspaceConfig
+  ): DecodingResult[List[Resolution]] = {
     DecodingResult.fromResults {
       for {
         dep <- workspace.dependencies
@@ -47,10 +69,18 @@ case class SaveDepsCommand(
       }
     }
   }
+
+  def unifyDependencies(
+      workspace: WorkspaceConfig,
+      resolutions: List[Resolution]
+  ): DecodingResult[ResolutionOutput] = {
+    ???
+  }
+
 }
 
 object SaveDepsCommand {
-  val default = new SaveDepsCommand(MultidepsApplication.default)
+  val default = new SaveDepsCommand(Application.default)
   implicit val parser: CommandParser[SaveDepsCommand] =
     CommandParser.derive[SaveDepsCommand](default)
 }
