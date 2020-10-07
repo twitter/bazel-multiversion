@@ -18,6 +18,7 @@ import moped.reporters.Input
 import multideps.configs.ResolutionOutput
 import multideps.configs.WorkspaceConfig
 import moped.annotations.CommandName
+import coursier.params.ResolutionParams
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -60,6 +61,10 @@ case class SaveDepsCommand(
     val results = workspace.coursierDependencies.map { dep =>
       val resolve = Resolve()
         .addDependencies(dep)
+        .withResolutionParams(
+          ResolutionParams().addForceVersion(
+          )
+        )
         .addRepositories(
           workspace.repositories.flatMap(_.coursierRepository): _*
         )
@@ -68,6 +73,7 @@ case class SaveDepsCommand(
         case Right(value) => ValueResult(value)
       }
     }
+    coursier.core.Version("1.0.0")
     DecodingResult.fromResults(results)
   }
 

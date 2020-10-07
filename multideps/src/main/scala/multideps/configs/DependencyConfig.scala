@@ -13,6 +13,7 @@ import moped.json.JsonElement
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.macros.ClassShape
+import moped.json.JsonObject
 
 final case class DependencyConfig(
     organization: String = "",
@@ -21,6 +22,7 @@ final case class DependencyConfig(
     modules: List[String] = Nil,
     lang: LanguagesConfig = JavaLanguagesConfig,
     exports: List[String] = Nil,
+    forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     name: String = ""
 ) {
   val crossBuildName: String = if (name.isEmpty()) artifact else name
@@ -45,39 +47,58 @@ final case class DependencyConfig(
 }
 
 object DependencyConfig {
+  private val Full: Regex = "(.+):::(.+):(.+)".r
+  private val Half: Regex = "(.+)::(.+):(.+)".r
+  private val Java: Regex = "(.+):(.+):(.+)".r
+  def unapply(s: String): Option[DependencyConfig] =
+    s match {
+      case Full(org, artifact, version) =>
+        Some(
+          DependencyConfig(
+            org,
+            artifact,
+            version = VersionsConfig(version),
+            lang = ScalaCompilerLanguagesConfig
+          )
+        )
+      case Half(org, artifact, version) =>
+        Some(
+          DependencyConfig(
+            org,
+            artifact,
+            version = VersionsConfig(version),
+            lang = ScalaLanguagesConfig
+          )
+        )
+      case Java(org, artifact, version) =>
+        Some(
+          DependencyConfig(org, artifact, version = VersionsConfig(version))
+        )
+      case _ => None
+
+    }
   val default: DependencyConfig = DependencyConfig()
+  def automaticCodec(d: DependencyConfig): JsonCodec[DependencyConfig] =
+    moped.macros.deriveCodec(d)
   val automaticCodec: JsonCodec[DependencyConfig] =
-    moped.macros.deriveCodec(default)
+    automaticCodec(default)
   implicit val codec: JsonCodec[DependencyConfig] =
     new JsonCodec[DependencyConfig] {
-      val Full: Regex = "(.+):::(.+):(.+)".r
-      val Half: Regex = "(.+)::(.+):(.+)".r
-      val Java: Regex = "(.+):(.+):(.+)".r
       def decode(context: DecodingContext): DecodingResult[DependencyConfig] = {
         context.json match {
-          case JsonString(Full(org, artifact, version)) =>
-            ValueResult(
-              DependencyConfig(
-                org,
-                artifact,
-                version = VersionsConfig(version),
-                lang = ScalaCompilerLanguagesConfig
-              )
-            )
-          case JsonString(Half(org, artifact, version)) =>
-            ValueResult(
-              DependencyConfig(
-                org,
-                artifact,
-                version = VersionsConfig(version),
-                lang = ScalaLanguagesConfig
-              )
-            )
-          case JsonString(Java(org, artifact, version)) =>
-            ValueResult(
-              DependencyConfig(org, artifact, version = VersionsConfig(version))
-            )
-          case _ => automaticCodec.decode(context)
+          case JsonString(DependencyConfig(dep)) => ValueResult(dep)
+          case obj: JsonObject =>
+            obj.value.get("dependency") match {
+              case Some(JsonString(DependencyConfig(dep))) =>
+                val newJson = JsonObject(
+                  obj.members.filterNot(_.key.value == "dependency")
+                )
+                automaticCodec(dep).decode(context.withJson(newJson))
+              case _ =>
+                automaticCodec.decode(context)
+            }
+          case _ =>
+            automaticCodec.decode(context)
         }
       }
       def encode(value: DependencyConfig): JsonElement =
