@@ -3,11 +3,13 @@ package tests.configs
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
+import multideps.configs._
+
 import moped.json.ErrorResult
+import moped.json.JsonString
 import moped.json.ValueResult
 import moped.reporters.ConsoleReporter
 import moped.reporters.Input
-import multideps.configs._
 import munit.TestOptions
 
 class WorkspaceConfigSuite extends munit.FunSuite {
@@ -121,5 +123,35 @@ class WorkspaceConfigSuite extends munit.FunSuite {
     // TODO(olafur): fix position of object keys
     """|error: unknown field name 'deps'
        |""".stripMargin
+  )
+
+  check(
+    "cross-library".only,
+    """|dependencies:
+       |  - dependency: com.google.guava:guava:29.0-jre
+       |    crossLibrary:
+       |      - name: old
+       |        version: 25.0-jre
+       |        forceVersions:
+       |          - com.google.guava:guava:old
+       |""".stripMargin,
+    WorkspaceConfig(
+      dependencies = List(
+        DependencyConfig(
+          organization = "com.google.guava",
+          artifact = "guava",
+          version = VersionsConfig("29.0-jre"),
+          crossLibrary = List(
+            CrossLibraryConfig(
+              name = JsonString("old"),
+              version = JsonString("25.0-jre"),
+              forceVersions = ForceVersionsConfig(
+                Map(ModuleConfig("com.google.guava", "guava") -> "old")
+              )
+            )
+          )
+        )
+      )
+    )
   )
 }

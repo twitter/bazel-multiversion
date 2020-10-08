@@ -1,12 +1,12 @@
 package multideps.configs
 
+import multideps.configs.MultidepsJsonDecoders._
+
 import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import moped.json.JsonCodec
-import moped.json.JsonDecoder
 import moped.json.JsonString
-import moped.json.ValueResult
 
 final case class ModuleConfig(
     organization: JsonString = JsonString(""),
@@ -22,11 +22,9 @@ final case class ModuleConfig(
 }
 
 object ModuleConfig {
+  def apply(organization: String, moduleName: String): ModuleConfig =
+    ModuleConfig(JsonString(organization), JsonString(moduleName))
   val default: ModuleConfig = ModuleConfig()
-  implicit private val jsonStringDecoder: JsonDecoder[JsonString] =
-    JsonDecoder.fromJson[JsonString]("String") {
-      case j: JsonString => ValueResult(j)
-    }
   implicit val codec: JsonCodec[ModuleConfig] =
     moped.macros.deriveCodec(default)
 }

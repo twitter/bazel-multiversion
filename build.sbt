@@ -1,6 +1,6 @@
 lazy val V = new {
   def scala212 = "2.12.12"
-  def moped = "0.1.2"
+  def moped = "0.1.2+5-4211a71e-SNAPSHOT"
 }
 inThisBuild(
   List(
@@ -59,7 +59,7 @@ lazy val tests = project
     testFrameworks := List(new TestFramework("munit.Framework")),
     libraryDependencies ++= List(
       "org.scalameta" %% "munit" % "0.7.13",
-      "org.scalameta" %% "testkit" % V.moped
+      "org.scalameta" %% "moped-testkit" % V.moped
     )
   )
   .dependsOn(multideps)

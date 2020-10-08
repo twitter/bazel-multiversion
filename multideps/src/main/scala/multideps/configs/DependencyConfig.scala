@@ -19,6 +19,7 @@ final case class DependencyConfig(
     organization: String = "",
     artifact: String = "",
     version: VersionsConfig = VersionsConfig(),
+    crossLibrary: List[CrossLibraryConfig] = Nil,
     modules: List[String] = Nil,
     lang: LanguagesConfig = JavaLanguagesConfig,
     exports: List[String] = Nil,

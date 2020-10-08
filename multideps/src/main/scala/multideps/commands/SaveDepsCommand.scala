@@ -4,6 +4,9 @@ import java.nio.file.Files
 
 import scala.collection.mutable
 
+import multideps.configs.ResolutionOutput
+import multideps.configs.WorkspaceConfig
+
 import coursier.Resolve
 import coursier.core.Module
 import coursier.core.Resolution
@@ -17,8 +20,6 @@ import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import multideps.configs.ResolutionOutput
-import multideps.configs.WorkspaceConfig
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -126,7 +127,7 @@ case class SaveDepsCommand(
       )
       versions += dependency.version
     }
-    pprint.log(artifacts)
+    // pprint.log(artifacts)
     ErrorResult(Diagnostic.error("not implemented yet"))
   }
 }

@@ -2,12 +2,13 @@ package multideps
 
 import java.nio.file.Paths
 
+import multideps.commands.DepsCommand
+
 import moped.cli.Application
 import moped.cli.CommandParser
 import moped.commands.CompletionsCommand
 import moped.commands.HelpCommand
 import moped.commands.VersionCommand
-import multideps.commands.DepsCommand
 import org.scalameta.bazel_multideps.Build.Target.Discriminator
 
 object Multideps {
