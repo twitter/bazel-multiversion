@@ -5,7 +5,7 @@ import java.nio.file.Files
 import scala.collection.mutable
 
 import multideps.configs.ResolutionOutput
-import multideps.configs.WorkspaceConfig
+import multideps.configs.ThirdpartyConfig
 
 import coursier.Resolve
 import coursier.core.Module
@@ -41,9 +41,9 @@ case class SaveDepsCommand(
     }
   }
 
-  def parseWorkspaceConfig(): DecodingResult[WorkspaceConfig] = {
+  def parseWorkspaceConfig(): DecodingResult[ThirdpartyConfig] = {
     val configPath =
-      app.env.workingDirectory.resolve("dependencies.yaml")
+      app.env.workingDirectory.resolve("3rdparty.yaml")
     if (!Files.isRegularFile(configPath)) {
       ErrorResult(
         Diagnostic.error(
@@ -51,12 +51,12 @@ case class SaveDepsCommand(
         )
       )
     } else {
-      WorkspaceConfig.parse(Input.path(configPath))
+      ThirdpartyConfig.parse(Input.path(configPath))
     }
   }
 
   def resolveDependencies(
-      workspace: WorkspaceConfig
+      workspace: ThirdpartyConfig
   ): DecodingResult[List[Resolution]] = {
     pprint.log(workspace)
     val results = for {
@@ -113,7 +113,7 @@ case class SaveDepsCommand(
   }
 
   def unifyDependencies(
-      workspace: WorkspaceConfig,
+      workspace: ThirdpartyConfig,
       resolutions: List[Resolution]
   ): DecodingResult[ResolutionOutput] = {
     val artifacts = mutable.Map.empty[Module, mutable.LinkedHashSet[String]]
@@ -127,7 +127,7 @@ case class SaveDepsCommand(
       )
       versions += dependency.version
     }
-    // pprint.log(artifacts)
+    pprint.log(artifacts)
     ErrorResult(Diagnostic.error("not implemented yet"))
   }
 }

@@ -18,12 +18,12 @@ class WorkspaceConfigSuite extends munit.FunSuite {
   private def parseConfig(
       name: TestOptions,
       text: String,
-      onSuccess: WorkspaceConfig => Unit,
+      onSuccess: ThirdpartyConfig => Unit,
       onError: String => Unit
   ): Unit = {
     out.reset()
     reporter.reset()
-    WorkspaceConfig.parse(
+    ThirdpartyConfig.parse(
       Input.filename(name.name + ".yaml", text)
     ) match {
       case ValueResult(value) => onSuccess(value)
@@ -35,7 +35,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
   def check(
       name: TestOptions,
       original: String,
-      expected: WorkspaceConfig
+      expected: ThirdpartyConfig
   )(implicit loc: munit.Location): Unit = {
     test(name) {
       parseConfig(
@@ -77,7 +77,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
        |    version: 0.7.13
        |    lang: scala
        |""".stripMargin,
-    WorkspaceConfig(
+    ThirdpartyConfig(
       scala = VersionsConfig("2.12.12"),
       dependencies = List(
         DependencyConfig(
@@ -100,7 +100,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
        |      old: "0.6.9"
        |    lang: scala
        |""".stripMargin,
-    WorkspaceConfig(
+    ThirdpartyConfig(
       dependencies = List(
         DependencyConfig(
           organization = "org.scalameta",
@@ -120,13 +120,14 @@ class WorkspaceConfigSuite extends munit.FunSuite {
        |    version: "0.7.13"
        |    lang: scala
        |""".stripMargin,
-    // TODO(olafur): fix position of object keys
-    """|error: unknown field name 'deps'
+    """|typo.yaml:1 error: unknown field name 'deps'
+       |deps:
+       |^
        |""".stripMargin
   )
 
   check(
-    "cross-library".only,
+    "cross-library",
     """|dependencies:
        |  - dependency: com.google.guava:guava:29.0-jre
        |    crossLibrary:
@@ -135,7 +136,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
        |        forceVersions:
        |          - com.google.guava:guava:old
        |""".stripMargin,
-    WorkspaceConfig(
+    ThirdpartyConfig(
       dependencies = List(
         DependencyConfig(
           organization = "com.google.guava",

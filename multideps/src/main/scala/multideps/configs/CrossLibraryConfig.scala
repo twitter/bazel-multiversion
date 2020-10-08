@@ -2,8 +2,8 @@ package multideps.configs
 
 import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 
-import moped.json.JsonString
 import moped.json.JsonCodec
+import moped.json.JsonString
 
 final case class CrossLibraryConfig(
     name: JsonString = JsonString(""),

@@ -8,7 +8,7 @@ import moped.json.JsonCodec
 import moped.parsers.YamlParser
 import moped.reporters.Input
 
-final case class WorkspaceConfig(
+final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
@@ -21,15 +21,15 @@ final case class WorkspaceConfig(
     dependencies.flatMap(_.coursierDependencies(scala))
 }
 
-object WorkspaceConfig {
-  def parse(input: Input): DecodingResult[WorkspaceConfig] = {
+object ThirdpartyConfig {
+  def parse(input: Input): DecodingResult[ThirdpartyConfig] = {
     YamlParser
       .parse(input)
       .flatMap(json =>
         codec.decode(DecodingContext(json).withFatalUnknownFields(true))
       )
   }
-  val default: WorkspaceConfig = WorkspaceConfig()
-  implicit val codec: JsonCodec[WorkspaceConfig] =
+  val default: ThirdpartyConfig = ThirdpartyConfig()
+  implicit val codec: JsonCodec[ThirdpartyConfig] =
     moped.macros.deriveCodec(default)
 }
