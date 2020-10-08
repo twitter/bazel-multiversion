@@ -2,16 +2,14 @@ package multideps.commands
 
 import java.nio.file.Files
 
-import scala.collection.mutable
+import scala.collection.immutable.Nil
 
-import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
+import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.outputs.ResolutionIndex
 
 import coursier.Resolve
-import coursier.core.Module
-import coursier.core.Resolution
 import coursier.params.ResolutionParams
 import moped.annotations.CommandName
 import moped.cli.Application
@@ -22,10 +20,7 @@ import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import moped.reporters.Position
 import moped.reporters.NoPosition
-import scala.collection.immutable.Nil
-import coursier.core.Dependency
 
 @CommandName("save")
 case class SaveDepsCommand(

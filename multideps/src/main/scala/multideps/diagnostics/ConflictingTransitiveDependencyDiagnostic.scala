@@ -1,11 +1,12 @@
 package multideps.diagnostics
 
+import multideps.diagnostics.MultidepsEnrichments._
+
+import coursier.core.Dependency
+import coursier.core.Module
 import moped.reporters.Diagnostic
 import moped.reporters.ErrorSeverity
 import moped.reporters.Position
-import coursier.core.Module
-import coursier.core.Dependency
-import MultidepsEnrichments._
 
 class ConflictingTransitiveDependencyDiagnostic(
     module: Module,

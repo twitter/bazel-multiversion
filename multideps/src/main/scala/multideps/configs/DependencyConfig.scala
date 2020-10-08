@@ -1,8 +1,8 @@
 package multideps.configs
 
-import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
-
 import scala.util.matching.Regex
+
+import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 
 import coursier.core.Dependency
 import coursier.core.Module
