@@ -20,7 +20,7 @@ final case class VersionsConfig(
     else extras.get(key).map(_.value)
   def binaryVersion: String =
     default.value.split('.').take(2).mkString(".")
-  def allVersions: List[String] =
+  def all: List[String] =
     (Iterator(default) ++ extras.valuesIterator)
       .map(_.value)
       .filter(_.nonEmpty)

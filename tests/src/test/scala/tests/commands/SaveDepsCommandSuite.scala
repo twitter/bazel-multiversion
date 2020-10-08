@@ -12,8 +12,6 @@ class SaveDepsCommandSuite extends tests.BaseSuite {
          |dependencies:
          |  - dependency: com.google.guava:guava:29.0-jre
          |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
-         |    forceVersions:
-         |      - com.google.guava:guava:default
          |""".stripMargin
   )
 

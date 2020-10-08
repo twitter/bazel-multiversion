@@ -4,6 +4,7 @@ import java.nio.file.Files
 
 import scala.collection.mutable
 
+import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
 
@@ -20,6 +21,10 @@ import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
+import moped.reporters.Position
+import moped.reporters.NoPosition
+import scala.collection.immutable.Nil
+import coursier.core.Dependency
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -27,9 +32,9 @@ case class SaveDepsCommand(
 ) extends Command {
   def run(): Int = {
     val result = for {
-      workspace <- parseWorkspaceConfig()
-      input <- resolveDependencies(workspace)
-      output <- unifyDependencies(workspace, input)
+      thirdparty <- parseThirdpartyConfig()
+      input <- resolveDependencies(thirdparty)
+      output <- unifyDependencies(thirdparty, input)
     } yield 0
 
     result match {
@@ -41,7 +46,7 @@ case class SaveDepsCommand(
     }
   }
 
-  def parseWorkspaceConfig(): DecodingResult[ThirdpartyConfig] = {
+  def parseThirdpartyConfig(): DecodingResult[ThirdpartyConfig] = {
     val configPath =
       app.env.workingDirectory.resolve("3rdparty.yaml")
     if (!Files.isRegularFile(configPath)) {
@@ -56,22 +61,22 @@ case class SaveDepsCommand(
   }
 
   def resolveDependencies(
-      workspace: ThirdpartyConfig
+      thirdparty: ThirdpartyConfig
   ): DecodingResult[List[Resolution]] = {
-    pprint.log(workspace)
+    pprint.log(thirdparty)
     val results = for {
-      dep <- workspace.dependencies
-      cdep <- dep.coursierDependencies(workspace.scala)
+      dep <- thirdparty.dependencies
+      cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield {
       val forceVersions = dep.forceVersions.overrides.map {
         case (module, version) =>
-          workspace.depsByModule.get(module.coursierModule) match {
+          thirdparty.depsByModule.get(module.coursierModule) match {
             case Some(depsConfig) =>
               depsConfig.version.get(version) match {
                 case Some(forcedVersion) =>
                   ValueResult(
                     depsConfig.coursierModule(
-                      workspace.scala
+                      thirdparty.scala
                     ) -> forcedVersion
                   )
                 case None =>
@@ -100,7 +105,7 @@ case class SaveDepsCommand(
             ResolutionParams().addForceVersion(forceVersions: _*)
           )
           .addRepositories(
-            workspace.repositories.flatMap(_.coursierRepository): _*
+            thirdparty.repositories.flatMap(_.coursierRepository): _*
           )
         result <- resolve.either() match {
           case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
@@ -113,10 +118,21 @@ case class SaveDepsCommand(
   }
 
   def unifyDependencies(
-      workspace: ThirdpartyConfig,
+      thirdparty: ThirdpartyConfig,
       resolutions: List[Resolution]
   ): DecodingResult[ResolutionOutput] = {
-    val artifacts = mutable.Map.empty[Module, mutable.LinkedHashSet[String]]
+    val artifacts =
+      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
+    val roots =
+      mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
+    for {
+      resolution <- resolutions
+      root <- resolution.rootDependencies
+      (dependency, _, _) <- resolution.dependencyArtifacts()
+    } {
+      val buf = roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
+      buf += root
+    }
     for {
       resolution <- resolutions
       (dependency, publication, artifact) <- resolution.dependencyArtifacts()
@@ -125,10 +141,62 @@ case class SaveDepsCommand(
         dependency.module,
         mutable.LinkedHashSet.empty
       )
-      versions += dependency.version
+      versions += dependency
     }
-    pprint.log(artifacts)
+    def conflictingVersions(
+        versions: Iterable[String],
+        module: Module,
+        pos: Position
+    ): Diagnostic =
+      Diagnostic.error(
+        s"conflicting versions for module '${module.repr}': ${versions.mkString(", ")}",
+        pos
+      )
+    val conflicts: List[Diagnostic] = for {
+      (module, versions) <- artifacts.toList
+      if versions.size > 1
+      diagnostic <- thirdparty.depsByModule.get(module) match {
+        case Some(declared) =>
+          val unspecified =
+            (versions.map(_.version) -- declared.version.all).toList
+          pprint.log(declared.version.all)
+          pprint.log(unspecified)
+          unspecified match {
+            case Nil =>
+              Nil
+            case _ =>
+              List(
+                new ConflictingTransitiveDependencyDiagnostic(
+                  module,
+                  unspecified.toList,
+                  declared.version.all,
+                  versions.iterator.flatMap(roots.get(_)).flatten.toList,
+                  declared.organization.position
+                )
+              )
+          }
+        case None =>
+          List(
+            new ConflictingTransitiveDependencyDiagnostic(
+              module,
+              versions.map(_.version).toList,
+              Nil,
+              versions.iterator.flatMap(roots.get(_)).flatten.toList,
+              NoPosition
+            )
+          )
+      }
+    } yield diagnostic
+    conflicts.foreach(d => app.reporter.log(d))
+    // pprint.log(artifacts)
     ErrorResult(Diagnostic.error("not implemented yet"))
+  }
+
+  private implicit class XtensionStrings(xs: Iterable[String]) {
+    def commas: String =
+      if (xs.isEmpty) ""
+      else if (xs.size == 1) xs.head
+      else xs.mkString(", ")
   }
 }
 

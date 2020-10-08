@@ -81,7 +81,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
       scala = VersionsConfig("2.12.12"),
       dependencies = List(
         DependencyConfig(
-          organization = "org.scalameta",
+          organization = JsonString("org.scalameta"),
           artifact = "munit",
           version = VersionsConfig("0.7.13"),
           lang = ScalaLanguagesConfig
@@ -103,7 +103,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
     ThirdpartyConfig(
       dependencies = List(
         DependencyConfig(
-          organization = "org.scalameta",
+          organization = JsonString("org.scalameta"),
           artifact = "munit",
           version = VersionsConfig("0.7.13", Map("old" -> "0.6.9")),
           lang = ScalaLanguagesConfig
@@ -139,7 +139,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
     ThirdpartyConfig(
       dependencies = List(
         DependencyConfig(
-          organization = "com.google.guava",
+          organization = JsonString("com.google.guava"),
           artifact = "guava",
           version = VersionsConfig("29.0-jre"),
           crossLibrary = List(
