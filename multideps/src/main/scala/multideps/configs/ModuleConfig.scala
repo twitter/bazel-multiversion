@@ -1,6 +1,6 @@
 package multideps.configs
 
-import multideps.configs.MultidepsJsonDecoders._
+import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 
 import coursier.core.Module
 import coursier.core.ModuleName

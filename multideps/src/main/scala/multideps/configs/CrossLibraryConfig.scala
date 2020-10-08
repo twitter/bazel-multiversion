@@ -1,6 +1,6 @@
 package multideps.configs
 
-import multideps.configs.MultidepsJsonDecoders._
+import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 
 import moped.json.JsonString
 import moped.json.JsonCodec
@@ -12,5 +12,6 @@ final case class CrossLibraryConfig(
 )
 object CrossLibraryConfig {
   val default: CrossLibraryConfig = CrossLibraryConfig()
-  implicit val codec: JsonCodec[CrossLibraryConfig] = moped.macros.deriveCodec(default)
+  implicit val codec: JsonCodec[CrossLibraryConfig] =
+    moped.macros.deriveCodec(default)
 }
