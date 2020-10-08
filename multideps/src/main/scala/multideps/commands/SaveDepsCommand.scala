@@ -2,8 +2,8 @@ package multideps.commands
 
 import java.nio.file.Files
 
-import scala.collection.immutable.Nil
-
+import multideps.diagnostics.MultidepsEnrichments.XtensionList
+import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.CoursierResolver
 import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
@@ -27,6 +27,7 @@ import coursier.cache.CachePolicy
 import coursier.util.Task
 import multideps.resolvers.Sha256
 import scala.util.Try
+import multideps.configs.ArtifactOutput
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -131,18 +132,31 @@ case class SaveDepsCommand(
     val cache = FileCache()
       .withCachePolicies(List(CachePolicy.FetchMissing))
       .withPool(CoursierResolver.downloadPool)
-    val artifacts = index.resolutions.flatMap(_.artifacts()).distinct
-    val files = artifacts.map { artifact =>
-      cache.file(artifact).run.map {
-        case Right(file) => Try(artifact -> Sha256.compute(file)).toEither
+      .withChecksums(Nil)
+    val artifacts = index.resolutions
+      .flatMap(_.dependencyArtifacts().map {
+        case (d, p, a) => ResolvedDependency(d, p, a)
+      })
+      .distinctBy(_.dependency)
+    val files = artifacts.map { r =>
+      cache.file(r.artifact).run.map {
+        case Right(file) =>
+          Try {
+            ArtifactOutput(
+              dependency = r.dependency,
+              artifact = r.artifact,
+              artifactSha256 = Sha256.compute(file)
+            )
+          }.toEither
+
         case Left(value) => Left(value)
       }
     }
     val all = Task.gather.gather(files).unsafeRun()(CoursierResolver.ec)
     val errors = all.collect { case Left(error) => error }
     if (errors.isEmpty) {
-      val sha256 = all.collect { case Right(sha) => sha }
-      pprint.log(sha256)
+      val artifacts = all.collect { case Right(a) => a }
+      pprint.log(artifacts.map(_.repr))
     }
     ErrorResult(Diagnostic.error("not implemented yet"))
   }
