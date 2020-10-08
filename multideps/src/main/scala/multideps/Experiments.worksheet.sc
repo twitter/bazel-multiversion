@@ -1,3 +1,4 @@
+import coursier.cache.FileCache
 import coursier.core.Version
 
 val v = Version("2.12-jre")

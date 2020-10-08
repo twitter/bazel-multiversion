@@ -22,10 +22,16 @@ class ConflictingTransitiveDependencyDiagnostic(
       if (xs.isEmpty) ""
       else if (xs.size == 1) tokenize(xs.head).mkString(" ", "", "")
       else xs.map(tokenize(_).mkString).mkString(" ", ", ", "")
+    val toFix =
+      if (pos.isNone)
+        s"add 'forceVersions' to the root dependencies OR create a new root dependency for the module '${module.repr}'."
+      else
+        "add 'forceVersions' to the root dependencies OR add 'crossVersions' to the transitive dependency."
     s"""transitive dependency '${module.repr}' has conflicting versions.
        |  resolved versions:${pretty(transitiveVersions)}
        |  declared versions:${pretty(declaredVersions)}
        |  root dependencies:${pretty(roots.map(_.repr))}
+       |To fix this problem, $toFix
        |""".stripMargin.trim
   }
 }

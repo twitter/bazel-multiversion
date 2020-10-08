@@ -21,11 +21,11 @@ final case class DependencyConfig(
     organization: JsonString = JsonString(""),
     artifact: String = "",
     version: VersionsConfig = VersionsConfig(),
-    crossLibrary: List[CrossLibraryConfig] = Nil,
+    crossVersions: List[CrossVersionsConfig] = Nil,
+    forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
     lang: LanguagesConfig = JavaLanguagesConfig,
     exports: List[String] = Nil,
-    forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     name: String = ""
 ) {
   val crossBuildName: String = if (name.isEmpty()) artifact else name

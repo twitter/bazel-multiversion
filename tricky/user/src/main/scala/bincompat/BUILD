@@ -6,7 +6,6 @@ cross_scala_library(
   srcs = ["CrossBuild.scala"],
   deps = ["//tricky/{lib}/src/main/scala/bincompat:LibraryTrait"],
   exports = ["//tricky/{lib}/src/main/scala/bincompat:LibraryTrait"],
-  # cross_build = cross_matrix({"lib": ["v1", "v2"], "guava": ["20", "30"]}),
   cross_build = [
     {"lib": "v1"},
     {"lib": "v2"},

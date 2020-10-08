@@ -142,8 +142,8 @@ class WorkspaceConfigSuite extends munit.FunSuite {
           organization = JsonString("com.google.guava"),
           artifact = "guava",
           version = VersionsConfig("29.0-jre"),
-          crossLibrary = List(
-            CrossLibraryConfig(
+          crossVersions = List(
+            CrossVersionsConfig(
               name = JsonString("old"),
               version = JsonString("25.0-jre"),
               forceVersions = ForceVersionsConfig(

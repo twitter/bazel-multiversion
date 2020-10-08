@@ -7,6 +7,7 @@ import scala.collection.mutable
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
+import multideps.outputs.ResolutionIndex
 
 import coursier.Resolve
 import coursier.core.Module
@@ -33,8 +34,8 @@ case class SaveDepsCommand(
   def run(): Int = {
     val result = for {
       thirdparty <- parseThirdpartyConfig()
-      input <- resolveDependencies(thirdparty)
-      output <- unifyDependencies(thirdparty, input)
+      index <- resolveDependencies(thirdparty)
+      output <- unifyDependencies(index)
     } yield 0
 
     result match {
@@ -62,7 +63,7 @@ case class SaveDepsCommand(
 
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
-  ): DecodingResult[List[Resolution]] = {
+  ): DecodingResult[ResolutionIndex] = {
     pprint.log(thirdparty)
     val results = for {
       dep <- thirdparty.dependencies
@@ -114,48 +115,33 @@ case class SaveDepsCommand(
       } yield result
     }
     coursier.core.Version("1.0.0")
-    DecodingResult.fromResults(results)
+    DecodingResult
+      .fromResults(results)
+      .map(resolutions =>
+        ResolutionIndex.fromResolutions(thirdparty, resolutions)
+      )
   }
 
   def unifyDependencies(
-      thirdparty: ThirdpartyConfig,
-      resolutions: List[Resolution]
+      index: ResolutionIndex
   ): DecodingResult[ResolutionOutput] = {
-    val artifacts =
-      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
-    val roots =
-      mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
-    for {
-      resolution <- resolutions
-      root <- resolution.rootDependencies
-      (dependency, _, _) <- resolution.dependencyArtifacts()
-    } {
-      val buf = roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
-      buf += root
+    val errors = lintResolutions(index)
+    pprint.log(index.artifacts.mapValues(_.map(_.version)))
+    Diagnostic.fromDiagnostics(errors) match {
+      case Some(error) =>
+        // errors.foreach(e => app.reporter.log(e))
+        ErrorResult(error)
+      case None =>
+        // conflicts.foreach(d => app.reporter.log(d))
+        ErrorResult(Diagnostic.error("not implemented yet"))
     }
+  }
+
+  def lintResolutions(index: ResolutionIndex): List[Diagnostic] = {
     for {
-      resolution <- resolutions
-      (dependency, publication, artifact) <- resolution.dependencyArtifacts()
-    } {
-      val versions = artifacts.getOrElseUpdate(
-        dependency.module,
-        mutable.LinkedHashSet.empty
-      )
-      versions += dependency
-    }
-    def conflictingVersions(
-        versions: Iterable[String],
-        module: Module,
-        pos: Position
-    ): Diagnostic =
-      Diagnostic.error(
-        s"conflicting versions for module '${module.repr}': ${versions.mkString(", ")}",
-        pos
-      )
-    val conflicts: List[Diagnostic] = for {
-      (module, versions) <- artifacts.toList
+      (module, versions) <- index.artifacts.toList
       if versions.size > 1
-      diagnostic <- thirdparty.depsByModule.get(module) match {
+      diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declared) =>
           val unspecified =
             (versions.map(_.version) -- declared.version.all).toList
@@ -170,7 +156,7 @@ case class SaveDepsCommand(
                   module,
                   unspecified.toList,
                   declared.version.all,
-                  versions.iterator.flatMap(roots.get(_)).flatten.toList,
+                  versions.iterator.flatMap(index.roots.get(_)).flatten.toList,
                   declared.organization.position
                 )
               )
@@ -181,15 +167,12 @@ case class SaveDepsCommand(
               module,
               versions.map(_.version).toList,
               Nil,
-              versions.iterator.flatMap(roots.get(_)).flatten.toList,
+              versions.iterator.flatMap(index.roots.get(_)).flatten.toList,
               NoPosition
             )
           )
       }
     } yield diagnostic
-    conflicts.foreach(d => app.reporter.log(d))
-    // pprint.log(artifacts)
-    ErrorResult(Diagnostic.error("not implemented yet"))
   }
 
   private implicit class XtensionStrings(xs: Iterable[String]) {
