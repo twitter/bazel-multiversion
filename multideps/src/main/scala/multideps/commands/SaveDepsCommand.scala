@@ -4,6 +4,7 @@ import java.nio.file.Files
 
 import scala.collection.immutable.Nil
 
+import multideps.resolvers.CoursierResolver
 import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
@@ -21,6 +22,11 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import coursier.cache.FileCache
+import coursier.cache.CachePolicy
+import coursier.util.Task
+import multideps.resolvers.Sha256
+import scala.util.Try
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -30,6 +36,7 @@ case class SaveDepsCommand(
     val result = for {
       thirdparty <- parseThirdpartyConfig()
       index <- resolveDependencies(thirdparty)
+      _ <- lintResolutions(index)
       output <- unifyDependencies(index)
     } yield 0
 
@@ -120,20 +127,28 @@ case class SaveDepsCommand(
   def unifyDependencies(
       index: ResolutionIndex
   ): DecodingResult[ResolutionOutput] = {
-    val errors = lintResolutions(index)
-    pprint.log(index.artifacts.mapValues(_.map(_.version)))
-    Diagnostic.fromDiagnostics(errors) match {
-      case Some(error) =>
-        // errors.foreach(e => app.reporter.log(e))
-        ErrorResult(error)
-      case None =>
-        // conflicts.foreach(d => app.reporter.log(d))
-        ErrorResult(Diagnostic.error("not implemented yet"))
+    // Step 1: download artifacts
+    val cache = FileCache()
+      .withCachePolicies(List(CachePolicy.FetchMissing))
+      .withPool(CoursierResolver.downloadPool)
+    val artifacts = index.resolutions.flatMap(_.artifacts()).distinct
+    val files = artifacts.map { artifact =>
+      cache.file(artifact).run.map {
+        case Right(file) => Try(artifact -> Sha256.compute(file)).toEither
+        case Left(value) => Left(value)
+      }
     }
+    val all = Task.gather.gather(files).unsafeRun()(CoursierResolver.ec)
+    val errors = all.collect { case Left(error) => error }
+    if (errors.isEmpty) {
+      val sha256 = all.collect { case Right(sha) => sha }
+      pprint.log(sha256)
+    }
+    ErrorResult(Diagnostic.error("not implemented yet"))
   }
 
-  def lintResolutions(index: ResolutionIndex): List[Diagnostic] = {
-    for {
+  def lintResolutions(index: ResolutionIndex): DecodingResult[Unit] = {
+    val errors = for {
       (module, versions) <- index.artifacts.toList
       if versions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
@@ -168,6 +183,10 @@ case class SaveDepsCommand(
           )
       }
     } yield diagnostic
+    Diagnostic.fromDiagnostics(errors) match {
+      case Some(diagnostic) => ErrorResult(diagnostic)
+      case None => ValueResult(())
+    }
   }
 
   private implicit class XtensionStrings(xs: Iterable[String]) {
