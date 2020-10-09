@@ -2,6 +2,7 @@ package multideps.commands
 
 import java.nio.file.Files
 
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 import multideps.diagnostics.MultidepsEnrichments.XtensionList
 import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.CoursierResolver
@@ -74,7 +75,6 @@ case class SaveDepsCommand(
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
-    pprint.log(thirdparty)
     val results = for {
       dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
@@ -157,7 +157,7 @@ case class SaveDepsCommand(
               artifact = r.artifact,
               artifactSha256 = Sha256.compute(file)
             )
-            outputs(r.dependency) = output
+            outputs(r.dependency.withoutMetadata) = output
             output
           }.toEither
 
@@ -172,7 +172,6 @@ case class SaveDepsCommand(
       case None =>
         val artifacts = all.collect { case Right(a) => a }
         val rendered = DepsOutput(artifacts).render
-        pprint.log(rendered)
         val out =
           app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
         Files.createDirectories(out.getParent())
@@ -189,8 +188,6 @@ case class SaveDepsCommand(
         case Some(declared) =>
           val unspecified =
             (versions.map(_.version) -- declared.version.all).toList
-          pprint.log(declared.version.all)
-          pprint.log(unspecified)
           unspecified match {
             case Nil =>
               Nil

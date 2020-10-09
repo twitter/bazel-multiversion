@@ -15,30 +15,27 @@ final case class DepsOutput(
       .intercalate(Docs.blankLine, artifacts.map(_.build))
       .render(width)
     s"""# DO NOT EDIT: this file is auto-generated
-def _http_files_impl(ctx):
+def _jvm_deps_impl(ctx):
     content = '''
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 
-def load_http_files():
+def load_jvm_deps():
     $httpFiles
 
 '''
-    ctx.file("deps.bzl", content, executable = False)
+    ctx.file("jvm_deps.bzl", content, executable = False)
     build_content = '''
-package(default_visibility = [\"//visibility:public\"])
+load(\"@io_bazel_rules_scala//scala:scala_import.bzl\", \"scala_import\")
 
 $builds
 '''
     ctx.file("BUILD", build_content, executable = False)
 
-http_files = repository_rule(
-    implementation = _http_files_impl,
+jvm_deps_rule = repository_rule(
+    implementation = _jvm_deps_impl,
 )
-
-
-def all_deps():
-  http_files(name = "maven")
-
+def jvm_deps():
+  jvm_deps_rule(name = "maven")
 """.stripMargin
   }
 }

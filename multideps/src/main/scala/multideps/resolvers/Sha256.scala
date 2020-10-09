@@ -24,7 +24,7 @@ object Sha256 {
     }
     bytesToHex(sha.digest())
   }
-  private val hexArray = "0123456789ABCDEF".toCharArray
+  private val hexArray = "0123456789abcdef".toCharArray
   private def bytesToHex(bytes: Array[Byte]): String = {
     val hexChars = new Array[Char](bytes.length * 2)
     var j = 0

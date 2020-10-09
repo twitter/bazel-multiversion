@@ -32,3 +32,10 @@ scala_binary(
   deps = [":CrossBuild-lib_v2", ":CrossBuild-lib_v1"],
   main_class = "bincompat.NeedsVersion3",
 )
+
+scala_binary(
+  name = "NeedsGuava",
+  srcs = ["NeedsGuava.scala"],
+  deps = ["@maven//:com.google.guava_guava_29.0-jre"],
+  main_class = "bincompat.NeedsGuava",
+)

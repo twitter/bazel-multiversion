@@ -20,9 +20,9 @@ final case class ArtifactOutput(
   val label = dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
   def dependencies =
     index.dependencies
-      .getOrElse(dependency, Nil)
+      .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
-      .map(outputs)
+      .map(d => outputs(d.withoutMetadata))
       .map(_.label)
       .toSeq
   def repr =
@@ -34,7 +34,7 @@ final case class ArtifactOutput(
   val org = dependency.module.organization.value
   val moduleName = dependency.module.name.value
   val version = dependency.version
-  val mavenLabel = s"@maven//:${org}/${moduleName}/${version}"
+  val mavenLabel = s"@maven//:${org}/${moduleName}-${version}.jar"
   // require(artifactsnonEmpty)
   // def label: String = ""
   // def name = ""
@@ -55,15 +55,15 @@ final case class ArtifactOutput(
       kind = "genrule",
       "name" -> Docs.literal(label + "_extension"),
       "srcs" -> Docs.array(s"@${label}//file"),
-      "outs" -> Docs.literal(mavenLabel)
+      "outs" -> Docs.array(mavenLabel),
+      "cmd" -> Docs.literal("cp $< $@")
     )
   def scalaImport: TargetOutput =
     TargetOutput(
       kind = "scala_import",
       "name" -> Docs.literal(label),
-      "jars" -> Docs.array(s"@${label}//file"),
+      "jars" -> Docs.array(mavenLabel),
       "deps" -> Docs.array(dependencies: _*),
-      "outs" -> Docs.literal(mavenLabel),
-      "visibility" -> Docs.literal("//visibility:public")
+      "visibility" -> Docs.array("//visibility:public")
     )
 }

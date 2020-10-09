@@ -37,6 +37,7 @@ lazy val multideps = project
     moduleName := "bazel-multideps",
     mainClass.in(Compile) := Some("multideps.Multideps"),
     libraryDependencies ++= List(
+      "com.google.guava" % "guava" % "29.0-jre",
       "io.get-coursier" %% "coursier" % "2.0.0",
       "org.typelevel" %% "paiges-core" % "0.3.2",
       "org.scalameta" %% "moped" % V.moped,

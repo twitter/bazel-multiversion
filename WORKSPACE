@@ -50,14 +50,9 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 protobuf_deps()
 
 
-# For bazel-deps
-load("//3rdparty:workspace.bzl", "maven_dependencies")
-maven_dependencies()
-load("//3rdparty:target_file.bzl", "build_external_workspace")
-build_external_workspace(name = "third_party")
-
-load("//:deps.bzl", "all_deps")
-all_deps()
-load("@maven//:deps.bzl", "load_http_files")
-load_http_files()
+# For bazel-multideps
+load("//:3rdparty/jvm_deps.bzl", "jvm_deps")
+jvm_deps()
+load("@maven//:jvm_deps.bzl", "load_jvm_deps")
+load_jvm_deps()
 

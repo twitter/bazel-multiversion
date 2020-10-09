@@ -1,5 +1,6 @@
 package multideps.outputs
 
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 import multideps.diagnostics.MultidepsEnrichments.XtensionList
 import scala.collection.mutable
 
@@ -25,7 +26,11 @@ final case class ResolutionIndex(
     (for {
       r <- resolutions.iterator
       dep <- r.dependencies.iterator
-    } yield dep -> r.dependenciesOf(dep)).toMap
+    } yield dep.withoutMetadata -> r.dependenciesOf(
+      dep,
+      withRetainedVersions = true,
+      withFallbackConfig = true
+    )).toMap
   }
 }
 

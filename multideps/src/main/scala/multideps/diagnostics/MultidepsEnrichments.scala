@@ -6,6 +6,7 @@ import scala.collection.mutable
 object MultidepsEnrichments {
   implicit class XtensionDependency(dep: Dependency) {
     def repr: String = s"${dep.module.repr}:${dep.version}"
+    def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
   }
   implicit class XtensionList[A](xs: List[A]) {
     def distinctBy[B](fn: A => B): List[A] = {

@@ -35,6 +35,9 @@ object Multideps {
       "deps(tricky/user/src/main/scala/bincompat:NeedsVersion1)",
       "--output=proto"
     )
+    com.google.common.hash.Hashing
+      .sha256()
+      .hashString("Hello world", java.nio.charset.StandardCharsets.UTF_8)
     val x = os.proc(command).call(cwd = os.Path(cwd))
     val query =
       org.scalameta.bazel_multideps.Build.QueryResult.parseFrom(x.out.bytes)
@@ -51,6 +54,5 @@ object Multideps {
           .filter(_.getName() == "deps")
           .flatMap(_.getStringListValueList().asScala)
       )
-    pprint.log(names)
   }
 }
