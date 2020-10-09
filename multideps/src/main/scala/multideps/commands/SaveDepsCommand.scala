@@ -5,9 +5,9 @@ import java.nio.file.Files
 import multideps.diagnostics.MultidepsEnrichments.XtensionList
 import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.CoursierResolver
-import multideps.configs.ResolutionOutput
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
+import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
 
 import coursier.Resolve
@@ -27,7 +27,11 @@ import coursier.cache.CachePolicy
 import coursier.util.Task
 import multideps.resolvers.Sha256
 import scala.util.Try
-import multideps.configs.ArtifactOutput
+import scala.collection.mutable
+import multideps.outputs.ArtifactOutput
+import coursier.core.Dependency
+import java.nio.charset.StandardCharsets
+import java.nio.file.Path
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -39,7 +43,10 @@ case class SaveDepsCommand(
       index <- resolveDependencies(thirdparty)
       _ <- lintResolutions(index)
       output <- unifyDependencies(index)
-    } yield 0
+    } yield {
+      app.info(s"generated: $output")
+      0
+    }
 
     result match {
       case ValueResult(exit) =>
@@ -127,7 +134,7 @@ case class SaveDepsCommand(
 
   def unifyDependencies(
       index: ResolutionIndex
-  ): DecodingResult[ResolutionOutput] = {
+  ): DecodingResult[Path] = {
     // Step 1: download artifacts
     val cache = FileCache()
       .withCachePolicies(List(CachePolicy.FetchMissing))
@@ -138,27 +145,39 @@ case class SaveDepsCommand(
         case (d, p, a) => ResolvedDependency(d, p, a)
       })
       .distinctBy(_.dependency)
+    val outputs = mutable.LinkedHashMap.empty[Dependency, ArtifactOutput]
     val files = artifacts.map { r =>
       cache.file(r.artifact).run.map {
         case Right(file) =>
           Try {
-            ArtifactOutput(
+            val output = ArtifactOutput(
+              index = index,
+              outputs = outputs,
               dependency = r.dependency,
               artifact = r.artifact,
               artifactSha256 = Sha256.compute(file)
             )
+            outputs(r.dependency) = output
+            output
           }.toEither
 
         case Left(value) => Left(value)
       }
     }
     val all = Task.gather.gather(files).unsafeRun()(CoursierResolver.ec)
-    val errors = all.collect { case Left(error) => error }
-    if (errors.isEmpty) {
-      val artifacts = all.collect { case Right(a) => a }
-      pprint.log(artifacts.map(_.repr))
+    val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
+    Diagnostic.fromDiagnostics(errors.toList) match {
+      case Some(error) =>
+        ErrorResult(error)
+      case None =>
+        val artifacts = all.collect { case Right(a) => a }
+        val rendered = DepsOutput(artifacts).render
+        val out =
+          app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
+        Files.createDirectories(out.getParent())
+        Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
+        ValueResult(out)
     }
-    ErrorResult(Diagnostic.error("not implemented yet"))
   }
 
   def lintResolutions(index: ResolutionIndex): DecodingResult[Unit] = {
