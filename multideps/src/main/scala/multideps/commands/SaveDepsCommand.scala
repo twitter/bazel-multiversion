@@ -102,7 +102,7 @@ case class SaveDepsCommand(
                   ErrorResult(
                     Diagnostic.error(
                       s"version '$version' not found",
-                      module.moduleName.position
+                      module.name.position
                     )
                   )
               }
@@ -110,7 +110,7 @@ case class SaveDepsCommand(
               ErrorResult(
                 Diagnostic.error(
                   s"module '${module.repr}' not found",
-                  module.moduleName.position
+                  module.name.position
                 )
               )
           }

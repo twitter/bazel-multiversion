@@ -10,13 +10,13 @@ import moped.json.JsonString
 
 final case class ModuleConfig(
     organization: JsonString = JsonString(""),
-    moduleName: JsonString = JsonString("")
+    name: JsonString = JsonString("")
 ) {
   def repr = coursierModule.repr
   def coursierModule: Module =
     Module(
       Organization(organization.value),
-      ModuleName(moduleName.value),
+      ModuleName(name.value),
       Map.empty
     )
 }

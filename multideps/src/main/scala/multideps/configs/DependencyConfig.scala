@@ -16,11 +16,15 @@ import moped.json.JsonObject
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.macros.ClassShape
+import coursier.core.Configuration
+import coursier.core.Publication
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
     artifact: String = "",
     version: String = "",
+    classifier: String = "",
+    exclusions: List[ModuleConfig] = Nil,
     crossVersions: List[CrossVersionsConfig] = Nil,
     forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
@@ -47,7 +51,21 @@ final case class DependencyConfig(
     if (key == "default") Some(version)
     else crossVersions.find(_.name.value == key).map(_.version.value)
   def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] =
-    allVersions.map(v => Dependency(coursierModule(scalaVersion), v))
+    allVersions.map(v =>
+      Dependency(
+        module = coursierModule(scalaVersion),
+        version = v,
+        configuration =
+          if (classifier.isEmpty) Configuration.empty
+          else Configuration("linux-x84_64"),
+        exclusions = exclusions
+          .map(e => e.coursierModule.organization -> e.coursierModule.name)
+          .toSet,
+        publication = Publication.empty,
+        optional = false,
+        transitive = true
+      )
+    )
 }
 
 object DependencyConfig {
