@@ -24,7 +24,7 @@ final case class DependencyConfig(
     artifact: String = "",
     version: String = "",
     classifier: String = "",
-    exclusions: List[ModuleConfig] = Nil,
+    exclusions: Set[ModuleConfig] = Set.empty,
     crossVersions: List[CrossVersionsConfig] = Nil,
     forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
@@ -57,10 +57,10 @@ final case class DependencyConfig(
         version = v,
         configuration =
           if (classifier.isEmpty) Configuration.empty
-          else Configuration("linux-x84_64"),
-        exclusions = exclusions
-          .map(e => e.coursierModule.organization -> e.coursierModule.name)
-          .toSet,
+          else Configuration(classifier),
+        exclusions = exclusions.map(e =>
+          e.coursierModule.organization -> e.coursierModule.name
+        ),
         publication = Publication.empty,
         optional = false,
         transitive = true

@@ -8,36 +8,46 @@ import moped.cli.Command
 import moped.annotations.Inline
 import moped.cli.CommandParser
 import os.Shellable
+import os.Inherit
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
     export: Boolean = true,
-    exportPath: Path = Paths.get("tools", "maven", "multideps.json"),
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
+    cwd: Option[Path] = None,
     @Inline
     save: SaveDepsCommand = SaveDepsCommand.default
 ) extends Command {
   def app = save.app
+
+  // NOTE(olafur): I tried to use the --output-path flag but it didn't work for
+  // some reason. Hardcoding this flag for now.
+  def exportPath: Path = Paths.get("tools", "maven", "multideps.json")
+
   def run(): Int = {
     runPantsExport()
     if (app.reporter.hasErrors()) 1
     else save.run()
   }
+
   def runPantsExport(): Unit = {
     if (export) {
-      val binary = app.env.workingDirectory.resolve("pants")
+      val workingDirectory = cwd.getOrElse(app.env.workingDirectory)
+      val binary = workingDirectory.resolve("pants")
       val command = List[String](
         binary.toString(),
         "bazel-multideps"
       ) ++ pantsTargets
-      val proc =
-        app.process(command.map(Shellable.StringShellable(_)): _*).call()
+      val commandString = command.mkString(" ")
+      app.reporter.info(commandString)
+      val proc = app
+        .process(command.map(Shellable.StringShellable(_)): _*)
+        .call(cwd = workingDirectory, stdout = Inherit)
       if (proc.exitCode != 0) {
-        val repro = command.mkString(" ")
         app.reporter.error(
           s"Pants exited with code '${proc.exitCode}'. " +
-            s"To reproduce this error, run the command:\n\t$repro"
+            s"To reproduce this error, run the command:\n\t$commandString"
         )
       }
     }
