@@ -1,11 +1,9 @@
 package multideps.resolvers
 
-import java.security.MessageDigest
-import java.io.File
-import java.io.File
-import java.security.MessageDigest
 import java.io.BufferedInputStream
+import java.io.File
 import java.nio.file.Files
+import java.security.MessageDigest
 
 object Sha256 {
   def compute(file: File): String = {

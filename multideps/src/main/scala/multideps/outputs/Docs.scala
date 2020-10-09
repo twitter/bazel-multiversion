@@ -12,10 +12,10 @@ object Docs {
     Doc
       .intercalate(Doc.comma + Doc.lineOrSpace, values)
       .tightBracketBy(open, close)
-  val blankLine = Doc.line + Doc.line
-  val quote = Doc.char('"')
-  val open = Doc.char('(')
-  val close = Doc.char(')')
-  val openBracket = Doc.char('[')
-  val closeBracket = Doc.char(']')
+  val blankLine: Doc = Doc.line + Doc.line
+  val quote: Doc = Doc.char('"')
+  val open: Doc = Doc.char('(')
+  val close: Doc = Doc.char(')')
+  val openBracket: Doc = Doc.char('[')
+  val closeBracket: Doc = Doc.char(']')
 }

@@ -1,18 +1,29 @@
 package multideps.commands
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
+import java.nio.file.Path
 
-import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-import multideps.diagnostics.MultidepsEnrichments.XtensionList
-import multideps.resolvers.ResolvedDependency
-import multideps.resolvers.CoursierResolver
+import scala.collection.mutable
+import scala.util.Try
+
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
+import multideps.diagnostics.MultidepsEnrichments.XtensionList
+import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
+import multideps.resolvers.CoursierResolver
+import multideps.resolvers.ResolvedDependency
+import multideps.resolvers.Sha256
 
 import coursier.Resolve
+import coursier.cache.CachePolicy
+import coursier.cache.FileCache
+import coursier.core.Dependency
 import coursier.params.ResolutionParams
+import coursier.util.Task
 import moped.annotations.CommandName
 import moped.cli.Application
 import moped.cli.Command
@@ -23,16 +34,6 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import coursier.cache.FileCache
-import coursier.cache.CachePolicy
-import coursier.util.Task
-import multideps.resolvers.Sha256
-import scala.util.Try
-import scala.collection.mutable
-import multideps.outputs.ArtifactOutput
-import coursier.core.Dependency
-import java.nio.charset.StandardCharsets
-import java.nio.file.Path
 
 @CommandName("save")
 case class SaveDepsCommand(

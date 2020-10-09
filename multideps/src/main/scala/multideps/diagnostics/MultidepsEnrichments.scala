@@ -1,7 +1,8 @@
 package multideps.diagnostics
 
-import coursier.core.Dependency
 import scala.collection.mutable
+
+import coursier.core.Dependency
 
 object MultidepsEnrichments {
   implicit class XtensionDependency(dep: Dependency) {

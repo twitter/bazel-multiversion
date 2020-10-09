@@ -1,8 +1,9 @@
 package multideps.outputs
 
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-import coursier.util.Artifact
+
 import coursier.core.Dependency
+import coursier.util.Artifact
 import org.typelevel.paiges.Doc
 
 final case class ArtifactOutput(
@@ -17,15 +18,15 @@ final case class ArtifactOutput(
   // val label =
   //   s"${dependency.module.organization.value}/${dependency.module.name.value}/${dependency.version}"
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
-  val label = dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
-  def dependencies =
+  val label: String = dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
+  def dependencies: Seq[String] =
     index.dependencies
       .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
       .map(d => outputs(d.withoutMetadata))
       .map(_.label)
       .toSeq
-  def repr =
+  def repr: String =
     s"""|Artifact(
         |  dep = "${label}",
         |  url = "${artifact.url}",
@@ -34,12 +35,12 @@ final case class ArtifactOutput(
   val org = dependency.module.organization.value
   val moduleName = dependency.module.name.value
   val version = dependency.version
-  val mavenLabel = s"@maven//:${org}/${moduleName}-${version}.jar"
+  val mavenLabel: String = s"@maven//:${org}/${moduleName}-${version}.jar"
   // require(artifactsnonEmpty)
   // def label: String = ""
   // def name = ""
-  val open = Doc.text("(")
-  val close = Doc.text(")")
+  val open: Doc = Doc.text("(")
+  val close: Doc = Doc.text(")")
   def httpFile: TargetOutput =
     TargetOutput(
       kind = "http_file",

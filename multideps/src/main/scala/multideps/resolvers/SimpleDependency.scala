@@ -6,6 +6,6 @@ case class SimpleDependency(
     module: SimpleModule,
     version: String
 ) {
-  def repr = s"${module.repr}:$version"
-  override lazy val hashCode = MurmurHash3.productHash(this)
+  def repr: String = s"${module.repr}:$version"
+  override lazy val hashCode: Int = MurmurHash3.productHash(this)
 }

@@ -1,14 +1,15 @@
 package multideps.indexes
 
-import org.scalameta.bazel_multideps.Build.Target
 import scala.collection.JavaConverters._
-import coursier.core.Dependency
+import scala.util.matching.Regex
+
+import multideps.resolvers.SimpleDependency
+import multideps.resolvers.SimpleModule
+
+import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
-import coursier.core.Module
-import multideps.resolvers.SimpleModule
-import multideps.resolvers.SimpleDependency
-import scala.util.matching.Regex
+import org.scalameta.bazel_multideps.Build.Target
 
 case class TargetIndex(
     name: String,

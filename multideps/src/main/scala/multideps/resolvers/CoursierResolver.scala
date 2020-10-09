@@ -1,8 +1,9 @@
 package multideps.resolvers
 
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
-import java.util.concurrent.ExecutorService
+
 import scala.concurrent.ExecutionContext
 
 object CoursierResolver {

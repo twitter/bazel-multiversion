@@ -1,26 +1,19 @@
 package multideps.commands
 
-import scala.collection.JavaConverters._
-import moped.cli.Command
+import multideps.indexes.DependenciesIndex
+
 import moped.annotations.CommandName
 import moped.annotations.PositionalArguments
-import moped.cli.CommandParser
 import moped.cli.Application
-import org.scalameta.bazel_multideps.Build.Target
-import org.scalameta.bazel_multideps.Build.QueryResult
-import scala.collection.mutable
-import coursier.core.Module
-import coursier.core.Organization
-import coursier.core.ModuleName
-import scala.util.matching.Regex
+import moped.cli.Command
+import moped.cli.CommandParser
 import moped.reporters.Diagnostic
-import multideps.indexes.TargetIndex
-import multideps.resolvers.SimpleModule
-import multideps.resolvers.SimpleDependency
+import org.scalameta.bazel_multideps.Build.QueryResult
+import org.scalameta.bazel_multideps.Build.Target
 
 @CommandName("lint")
 case class LintCommand(
-    @PositionalArguments targets: List[String] = Nil,
+    @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
   def run(): Int = {
@@ -29,32 +22,19 @@ case class LintCommand(
       "query",
       "--notool_deps",
       "--noimplicit_deps",
-      s"deps(${targets.mkString(" ")})",
+      s"deps(${queryExpressions.mkString(" ")})",
       "--output=proto"
     )
     val process = os.proc(command).call(cwd = os.Path(app.env.workingDirectory))
     val query = QueryResult.parseFrom(process.out.bytes)
     val index = new DependenciesIndex(query)
-    val ts = query
-      .getTargetList()
-      .asScala
-      .filter(_.getType() == Target.Discriminator.RULE)
-      .filter(_.getRule().getRuleClass() == "scala_import")
-      .map(TargetIndex.fromQuery)
-    pprint.log(ts)
+    pprint.log(index.targets.map(_.name).sorted)
+    val deps = index.dependencies(
+      "//tricky/user/src/main/scala/bincompat:NeedsGuavaIllegal"
+    )
+    val grouped = deps.groupBy(_.dependency.map(_.module))
+    pprint.log(grouped)
     0
-  }
-
-  private class DependenciesIndex(query: QueryResult) {
-    private val deps: mutable.LinkedHashMap[String, List[String]] =
-      mutable.LinkedHashMap.empty
-    def dependencies(target: String): List[String] = {
-      deps.get(target) match {
-        case Some(cached) => cached
-        case None =>
-          Nil
-      }
-    }
   }
 
   private def lintTarget(
@@ -71,6 +51,7 @@ case class LintCommand(
 }
 
 object LintCommand {
-  val default = LintCommand()
-  implicit val parser = CommandParser.derive(default)
+  val default: LintCommand = LintCommand()
+  implicit val parser: CommandParser[LintCommand] =
+    CommandParser.derive(default)
 }
