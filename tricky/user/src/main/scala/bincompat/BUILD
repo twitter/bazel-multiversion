@@ -36,7 +36,10 @@ scala_binary(
 scala_binary(
   name = "NeedsGuava24",
   srcs = ["NeedsGuava24.scala"],
-  deps = ["@maven//:com.google.guava_guava_24.1.1-jre"],
+  deps = [
+    "@maven//:com.google.guava_guava_24.1.1-jre",
+    "@maven//:org.scalameta_scalameta_2.12_4.3.23"
+    ],
   main_class = "bincompat.NeedsGuava24",
 )
 
@@ -47,10 +50,14 @@ scala_binary(
   main_class = "bincompat.NeedsGuava29",
 )
 
-
-scala_binary(
+scala_library(
   name = "NeedsGuavaIllegal",
   srcs = ["NeedsGuavaIllegal.scala"],
   deps = ["@maven//:com.google.guava_guava_29.0-jre", "@maven//:com.google.guava_guava_24.1.1-jre"],
+)
+
+scala_binary(
+  name = "NeedsGuavaIllegalBinary",
+  deps = [":NeedsGuavaIllegal"],
   main_class = "bincompat.NeedsGuavaIllegal",
 )

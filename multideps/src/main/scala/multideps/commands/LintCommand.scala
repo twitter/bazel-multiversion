@@ -1,7 +1,9 @@
 package multideps.commands
 
+import scala.collection.JavaConverters._
 import multideps.indexes.DependenciesIndex
 
+import multideps.diagnostics.MultidepsEnrichments._
 import moped.annotations.CommandName
 import moped.annotations.PositionalArguments
 import moped.cli.Application
@@ -10,31 +12,67 @@ import moped.cli.CommandParser
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target
+import multideps.indexes.TargetIndex
+import multideps.resolvers.SimpleDependency
+import os.Pipe
 
 @CommandName("lint")
 case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
-  def run(): Int = {
+  private def runQuery(queryExpression: String): QueryResult = {
     val command = List(
       "bazel",
       "query",
       "--notool_deps",
       "--noimplicit_deps",
-      s"deps(${queryExpressions.mkString(" ")})",
+      queryExpression,
       "--output=proto"
     )
-    val process = os.proc(command).call(cwd = os.Path(app.env.workingDirectory))
-    val query = QueryResult.parseFrom(process.out.bytes)
-    val index = new DependenciesIndex(query)
-    pprint.log(index.targets.map(_.name).sorted)
-    val deps = index.dependencies(
-      "//tricky/user/src/main/scala/bincompat:NeedsGuavaIllegal"
-    )
-    val grouped = deps.groupBy(_.dependency.map(_.module))
-    pprint.log(grouped)
-    0
+    val process = os
+      .proc(command)
+      .call(cwd = os.Path(app.env.workingDirectory), stderr = Pipe)
+    QueryResult.parseFrom(process.out.bytes)
+  }
+  def run(): Int = {
+    val expr = queryExpressions.mkString(" ")
+    val result = runQuery(s"deps($expr)")
+    val roots =
+      runQuery(expr).getTargetList().asScala.map(_.getRule().getName())
+    val index = new DependenciesIndex(result)
+    roots.foreach { root =>
+      val deps = index.dependencies(root)
+      val errors = deps.groupBy(_.dependency.map(_.module)).collect {
+        case (Some(dep), ts) if ts.size > 1 =>
+          dep -> ts.collect {
+            case TargetIndex(_, _, _, Some(dep)) => dep.version
+          }
+      }
+      val isTransitive = errors.toList.flatMap {
+        case (m, vs) =>
+          for {
+            v <- vs
+            dep = SimpleDependency(m, v)
+            tdep <- index.dependencies(dep)
+            if tdep.dependency != Some(dep)
+          } yield tdep
+      }.toSet
+      val redundant = errors.foreach {
+        case (module, versions) =>
+          val deps = versions
+            .map(v => SimpleDependency(module, v))
+            .flatMap(index.byDependency.get(_))
+          if (!deps.exists(isTransitive)) {
+            app.reporter.error(
+              s"target '$root' depends on conflicting versions of the 3rdparty dependency '${module.repr}:{${versions.commas}}'.\n" +
+                s"\tTo fix this problem, the dependency list of this target so that it only depends on one version of the 3rdparty module '${module.repr}'"
+            )
+          }
+      }
+    }
+    if (app.reporter.hasErrors()) 1
+    else 0
   }
 
   private def lintTarget(

@@ -7,3 +7,11 @@ dependencies:
       - name: new
         version: 29.0-jre
   - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
+  - dependency: com.google.protobuf:protobuf-java:3.13.0
+    crossVersions:
+      - name: old
+        version: 2.6.1
+  - dependency: org.scalameta:scalameta:4.3.23
+    lang: scala
+    forceVersions:
+      - com.google.protobuf:protobuf-java:default

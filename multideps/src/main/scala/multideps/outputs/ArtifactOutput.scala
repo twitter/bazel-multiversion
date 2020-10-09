@@ -65,6 +65,7 @@ final case class ArtifactOutput(
       "name" -> Docs.literal(label),
       "jars" -> Docs.array(mavenLabel),
       "deps" -> Docs.array(dependencies: _*),
+      "exports" -> Docs.array(dependencies: _*),
       "tags" -> Docs.array(
         s"jvm_module=${dependency.module.repr}",
         s"jvm_version=${dependency.version}"

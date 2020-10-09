@@ -9,8 +9,7 @@ import scala.util.Try
 
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
-import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-import multideps.diagnostics.MultidepsEnrichments.XtensionList
+import multideps.diagnostics.MultidepsEnrichments._
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -43,11 +42,18 @@ case class SaveDepsCommand(
     val result = for {
       thirdparty <- parseThirdpartyConfig()
       index <- resolveDependencies(thirdparty)
-      _ <- lintResolutions(index)
+      _ <- lintPostResolution(index)
       output <- unifyDependencies(index)
+      _ = app.info(s"generated: $output")
     } yield {
-      app.info(s"generated: $output")
-      0
+      LintCommand()
+        .copy(
+          queryExpressions = List("@maven//:all"),
+          app = app
+        )
+        .run()
+      if (app.reporter.hasErrors()) 1
+      else 0
     }
 
     result match {
@@ -181,7 +187,8 @@ case class SaveDepsCommand(
     }
   }
 
-  def lintResolutions(index: ResolutionIndex): DecodingResult[Unit] = {
+  def lintPostGeneration(index: ResolutionIndex): Unit = {}
+  def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
     val errors = for {
       (module, versions) <- index.artifacts.toList
       if versions.size > 1
@@ -222,12 +229,6 @@ case class SaveDepsCommand(
     }
   }
 
-  private implicit class XtensionStrings(xs: Iterable[String]) {
-    def commas: String =
-      if (xs.isEmpty) ""
-      else if (xs.size == 1) xs.head
-      else xs.mkString(", ")
-  }
 }
 
 object SaveDepsCommand {

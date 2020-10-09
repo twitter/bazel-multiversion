@@ -5,6 +5,15 @@ import scala.collection.mutable
 import coursier.core.Dependency
 
 object MultidepsEnrichments {
+  implicit class XtensionString(string: String) {
+    def asLiteral = pprint.PPrinter.BlackWhite.tokenize(string).mkString
+  }
+  implicit class XtensionStrings(xs: Iterable[String]) {
+    def commas: String =
+      if (xs.isEmpty) ""
+      else if (xs.size == 1) xs.head
+      else xs.mkString(", ")
+  }
   implicit class XtensionDependency(dep: Dependency) {
     def repr: String = s"${dep.module.repr}:${dep.version}"
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
