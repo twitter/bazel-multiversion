@@ -172,6 +172,7 @@ case class SaveDepsCommand(
       case None =>
         val artifacts = all.collect { case Right(a) => a }
         val rendered = DepsOutput(artifacts).render
+        pprint.log(rendered)
         val out =
           app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
         Files.createDirectories(out.getParent())
