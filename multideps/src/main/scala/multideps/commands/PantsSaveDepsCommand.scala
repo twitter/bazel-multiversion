@@ -31,6 +31,7 @@ final case class PantsSaveDepsCommand(
     else save.run()
   }
 
+  def runPantsImport(): Unit = {}
   def runPantsExport(): Unit = {
     if (export) {
       val workingDirectory = cwd.getOrElse(app.env.workingDirectory)
