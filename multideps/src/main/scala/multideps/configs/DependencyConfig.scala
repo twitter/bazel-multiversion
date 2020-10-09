@@ -20,7 +20,7 @@ import moped.macros.ClassShape
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
     artifact: String = "",
-    version: VersionsConfig = VersionsConfig(),
+    version: String = "",
     crossVersions: List[CrossVersionsConfig] = Nil,
     forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
@@ -41,17 +41,20 @@ final case class DependencyConfig(
       Map.empty
     )
   }
+  def allVersions: List[String] =
+    version :: crossVersions.map(_.version.value)
+  def getVersion(key: String): Option[String] =
+    if (key == "default") Some(version)
+    else crossVersions.find(_.name.value == key).map(_.version.value)
   def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] =
-    version.all.map { version =>
-      Dependency(coursierModule(scalaVersion), version)
-    }
+    List(Dependency(coursierModule(scalaVersion), version))
 }
 
 object DependencyConfig {
   private val Full: Regex = "(.+):::(.+):(.+)".r
   private val Half: Regex = "(.+)::(.+):(.+)".r
   private val Java: Regex = "(.+):(.+):(.+)".r
-  private object FromJson {
+  private object FromJsonString {
     def unapply(s: JsonString): Option[DependencyConfig] = {
       def json(value: String) = JsonString(value).withPosition(s.position)
       s.value match {
@@ -60,7 +63,7 @@ object DependencyConfig {
             DependencyConfig(
               json(org),
               artifact,
-              version = VersionsConfig(version),
+              version = version,
               lang = ScalaCompilerLanguagesConfig
             )
           )
@@ -69,7 +72,7 @@ object DependencyConfig {
             DependencyConfig(
               json(org),
               artifact,
-              version = VersionsConfig(version),
+              version = version,
               lang = ScalaLanguagesConfig
             )
           )
@@ -78,7 +81,7 @@ object DependencyConfig {
             DependencyConfig(
               json(org),
               artifact,
-              version = VersionsConfig(version)
+              version = version
             )
           )
         case _ => None
@@ -95,10 +98,10 @@ object DependencyConfig {
     new JsonCodec[DependencyConfig] {
       def decode(context: DecodingContext): DecodingResult[DependencyConfig] = {
         context.json match {
-          case FromJson(dep) => ValueResult(dep)
+          case FromJsonString(dep) => ValueResult(dep)
           case obj: JsonObject =>
             obj.value.get("dependency") match {
-              case Some(FromJson(dep)) =>
+              case Some(FromJsonString(dep)) =>
                 val newJson = JsonObject(
                   obj.members.filterNot(_.key.value == "dependency")
                 )

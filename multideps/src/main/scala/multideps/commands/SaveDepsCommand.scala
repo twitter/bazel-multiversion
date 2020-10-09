@@ -83,7 +83,7 @@ case class SaveDepsCommand(
         case (module, version) =>
           thirdparty.depsByModule.get(module.coursierModule) match {
             case Some(depsConfig) =>
-              depsConfig.version.get(version) match {
+              depsConfig.getVersion(version) match {
                 case Some(forcedVersion) =>
                   ValueResult(
                     depsConfig.coursierModule(
@@ -187,7 +187,7 @@ case class SaveDepsCommand(
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declared) =>
           val unspecified =
-            (versions.map(_.version) -- declared.version.all).toList
+            (versions.map(_.version) -- declared.allVersions).toList
           unspecified match {
             case Nil =>
               Nil
@@ -196,7 +196,7 @@ case class SaveDepsCommand(
                 new ConflictingTransitiveDependencyDiagnostic(
                   module,
                   unspecified.toList,
-                  declared.version.all,
+                  declared.allVersions,
                   versions.iterator.flatMap(index.roots.get(_)).flatten.toList,
                   declared.organization.position
                 )
