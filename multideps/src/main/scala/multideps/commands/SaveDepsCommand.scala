@@ -24,6 +24,7 @@ import coursier.core.Dependency
 import coursier.params.ResolutionParams
 import coursier.util.Task
 import moped.annotations.CommandName
+import moped.annotations._
 import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
@@ -36,7 +37,7 @@ import moped.reporters.NoPosition
 
 @CommandName("save")
 case class SaveDepsCommand(
-    app: Application
+    app: Application = Application.default
 ) extends Command {
   def run(): Int = {
     val result = for {
@@ -52,8 +53,7 @@ case class SaveDepsCommand(
           app = app
         )
         .run()
-      if (app.reporter.hasErrors()) 1
-      else 0
+      app.reporter.exitCode()
     }
 
     result match {
@@ -232,7 +232,7 @@ case class SaveDepsCommand(
 }
 
 object SaveDepsCommand {
-  val default = new SaveDepsCommand(Application.default)
+  val default = new SaveDepsCommand()
   implicit val parser: CommandParser[SaveDepsCommand] =
     CommandParser.derive[SaveDepsCommand](default)
 }

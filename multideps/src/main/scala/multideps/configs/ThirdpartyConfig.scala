@@ -10,6 +10,7 @@ import moped.reporters.Input
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),
+    overrideTargets: List[OverrideTargetConfig] = List(),
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
 ) {

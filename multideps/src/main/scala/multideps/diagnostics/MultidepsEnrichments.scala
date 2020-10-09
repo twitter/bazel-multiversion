@@ -3,10 +3,14 @@ package multideps.diagnostics
 import scala.collection.mutable
 
 import coursier.core.Dependency
+import moped.reporters.Reporter
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
     def asLiteral = pprint.PPrinter.BlackWhite.tokenize(string).mkString
+  }
+  implicit class XtensionReporter(reporter: Reporter) {
+    def exitCode(): Int = if (reporter.hasErrors()) 1 else 0
   }
   implicit class XtensionStrings(xs: Iterable[String]) {
     def commas: String =
