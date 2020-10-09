@@ -23,6 +23,9 @@ object Multideps {
     )
   )
   def main(args: Array[String]): Unit = {
+    app.runAndExitIfNonZero(args.toList)
+  }
+  def query(): Unit = {
     val cwd = Paths.get(".").toAbsolutePath().normalize()
     val command = List(
       "bazel",
