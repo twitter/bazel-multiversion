@@ -50,6 +50,13 @@ lazy val multideps = project
     buildInfoPackage := "multideps",
     buildInfoKeys := Seq[BuildInfoKey](
       version
+    ),
+    name.in(NativeImage) := "bm",
+    nativeImageOptions ++= List(
+      "--initialize-at-build-time=scala.collection.immutable.VM",
+      "--initialize-at-run-time=multideps,moped.cli.Environment$",
+      "-H:+TraceClassInitialization",
+      "--report-unsupported-elements-at-runtime"
     )
   )
   .enablePlugins(ProtobufPlugin, NativeImagePlugin, BuildInfoPlugin)

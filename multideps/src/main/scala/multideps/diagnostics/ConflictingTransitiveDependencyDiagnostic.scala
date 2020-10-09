@@ -9,10 +9,10 @@ import moped.reporters.ErrorSeverity
 import moped.reporters.Position
 
 class ConflictingTransitiveDependencyDiagnostic(
-    module: Module,
-    transitiveVersions: List[String],
-    declaredVersions: List[String],
-    rootDependencies: List[Dependency],
+    val module: Module,
+    val transitiveVersions: List[String],
+    val declaredVersions: List[String],
+    val rootDependencies: List[Dependency],
     pos: Position
 ) extends Diagnostic(ErrorSeverity, "", pos) {
   private val roots = rootDependencies.filterNot(_.module == module)

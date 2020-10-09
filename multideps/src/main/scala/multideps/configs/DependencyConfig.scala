@@ -47,7 +47,7 @@ final case class DependencyConfig(
     if (key == "default") Some(version)
     else crossVersions.find(_.name.value == key).map(_.version.value)
   def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] =
-    List(Dependency(coursierModule(scalaVersion), version))
+    allVersions.map(v => Dependency(coursierModule(scalaVersion), v))
 }
 
 object DependencyConfig {

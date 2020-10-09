@@ -34,8 +34,15 @@ scala_binary(
 )
 
 scala_binary(
-  name = "NeedsGuava",
-  srcs = ["NeedsGuava.scala"],
-  deps = ["@maven//:com.google.guava_guava_29.0-jre"],
-  main_class = "bincompat.NeedsGuava",
+  name = "NeedsGuava24",
+  srcs = ["NeedsGuava24.scala"],
+  deps = ["@maven//:com.google.guava_guava_24.1.1-jre"],
+  main_class = "bincompat.NeedsGuava24",
+)
+
+scala_binary(
+  name = "NeedsGuava29",
+  srcs = ["NeedsGuava29.scala"],
+  deps = ["@maven//:com.google.guava_guava_29.0-jre", "@maven//:com.google.guava_guava_24.1.1-jre"],
+  main_class = "bincompat.NeedsGuava29",
 )
