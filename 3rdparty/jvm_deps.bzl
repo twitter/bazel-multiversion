@@ -168,6 +168,7 @@ scala_import(
     "com.google.errorprone_error_prone_annotations_2.1.3", "com.google.j2objc_j2objc-annotations_1.1",
     "org.codehaus.mojo_animal-sniffer-annotations_1.14"
   ],
+  tags = ["jvm_module=com.google.guava:guava", "jvm_version=24.1.1-jre"],
   visibility = ["//visibility:public"]
 )
 
@@ -181,6 +182,7 @@ scala_import(
   name = "com.google.code.findbugs_jsr305_1.3.9",
   jars = ["@maven//:com.google.code.findbugs/jsr305-1.3.9.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.code.findbugs:jsr305", "jvm_version=1.3.9"],
   visibility = ["//visibility:public"]
 )
 
@@ -194,6 +196,7 @@ scala_import(
   name = "org.checkerframework_checker-compat-qual_2.0.0",
   jars = ["@maven//:org.checkerframework/checker-compat-qual-2.0.0.jar"],
   deps = [],
+  tags = ["jvm_module=org.checkerframework:checker-compat-qual", "jvm_version=2.0.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -207,6 +210,7 @@ scala_import(
   name = "com.google.errorprone_error_prone_annotations_2.1.3",
   jars = ["@maven//:com.google.errorprone/error_prone_annotations-2.1.3.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.errorprone:error_prone_annotations", "jvm_version=2.1.3"],
   visibility = ["//visibility:public"]
 )
 
@@ -220,6 +224,7 @@ scala_import(
   name = "com.google.j2objc_j2objc-annotations_1.1",
   jars = ["@maven//:com.google.j2objc/j2objc-annotations-1.1.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.j2objc:j2objc-annotations", "jvm_version=1.1"],
   visibility = ["//visibility:public"]
 )
 
@@ -233,6 +238,7 @@ scala_import(
   name = "org.codehaus.mojo_animal-sniffer-annotations_1.14",
   jars = ["@maven//:org.codehaus.mojo/animal-sniffer-annotations-1.14.jar"],
   deps = [],
+  tags = ["jvm_module=org.codehaus.mojo:animal-sniffer-annotations", "jvm_version=1.14"],
   visibility = ["//visibility:public"]
 )
 
@@ -252,6 +258,7 @@ scala_import(
     "com.google.errorprone_error_prone_annotations_2.2.0", "com.google.j2objc_j2objc-annotations_1.1",
     "org.codehaus.mojo_animal-sniffer-annotations_1.17"
   ],
+  tags = ["jvm_module=com.google.guava:guava", "jvm_version=27.1-jre"],
   visibility = ["//visibility:public"]
 )
 
@@ -265,6 +272,7 @@ scala_import(
   name = "com.google.guava_failureaccess_1.0.1",
   jars = ["@maven//:com.google.guava/failureaccess-1.0.1.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.guava:failureaccess", "jvm_version=1.0.1"],
   visibility = ["//visibility:public"]
 )
 
@@ -278,6 +286,7 @@ scala_import(
   name = "com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava",
   jars = ["@maven//:com.google.guava/listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.guava:listenablefuture", "jvm_version=9999.0-empty-to-avoid-conflict-with-guava"],
   visibility = ["//visibility:public"]
 )
 
@@ -291,6 +300,7 @@ scala_import(
   name = "com.google.code.findbugs_jsr305_3.0.2",
   jars = ["@maven//:com.google.code.findbugs/jsr305-3.0.2.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.code.findbugs:jsr305", "jvm_version=3.0.2"],
   visibility = ["//visibility:public"]
 )
 
@@ -304,6 +314,7 @@ scala_import(
   name = "org.checkerframework_checker-qual_2.5.2",
   jars = ["@maven//:org.checkerframework/checker-qual-2.5.2.jar"],
   deps = [],
+  tags = ["jvm_module=org.checkerframework:checker-qual", "jvm_version=2.5.2"],
   visibility = ["//visibility:public"]
 )
 
@@ -317,6 +328,7 @@ scala_import(
   name = "com.google.errorprone_error_prone_annotations_2.2.0",
   jars = ["@maven//:com.google.errorprone/error_prone_annotations-2.2.0.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.errorprone:error_prone_annotations", "jvm_version=2.2.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -330,6 +342,7 @@ scala_import(
   name = "org.codehaus.mojo_animal-sniffer-annotations_1.17",
   jars = ["@maven//:org.codehaus.mojo/animal-sniffer-annotations-1.17.jar"],
   deps = [],
+  tags = ["jvm_module=org.codehaus.mojo:animal-sniffer-annotations", "jvm_version=1.17"],
   visibility = ["//visibility:public"]
 )
 
@@ -348,6 +361,7 @@ scala_import(
     "com.google.code.findbugs_jsr305_3.0.2", "org.checkerframework_checker-qual_2.11.1",
     "com.google.errorprone_error_prone_annotations_2.3.4", "com.google.j2objc_j2objc-annotations_1.3"
   ],
+  tags = ["jvm_module=com.google.guava:guava", "jvm_version=29.0-jre"],
   visibility = ["//visibility:public"]
 )
 
@@ -361,6 +375,7 @@ scala_import(
   name = "org.checkerframework_checker-qual_2.11.1",
   jars = ["@maven//:org.checkerframework/checker-qual-2.11.1.jar"],
   deps = [],
+  tags = ["jvm_module=org.checkerframework:checker-qual", "jvm_version=2.11.1"],
   visibility = ["//visibility:public"]
 )
 
@@ -374,6 +389,7 @@ scala_import(
   name = "com.google.errorprone_error_prone_annotations_2.3.4",
   jars = ["@maven//:com.google.errorprone/error_prone_annotations-2.3.4.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.errorprone:error_prone_annotations", "jvm_version=2.3.4"],
   visibility = ["//visibility:public"]
 )
 
@@ -387,6 +403,7 @@ scala_import(
   name = "com.google.j2objc_j2objc-annotations_1.3",
   jars = ["@maven//:com.google.j2objc/j2objc-annotations-1.3.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.j2objc:j2objc-annotations", "jvm_version=1.3"],
   visibility = ["//visibility:public"]
 )
 
@@ -400,6 +417,7 @@ scala_import(
   name = "org.eclipse.lsp4j_org.eclipse.lsp4j_0.9.0",
   jars = ["@maven//:org.eclipse.lsp4j/org.eclipse.lsp4j-0.9.0.jar"],
   deps = ["org.eclipse.lsp4j_org.eclipse.lsp4j.generator_0.9.0", "org.eclipse.lsp4j_org.eclipse.lsp4j.jsonrpc_0.9.0"],
+  tags = ["jvm_module=org.eclipse.lsp4j:org.eclipse.lsp4j", "jvm_version=0.9.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -413,6 +431,7 @@ scala_import(
   name = "org.eclipse.lsp4j_org.eclipse.lsp4j.generator_0.9.0",
   jars = ["@maven//:org.eclipse.lsp4j/org.eclipse.lsp4j.generator-0.9.0.jar"],
   deps = ["org.eclipse.lsp4j_org.eclipse.lsp4j.jsonrpc_0.9.0", "org.eclipse.xtend_org.eclipse.xtend.lib_2.19.0"],
+  tags = ["jvm_module=org.eclipse.lsp4j:org.eclipse.lsp4j.generator", "jvm_version=0.9.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -426,6 +445,7 @@ scala_import(
   name = "org.eclipse.lsp4j_org.eclipse.lsp4j.jsonrpc_0.9.0",
   jars = ["@maven//:org.eclipse.lsp4j/org.eclipse.lsp4j.jsonrpc-0.9.0.jar"],
   deps = ["com.google.code.gson_gson_2.8.2"],
+  tags = ["jvm_module=org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc", "jvm_version=0.9.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -441,6 +461,7 @@ scala_import(
   deps = [
     "org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0", "org.eclipse.xtend_org.eclipse.xtend.lib.macro_2.19.0"
   ],
+  tags = ["jvm_module=org.eclipse.xtend:org.eclipse.xtend.lib", "jvm_version=2.19.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -454,6 +475,7 @@ scala_import(
   name = "com.google.code.gson_gson_2.8.2",
   jars = ["@maven//:com.google.code.gson/gson-2.8.2.jar"],
   deps = [],
+  tags = ["jvm_module=com.google.code.gson:gson", "jvm_version=2.8.2"],
   visibility = ["//visibility:public"]
 )
 
@@ -467,6 +489,7 @@ scala_import(
   name = "org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0",
   jars = ["@maven//:org.eclipse.xtext/org.eclipse.xtext.xbase.lib-2.19.0.jar"],
   deps = ["com.google.guava_guava_27.1-jre"],
+  tags = ["jvm_module=org.eclipse.xtext:org.eclipse.xtext.xbase.lib", "jvm_version=2.19.0"],
   visibility = ["//visibility:public"]
 )
 
@@ -480,6 +503,7 @@ scala_import(
   name = "org.eclipse.xtend_org.eclipse.xtend.lib.macro_2.19.0",
   jars = ["@maven//:org.eclipse.xtend/org.eclipse.xtend.lib.macro-2.19.0.jar"],
   deps = ["org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0"],
+  tags = ["jvm_module=org.eclipse.xtend:org.eclipse.xtend.lib.macro", "jvm_version=2.19.0"],
   visibility = ["//visibility:public"]
 )
 '''

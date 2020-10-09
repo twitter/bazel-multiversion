@@ -1,0 +1,12 @@
+digraph mygraph {
+  node [shape=box];
+  "//tricky/user/src/main/scala/bincompat:NeedsGuavaIllegal"
+  "//tricky/user/src/main/scala/bincompat:NeedsGuavaIllegal" -> "@maven//:com.google.guava_guava_24.1.1-jre"
+  "//tricky/user/src/main/scala/bincompat:NeedsGuavaIllegal" -> "@maven//:com.google.guava_guava_29.0-jre"
+  "@maven//:com.google.guava_guava_24.1.1-jre"
+  "@maven//:com.google.guava_guava_24.1.1-jre" -> "@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14\n@maven//:org.checkerframework_checker-compat-qual_2.0.0\n@maven//:com.google.errorprone_error_prone_annotations_2.1.3\n@maven//:com.google.j2objc_j2objc-annotations_1.1\n@maven//:com.google.code.findbugs_jsr305_1.3.9"
+  "@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14\n@maven//:org.checkerframework_checker-compat-qual_2.0.0\n@maven//:com.google.errorprone_error_prone_annotations_2.1.3\n@maven//:com.google.j2objc_j2objc-annotations_1.1\n@maven//:com.google.code.findbugs_jsr305_1.3.9"
+  "@maven//:com.google.guava_guava_29.0-jre"
+  "@maven//:com.google.guava_guava_29.0-jre" -> "@maven//:com.google.j2objc_j2objc-annotations_1.3\n@maven//:com.google.guava_failureaccess_1.0.1\n@maven//:com.google.code.findbugs_jsr305_3.0.2\n@maven//:org.checkerframework_checker-qual_2.11.1\n@maven//:com.google.errorprone_error_prone_annotations_2.3.4\n@maven//:com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava"
+  "@maven//:com.google.j2objc_j2objc-annotations_1.3\n@maven//:com.google.guava_failureaccess_1.0.1\n@maven//:com.google.code.findbugs_jsr305_3.0.2\n@maven//:org.checkerframework_checker-qual_2.11.1\n@maven//:com.google.errorprone_error_prone_annotations_2.3.4\n@maven//:com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava"
+}

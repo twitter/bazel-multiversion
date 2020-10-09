@@ -10,6 +10,7 @@ import moped.commands.CompletionsCommand
 import moped.commands.HelpCommand
 import moped.commands.VersionCommand
 import org.scalameta.bazel_multideps.Build.Target.Discriminator
+import multideps.commands.LintCommand
 
 object Multideps {
   val app: Application = Application.fromName(
@@ -19,6 +20,7 @@ object Multideps {
       CommandParser[VersionCommand],
       CommandParser[HelpCommand],
       CommandParser[DepsCommand],
+      CommandParser[LintCommand],
       CommandParser[CompletionsCommand]
     )
   )
