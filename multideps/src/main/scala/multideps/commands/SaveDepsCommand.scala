@@ -39,30 +39,23 @@ import moped.reporters.NoPosition
 case class SaveDepsCommand(
     app: Application = Application.default
 ) extends Command {
-  def run(): Int = {
-    val result = for {
+  def runResult(): DecodingResult[Unit] = {
+    for {
       thirdparty <- parseThirdpartyConfig()
       index <- resolveDependencies(thirdparty)
       _ <- lintPostResolution(index)
       output <- unifyDependencies(index)
       _ = app.info(s"generated: $output")
-    } yield {
-      LintCommand()
+      lint <- LintCommand()
         .copy(
           queryExpressions = List("@maven//:all"),
           app = app
         )
-        .run()
-      app.reporter.exitCode()
-    }
-
-    result match {
-      case ValueResult(exit) =>
-        exit
-      case ErrorResult(error) =>
-        app.reporter.log(error)
-        1
-    }
+        .runResult()
+    } yield lint
+  }
+  def run(): Int = {
+    app.complete(runResult())
   }
 
   def parseThirdpartyConfig(): DecodingResult[ThirdpartyConfig] = {
@@ -75,7 +68,7 @@ case class SaveDepsCommand(
         )
       )
     } else {
-      ThirdpartyConfig.parse(Input.path(configPath))
+      ThirdpartyConfig.parseYaml(Input.path(configPath))
     }
   }
 

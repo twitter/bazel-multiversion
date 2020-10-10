@@ -7,6 +7,8 @@ import moped.json.DecodingResult
 import moped.json.JsonCodec
 import moped.parsers.YamlParser
 import moped.reporters.Input
+import moped.parsers.ConfigurationParser
+import moped.parsers.JsonParser
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),
@@ -23,8 +25,17 @@ final case class ThirdpartyConfig(
 }
 
 object ThirdpartyConfig {
-  def parse(input: Input): DecodingResult[ThirdpartyConfig] = {
-    YamlParser
+  def parseYaml(input: Input): DecodingResult[ThirdpartyConfig] = {
+    parse(input, YamlParser)
+  }
+  def parseJson(input: Input): DecodingResult[ThirdpartyConfig] = {
+    parse(input, JsonParser)
+  }
+  private def parse(
+      input: Input,
+      parser: ConfigurationParser
+  ): DecodingResult[ThirdpartyConfig] = {
+    parser
       .parse(input)
       .flatMap(json =>
         codec.decode(DecodingContext(json).withFatalUnknownFields(true))

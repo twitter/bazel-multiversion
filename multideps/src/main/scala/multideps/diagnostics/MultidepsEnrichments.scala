@@ -4,6 +4,10 @@ import scala.collection.mutable
 
 import coursier.core.Dependency
 import moped.reporters.Reporter
+import moped.cli.Application
+import moped.json.DecodingResult
+import moped.json.ErrorResult
+import moped.json.ValueResult
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
@@ -17,6 +21,16 @@ object MultidepsEnrichments {
       if (xs.isEmpty) ""
       else if (xs.size == 1) xs.head
       else xs.mkString(", ")
+  }
+  implicit class XtensionApplication(app: Application) {
+    def complete(result: DecodingResult[Unit]): Int =
+      result match {
+        case ValueResult(()) =>
+          app.reporter.exitCode()
+        case ErrorResult(error) =>
+          app.reporter.log(error)
+          1
+      }
   }
   implicit class XtensionDependency(dep: Dependency) {
     def repr: String = s"${dep.module.repr}:${dep.version}"

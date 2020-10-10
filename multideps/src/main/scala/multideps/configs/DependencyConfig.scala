@@ -21,18 +21,16 @@ import coursier.core.Publication
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
-    artifact: String = "",
+    name: String = "",
     version: String = "",
-    classifier: String = "",
+    classifier: Option[String] = None,
     exclusions: Set[ModuleConfig] = Set.empty,
     crossVersions: List[CrossVersionsConfig] = Nil,
     forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
     lang: LanguagesConfig = JavaLanguagesConfig,
-    exports: List[String] = Nil,
-    name: String = ""
+    exports: List[String] = Nil
 ) {
-  val crossBuildName: String = if (name.isEmpty()) artifact else name
   def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
       case JavaLanguagesConfig => ""
@@ -41,7 +39,7 @@ final case class DependencyConfig(
     }
     Module(
       Organization(organization.value),
-      ModuleName(artifact + suffix),
+      ModuleName(name + suffix),
       Map.empty
     )
   }
@@ -55,9 +53,10 @@ final case class DependencyConfig(
       Dependency(
         module = coursierModule(scalaVersion),
         version = v,
-        configuration =
-          if (classifier.isEmpty) Configuration.empty
-          else Configuration(classifier),
+        configuration = classifier match {
+          case Some(c) => Configuration(c)
+          case None => Configuration.empty
+        },
         exclusions = exclusions.map(e =>
           e.coursierModule.organization -> e.coursierModule.name
         ),

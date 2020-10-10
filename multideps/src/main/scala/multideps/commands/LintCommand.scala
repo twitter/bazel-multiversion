@@ -15,6 +15,8 @@ import org.scalameta.bazel_multideps.Build.Target
 import multideps.indexes.TargetIndex
 import multideps.resolvers.SimpleDependency
 import os.Pipe
+import moped.json.DecodingResult
+import moped.json.ValueResult
 
 @CommandName("lint")
 case class LintCommand(
@@ -35,7 +37,10 @@ case class LintCommand(
       .call(cwd = os.Path(app.env.workingDirectory), stderr = Pipe)
     QueryResult.parseFrom(process.out.bytes)
   }
-  def run(): Int = {
+
+  def run(): Int = app.complete(runResult())
+
+  def runResult(): DecodingResult[Unit] = {
     val expr = queryExpressions.mkString(" ")
     val result = runQuery(s"deps($expr)")
     val roots =
@@ -71,8 +76,7 @@ case class LintCommand(
           }
       }
     }
-    if (app.reporter.hasErrors()) 1
-    else 0
+    ValueResult(())
   }
 
   private def lintTarget(
