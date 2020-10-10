@@ -23,7 +23,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
   ): Unit = {
     out.reset()
     reporter.reset()
-    ThirdpartyConfig.parse(
+    ThirdpartyConfig.parseYaml(
       Input.filename(name.name + ".yaml", text)
     ) match {
       case ValueResult(value) => onSuccess(value)

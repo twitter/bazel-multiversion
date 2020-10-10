@@ -1,22 +1,23 @@
 package multideps.commands
 
 import scala.collection.JavaConverters._
-import multideps.indexes.DependenciesIndex
 
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.indexes.DependenciesIndex
+import multideps.indexes.TargetIndex
+import multideps.resolvers.SimpleDependency
+
 import moped.annotations.CommandName
 import moped.annotations.PositionalArguments
 import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
+import moped.json.DecodingResult
+import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target
-import multideps.indexes.TargetIndex
-import multideps.resolvers.SimpleDependency
 import os.Pipe
-import moped.json.DecodingResult
-import moped.json.ValueResult
 
 @CommandName("lint")
 case class LintCommand(

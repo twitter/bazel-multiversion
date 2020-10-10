@@ -5,10 +5,10 @@ import coursier.core.Module
 import moped.json.DecodingContext
 import moped.json.DecodingResult
 import moped.json.JsonCodec
-import moped.parsers.YamlParser
-import moped.reporters.Input
 import moped.parsers.ConfigurationParser
 import moped.parsers.JsonParser
+import moped.parsers.YamlParser
+import moped.reporters.Input
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),

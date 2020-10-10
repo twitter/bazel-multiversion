@@ -4,10 +4,12 @@ import scala.util.matching.Regex
 
 import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 
+import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
+import coursier.core.Publication
 import moped.json.DecodingContext
 import moped.json.DecodingResult
 import moped.json.JsonCodec
@@ -16,8 +18,6 @@ import moped.json.JsonObject
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.macros.ClassShape
-import coursier.core.Configuration
-import coursier.core.Publication
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),

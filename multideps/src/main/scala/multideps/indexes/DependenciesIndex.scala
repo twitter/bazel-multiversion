@@ -1,11 +1,12 @@
 package multideps.indexes
 
 import scala.collection.JavaConverters._
-import org.scalameta.bazel_multideps.Build.QueryResult
 import scala.collection.mutable
-import org.scalameta.bazel_multideps.Build.Target
-import java.text.SimpleDateFormat
+
 import multideps.resolvers.SimpleDependency
+
+import org.scalameta.bazel_multideps.Build.QueryResult
+import org.scalameta.bazel_multideps.Build.Target
 
 class DependenciesIndex(query: QueryResult) {
   private val deps: mutable.LinkedHashMap[String, Set[TargetIndex]] =

@@ -1,22 +1,24 @@
 package multideps.commands
 
-import multideps.diagnostics.MultidepsEnrichments._
-import moped.annotations.PositionalArguments
-import moped.annotations.CommandName
-import java.nio.file.Paths
-import java.nio.file.Path
-import moped.cli.Command
-import moped.annotations.Inline
-import moped.cli.CommandParser
-import os.Shellable
-import os.Inherit
-import moped.json.ValueResult
-import moped.json.ErrorResult
-import moped.reporters.Diagnostic
-import moped.json.DecodingResult
 import java.nio.file.Files
-import moped.reporters.Input
+import java.nio.file.Path
+import java.nio.file.Paths
+
 import multideps.configs.ThirdpartyConfig
+import multideps.diagnostics.MultidepsEnrichments._
+
+import moped.annotations.CommandName
+import moped.annotations.Inline
+import moped.annotations.PositionalArguments
+import moped.cli.Command
+import moped.cli.CommandParser
+import moped.json.DecodingResult
+import moped.json.ErrorResult
+import moped.json.ValueResult
+import moped.reporters.Diagnostic
+import moped.reporters.Input
+import os.Inherit
+import os.Shellable
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
@@ -90,6 +92,6 @@ final case class PantsSaveDepsCommand(
 }
 
 object PantsSaveDepsCommand {
-  val default = PantsSaveDepsCommand()
-  implicit val parser = CommandParser.derive(default)
+  val default: PantsSaveDepsCommand = PantsSaveDepsCommand()
+  implicit val parser: CommandParser[PantsSaveDepsCommand] = CommandParser.derive(default)
 }
