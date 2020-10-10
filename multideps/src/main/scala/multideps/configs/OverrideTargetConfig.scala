@@ -8,5 +8,6 @@ final case class OverrideTargetConfig(
 
 object OverrideTargetConfig {
   val default: OverrideTargetConfig = OverrideTargetConfig()
-  implicit val codec: JsonCodec[OverrideTargetConfig] = moped.macros.deriveCodec(default)
+  implicit val codec: JsonCodec[OverrideTargetConfig] =
+    moped.macros.deriveCodec(default)
 }

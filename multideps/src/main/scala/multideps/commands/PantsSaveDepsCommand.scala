@@ -2,7 +2,6 @@ package multideps.commands
 
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.Paths
 
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments._
@@ -19,6 +18,8 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Inherit
 import os.Shellable
+import moped.parsers.JsonParser
+import java.nio.charset.StandardCharsets
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
@@ -30,21 +31,25 @@ final case class PantsSaveDepsCommand(
     save: SaveDepsCommand = SaveDepsCommand.default
 ) extends Command {
   def app = save.app
+  def workingDirectory = cwd.getOrElse(app.env.workingDirectory)
 
   // NOTE(olafur): I tried to use the --output-path flag but it didn't work for
   // some reason. Hardcoding this flag for now.
-  def outputPath: Path = Paths.get(".pants.d", "bazel-multideps.json")
+  def outputPath: Path =
+    workingDirectory.resolve(".pants.d").resolve("bazel-multideps.json")
+  def inputPath: Path =
+    workingDirectory.resolve("3rdparty.yaml")
 
   def run(): Int = app.complete(runResult())
   def runResult(): DecodingResult[Unit] = {
     for {
       _ <- runPantsExport()
-      _ <- runPantsImport()
-      save <- save.runResult()
+      thirdparty <- runPantsImport()
+      save <- save.runResult(thirdparty)
     } yield save
   }
 
-  def runPantsImport(): DecodingResult[Unit] = {
+  def runPantsImport(): DecodingResult[ThirdpartyConfig] = {
     if (!Files.isRegularFile(outputPath)) {
       ErrorResult(
         Diagnostic.error(
@@ -53,18 +58,18 @@ final case class PantsSaveDepsCommand(
         )
       )
     } else {
-      val input = Input.path(outputPath)
       for {
-        thirdparty <- ThirdpartyConfig.parseJson(input)
-      } yield {
-        pprint.log(thirdparty)
-        ()
-      }
+        json <- JsonParser.parse(Input.path(outputPath))
+        _ = Files.write(
+          outputPath,
+          json.toDoc.render(120).getBytes(StandardCharsets.UTF_8)
+        )
+        thirdparty <- ThirdpartyConfig.parseJson(Input.path(outputPath))
+      } yield thirdparty
     }
   }
   def runPantsExport(): DecodingResult[Unit] = {
     if (export) {
-      val workingDirectory = cwd.getOrElse(app.env.workingDirectory)
       val binary = workingDirectory.resolve("pants")
       val command = List[String](
         binary.toString(),
@@ -93,5 +98,6 @@ final case class PantsSaveDepsCommand(
 
 object PantsSaveDepsCommand {
   val default: PantsSaveDepsCommand = PantsSaveDepsCommand()
-  implicit val parser: CommandParser[PantsSaveDepsCommand] = CommandParser.derive(default)
+  implicit val parser: CommandParser[PantsSaveDepsCommand] =
+    CommandParser.derive(default)
 }

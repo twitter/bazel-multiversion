@@ -34,14 +34,14 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import java.util.concurrent.atomic.AtomicInteger
 
 @CommandName("save")
 case class SaveDepsCommand(
     app: Application = Application.default
 ) extends Command {
-  def runResult(): DecodingResult[Unit] = {
+  def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
     for {
-      thirdparty <- parseThirdpartyConfig()
       index <- resolveDependencies(thirdparty)
       _ <- lintPostResolution(index)
       output <- unifyDependencies(index)
@@ -53,6 +53,9 @@ case class SaveDepsCommand(
         )
         .runResult()
     } yield lint
+  }
+  def runResult(): DecodingResult[Unit] = {
+    parseThirdpartyConfig().flatMap(t => runResult(t))
   }
   def run(): Int = {
     app.complete(runResult())
@@ -75,8 +78,10 @@ case class SaveDepsCommand(
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
+    val counter = new AtomicInteger(0)
+    val N = thirdparty.dependencies.size
     val results = for {
-      dep <- thirdparty.dependencies
+      dep <- thirdparty.dependencies.par
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield {
       val forceVersions = dep.forceVersions.overrides.map {
@@ -118,6 +123,7 @@ case class SaveDepsCommand(
           .addRepositories(
             thirdparty.repositories.flatMap(_.coursierRepository): _*
           )
+        _ = app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
         result <- resolve.either() match {
           case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
           case Right(value) => ValueResult(value)
@@ -126,7 +132,7 @@ case class SaveDepsCommand(
     }
     coursier.core.Version("1.0.0")
     DecodingResult
-      .fromResults(results)
+      .fromResults(results.toList)
       .map(resolutions =>
         ResolutionIndex.fromResolutions(thirdparty, resolutions)
       )
@@ -146,7 +152,10 @@ case class SaveDepsCommand(
       })
       .distinctBy(_.dependency)
     val outputs = mutable.LinkedHashMap.empty[Dependency, ArtifactOutput]
+    val counter = new AtomicInteger(0)
+    val N = artifacts.size
     val files = artifacts.map { r =>
+      app.info(f"[${counter.incrementAndGet()}%5s/$N] ${r.dependency.repr}")
       cache.file(r.artifact).run.map {
         case Right(file) =>
           Try {

@@ -36,6 +36,11 @@ lazy val multideps = project
   .settings(
     moduleName := "bazel-multideps",
     mainClass.in(Compile) := Some("multideps.Multideps"),
+    fork := true,
+    javaOptions ++= List(
+      "-Xmx8g",
+      "-XX:+UseG1GC"
+    ),
     libraryDependencies ++= List(
       "com.google.guava" % "guava" % "29.0-jre",
       "io.get-coursier" %% "coursier" % "2.0.0",
