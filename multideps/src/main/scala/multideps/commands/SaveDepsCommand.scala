@@ -163,6 +163,7 @@ case class SaveDepsCommand(
   }
 
   private def createLogger(): CacheLogger = {
+    // pprint.log(useAnsiOutput)
     val l = RefreshLogger.create(
       new OutputStreamWriter(app.err),
       RefreshLogger.defaultDisplay(
@@ -172,6 +173,7 @@ case class SaveDepsCommand(
     )
     l.init(None)
     l
+    // CacheLogger.nop
   }
 
   def unifyDependencies(

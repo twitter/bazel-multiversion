@@ -24,8 +24,6 @@ import coursier.paths.Util
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
-    useAnsiOutput: Boolean = Util.useAnsiOutput(),
-    quiet: Boolean = false,
     export: Boolean = true,
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
@@ -50,7 +48,7 @@ final case class PantsSaveDepsCommand(
       thirdparty <- runPantsImport()
       save <-
         save
-          .copy(useAnsiOutput = useAnsiOutput, quiet = quiet)
+          .copy(useAnsiOutput = true, quiet = true)
           .runResult(thirdparty)
     } yield save
   }
