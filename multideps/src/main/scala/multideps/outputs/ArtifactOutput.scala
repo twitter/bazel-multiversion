@@ -23,7 +23,7 @@ final case class ArtifactOutput(
     index.dependencies
       .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
-      .map(d => outputs(d.repr.intern()))
+      .map(d => outputs(d.repr))
       .map(_.label)
       .toSeq
       .distinct

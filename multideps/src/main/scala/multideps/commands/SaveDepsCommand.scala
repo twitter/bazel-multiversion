@@ -1,6 +1,6 @@
 package multideps.commands
 
-import java.io.PrintWriter
+import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -12,9 +12,6 @@ import scala.util.Try
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
-import multideps.loggers.FancyDownloadArtifactLogger
-import multideps.loggers.FancyResolveLogger
-import multideps.loggers.ProgressLogger
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -23,6 +20,7 @@ import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.Sha256
 
 import coursier.Resolve
+import coursier.cache.CacheLogger
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.cache.loggers.RefreshLogger
@@ -45,6 +43,7 @@ import moped.reporters.NoPosition
 @CommandName("save")
 case class SaveDepsCommand(
     useAnsiOutput: Boolean = Util.useAnsiOutput(),
+    quiet: Boolean = false,
     app: Application = Application.default
 ) extends Command {
   def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
@@ -81,7 +80,6 @@ case class SaveDepsCommand(
       ThirdpartyConfig.parseYaml(Input.path(configPath))
     }
   }
-  def newLogger: RefreshLogger = RefreshLogger.create()
   val cache: FileCache[Task] = FileCache().noCredentials
     .withCachePolicies(List(CachePolicy.FetchMissing))
     .withPool(CoursierResolver.downloadPool)
@@ -100,79 +98,80 @@ case class SaveDepsCommand(
       dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield dep -> cdep).distinctBy(_._2)
-    val p = new FancyResolveLogger(
-      app.env.standardError,
-      useAnsiOutput,
-      coursierDeps.size
-    )
+    val maxWidth =
+      if (coursierDeps.isEmpty) 0
+      else coursierDeps.map(_._2.repr.length()).max
+    val total = coursierDeps.length
     val results: List[DecodingResult[Resolution]] =
-      try {
-        p.start()
-        val maxWidth =
-          if (coursierDeps.isEmpty) 0
-          else coursierDeps.map(_._2.repr.length()).max
-        val total = coursierDeps.length
-        coursierDeps.zipWithIndex.par.map {
-          case ((dep, cdep), i) =>
-            val forceVersions = dep.forceVersions.overrides.map {
-              case (module, version) =>
-                thirdparty.depsByModule.get(module.coursierModule) match {
-                  case Some(depsConfig) =>
-                    depsConfig.getVersion(version) match {
-                      case Some(forcedVersion) =>
-                        ValueResult(
-                          depsConfig.coursierModule(
-                            thirdparty.scala
-                          ) -> forcedVersion
-                        )
-                      case None =>
-                        // TODO: report "did you mean?"
-                        ErrorResult(
-                          Diagnostic.error(
-                            s"version '$version' not found",
-                            module.name.position
-                          )
-                        )
-                    }
-                  case None =>
-                    ErrorResult(
-                      Diagnostic.error(
-                        s"module '${module.repr}' not found",
-                        module.name.position
+      coursierDeps.zipWithIndex.map {
+        case ((dep, cdep), i) =>
+          val forceVersions = dep.forceVersions.overrides.map {
+            case (module, version) =>
+              thirdparty.depsByModule.get(module.coursierModule) match {
+                case Some(depsConfig) =>
+                  depsConfig.getVersion(version) match {
+                    case Some(forcedVersion) =>
+                      ValueResult(
+                        depsConfig.coursierModule(
+                          thirdparty.scala
+                        ) -> forcedVersion
                       )
+                    case None =>
+                      // TODO: report "did you mean?"
+                      ErrorResult(
+                        Diagnostic.error(
+                          s"version '$version' not found",
+                          module.name.position
+                        )
+                      )
+                  }
+                case None =>
+                  ErrorResult(
+                    Diagnostic.error(
+                      s"module '${module.repr}' not found",
+                      module.name.position
                     )
-                }
-            }
-            for {
-              forceVersions <- DecodingResult.fromResults(forceVersions)
-              result <- {
-                val logger = p.newLogger()
-                val resolve = Resolve(cache.withLogger(logger))
-                  .addDependencies(cdep)
-                  .withResolutionParams(
-                    ResolutionParams().addForceVersion(forceVersions: _*)
                   )
-                  .addRepositories(
-                    thirdparty.repositories.flatMap(_.coursierRepository): _*
-                  )
-                // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
-                val result = resolve.either() match {
-                  case Left(error) =>
-                    ErrorResult(Diagnostic.error(error.getMessage()))
-                  case Right(value) => ValueResult(value)
-                }
-                result
               }
-            } yield result
-        }.toList
-      } finally {
-        p.stop()
-      }
+          }
+          for {
+            forceVersions <- DecodingResult.fromResults(forceVersions)
+            result <- {
+              val resolve = Resolve(cache.withLogger(createLogger()))
+                .addDependencies(cdep)
+                .withResolutionParams(
+                  ResolutionParams().addForceVersion(forceVersions: _*)
+                )
+                .addRepositories(
+                  thirdparty.repositories.flatMap(_.coursierRepository): _*
+                )
+              // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
+              val result = resolve.either() match {
+                case Left(error) =>
+                  ErrorResult(Diagnostic.error(error.getMessage()))
+                case Right(value) => ValueResult(value)
+              }
+              result
+            }
+          } yield result
+      }.toList
     DecodingResult
       .fromResults(results.toList)
       .map(resolutions =>
         ResolutionIndex.fromResolutions(thirdparty, resolutions)
       )
+  }
+
+  private def createLogger(): CacheLogger = {
+    val l = RefreshLogger.create(
+      new OutputStreamWriter(app.err),
+      RefreshLogger.defaultDisplay(
+        fallbackMode = !useAnsiOutput,
+        quiet = quiet
+      )
+    )
+    l.init(None)
+    l
   }
 
   def unifyDependencies(
@@ -184,18 +183,11 @@ case class SaveDepsCommand(
         case (d, p, a) => ResolvedDependency(d, p, a)
       })
       .distinctBy(_.dependency.repr)
-    val outputs = new ju.IdentityHashMap[String, ArtifactOutput]
+    val outputs = new ju.HashMap[String, ArtifactOutput]
     val counter = new AtomicInteger(0)
     val N = artifacts.size
-    val p =
-      new FancyDownloadArtifactLogger(app.err, artifacts.size, useAnsiOutput)
-    new ProgressLogger[String](
-      "Downloaded",
-      "jars",
-      new PrintWriter(app.env.standardError)
-    )
     val files = artifacts.map { r =>
-      cache.withLogger(p.newLogger()).file(r.artifact).run.map {
+      cache.withLogger(createLogger()).file(r.artifact).run.map {
         case Right(file) =>
           Try {
             import scala.collection.JavaConverters._
@@ -207,7 +199,7 @@ case class SaveDepsCommand(
               artifact = r.artifact,
               artifactSha256 = Sha256.compute(file)
             )
-            outputs.put(r.dependency.repr.intern(), output)
+            outputs.put(r.dependency.repr, output)
             output
           }.toEither
 
@@ -215,7 +207,6 @@ case class SaveDepsCommand(
       }
     }
     val all = Task.gather.gather(files).unsafeRun()(CoursierResolver.ec)
-    p.stop()
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
     Diagnostic.fromDiagnostics(errors.toList) match {
       case Some(error) =>

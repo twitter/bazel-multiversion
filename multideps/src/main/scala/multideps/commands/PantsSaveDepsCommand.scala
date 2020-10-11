@@ -20,9 +20,12 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Inherit
 import os.Shellable
+import coursier.paths.Util
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
+    useAnsiOutput: Boolean = Util.useAnsiOutput(),
+    quiet: Boolean = false,
     export: Boolean = true,
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
@@ -45,7 +48,10 @@ final case class PantsSaveDepsCommand(
     for {
       _ <- runPantsExport()
       thirdparty <- runPantsImport()
-      save <- save.copy(useAnsiOutput = true).runResult(thirdparty)
+      save <-
+        save
+          .copy(useAnsiOutput = useAnsiOutput, quiet = quiet)
+          .runResult(thirdparty)
     } yield save
   }
 
