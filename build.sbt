@@ -42,6 +42,9 @@ lazy val multideps = project
       "-XX:+UseG1GC"
     ),
     resolvers += Resolver.typesafeIvyRepo("releases"), // For lightbend-emoji
+    forkOptions ~= { old =>
+      old.withWorkingDirectory(file(".").getAbsoluteFile().getCanonicalFile())
+    },
     libraryDependencies ++= List(
       "me.tongfei" % "progressbar" % "0.9.0",
       "com.google.guava" % "guava" % "29.0-jre",
