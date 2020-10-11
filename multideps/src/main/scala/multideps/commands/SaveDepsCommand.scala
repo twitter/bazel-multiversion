@@ -35,6 +35,10 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
 import java.util.concurrent.atomic.AtomicInteger
+import java.io.Writer
+import java.io.PrintStream
+import java.io.PrintWriter
+import multideps.loggers.ProgressLogger
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -78,10 +82,17 @@ case class SaveDepsCommand(
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
+    val p = new ProgressLogger[Dependency](
+      "Resolved",
+      "dependency",
+      new PrintWriter(app.env.standardError)
+    )
     val counter = new AtomicInteger(0)
     val N = thirdparty.dependencies.size
+    val cache = FileCache().noCredentials
+      .withLocation(app.env.workingDirectory.resolve(".cache3").toFile)
     val results = for {
-      dep <- thirdparty.dependencies.par
+      dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield {
       val forceVersions = dep.forceVersions.overrides.map {
@@ -115,22 +126,24 @@ case class SaveDepsCommand(
       }
       for {
         forceVersions <- DecodingResult.fromResults(forceVersions)
-        resolve = Resolve()
-          .addDependencies(cdep)
-          .withResolutionParams(
-            ResolutionParams().addForceVersion(forceVersions: _*)
-          )
-          .addRepositories(
-            thirdparty.repositories.flatMap(_.coursierRepository): _*
-          )
-        _ = app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
-        result <- resolve.either() match {
-          case Left(error) => ErrorResult(Diagnostic.error(error.getMessage()))
-          case Right(value) => ValueResult(value)
+        result <- {
+          val resolve = Resolve(cache)
+            .addDependencies(cdep)
+            .withResolutionParams(
+              ResolutionParams().addForceVersion(forceVersions: _*)
+            )
+            .addRepositories(
+              thirdparty.repositories.flatMap(_.coursierRepository): _*
+            )
+          app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
+          resolve.either() match {
+            case Left(error) =>
+              ErrorResult(Diagnostic.error(error.getMessage()))
+            case Right(value) => ValueResult(value)
+          }
         }
       } yield result
     }
-    coursier.core.Version("1.0.0")
     DecodingResult
       .fromResults(results.toList)
       .map(resolutions =>
@@ -154,6 +167,11 @@ case class SaveDepsCommand(
     val outputs = mutable.LinkedHashMap.empty[Dependency, ArtifactOutput]
     val counter = new AtomicInteger(0)
     val N = artifacts.size
+    val p = new ProgressLogger[Dependency](
+      "Resolved",
+      "dependency",
+      new PrintWriter(app.env.standardError)
+    )
     val files = artifacts.map { r =>
       app.info(f"[${counter.incrementAndGet()}%5s/$N] ${r.dependency.repr}")
       cache.file(r.artifact).run.map {

@@ -41,7 +41,9 @@ lazy val multideps = project
       "-Xmx8g",
       "-XX:+UseG1GC"
     ),
+    resolvers += Resolver.typesafeIvyRepo("releases"), // For lightbend-emoji
     libraryDependencies ++= List(
+      "me.tongfei" % "progressbar" % "0.9.0",
       "com.google.guava" % "guava" % "29.0-jre",
       "io.get-coursier" %% "coursier" % "2.0.0",
       "org.typelevel" %% "paiges-core" % "0.3.2",
@@ -50,7 +52,8 @@ lazy val multideps = project
       "com.lihaoyi" %% "os-lib" % "0.7.1",
       "com.lihaoyi" %% "fansi" % "0.2.9",
       "com.lihaoyi" %% "pprint" % "0.6.0",
-      "com.lihaoyi" %% "requests" % "0.6.5"
+      "com.lihaoyi" %% "requests" % "0.6.5",
+      "com.lightbend" %% "emoji" % "1.2.1"
     ),
     buildInfoPackage := "multideps",
     buildInfoKeys := Seq[BuildInfoKey](
