@@ -1,8 +1,10 @@
 package multideps.commands
 
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 import scala.util.Try
@@ -10,6 +12,8 @@ import scala.util.Try
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.loggers.ProgressLogger
+import multideps.loggers.SaveDepsLogger
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -21,6 +25,7 @@ import coursier.Resolve
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
+import coursier.core.Resolution
 import coursier.params.ResolutionParams
 import coursier.util.Task
 import moped.annotations.CommandName
@@ -34,12 +39,6 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import java.util.concurrent.atomic.AtomicInteger
-import java.io.Writer
-import java.io.PrintStream
-import java.io.PrintWriter
-import multideps.loggers.ProgressLogger
-import coursier.core.Resolution
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -83,14 +82,9 @@ case class SaveDepsCommand(
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
-    val p = new ProgressLogger[String](
-      "Resolved",
-      "dependency",
-      new PrintWriter(app.env.standardError)
-    )
+    val p = new SaveDepsLogger(new PrintWriter(app.env.standardError))
     val results: List[DecodingResult[Resolution]] =
       try {
-
         p.start()
         val counter = new AtomicInteger(0)
         val N = thirdparty.dependencies.size
@@ -134,7 +128,7 @@ case class SaveDepsCommand(
           for {
             forceVersions <- DecodingResult.fromResults(forceVersions)
             result <- {
-              val resolve = Resolve(cache)
+              val resolve = Resolve(cache.withLogger(p.startResolve(cdep)))
                 .addDependencies(cdep)
                 .withResolutionParams(
                   ResolutionParams().addForceVersion(forceVersions: _*)
@@ -142,25 +136,18 @@ case class SaveDepsCommand(
                 .addRepositories(
                   thirdparty.repositories.flatMap(_.coursierRepository): _*
                 )
-              p.processingSet(cdep.repr, None)
-              p.processing(cdep.repr, cdep.repr)
               // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
               val result = resolve.either() match {
                 case Left(error) =>
                   ErrorResult(Diagnostic.error(error.getMessage()))
                 case Right(value) => ValueResult(value)
               }
-              p.processed(
-                cdep.repr,
-                cdep.repr,
-                result.isInstanceOf[ValueResult[_]]
-              )
               result
             }
           } yield result
         }
       } finally {
-        p.stop(keep = false)
+        p.stop()
       }
     DecodingResult
       .fromResults(results.toList)

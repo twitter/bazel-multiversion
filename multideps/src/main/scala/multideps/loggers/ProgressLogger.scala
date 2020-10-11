@@ -1,20 +1,17 @@
 package multideps.loggers
 
 import java.io.Writer
-import java.lang.{Boolean => JBoolean}
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.ScheduledFuture
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.{
-  ConcurrentHashMap,
-  Executors,
-  ScheduledFuture,
-  TimeUnit
-}
+
+import scala.collection.JavaConverters._
 
 import com.lightbend.emoji.ShortCodes.Defaults.defaultImplicit.emoji
 import coursier.cache.internal.Terminal.Ansi
 import coursier.cache.internal.ThreadUtil
-
-import scala.collection.JavaConverters._
 
 /**
   * Displays the progress of some task on a single line.

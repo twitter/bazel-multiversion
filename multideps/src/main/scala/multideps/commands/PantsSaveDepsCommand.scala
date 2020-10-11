@@ -1,5 +1,6 @@
 package multideps.commands
 
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -14,12 +15,11 @@ import moped.cli.CommandParser
 import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.ValueResult
+import moped.parsers.JsonParser
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Inherit
 import os.Shellable
-import moped.parsers.JsonParser
-import java.nio.charset.StandardCharsets
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(
@@ -31,7 +31,7 @@ final case class PantsSaveDepsCommand(
     save: SaveDepsCommand = SaveDepsCommand.default
 ) extends Command {
   def app = save.app
-  def workingDirectory = cwd.getOrElse(app.env.workingDirectory)
+  def workingDirectory: Path = cwd.getOrElse(app.env.workingDirectory)
 
   // NOTE(olafur): I tried to use the --output-path flag but it didn't work for
   // some reason. Hardcoding this flag for now.

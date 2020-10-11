@@ -11,7 +11,6 @@ import moped.commands.CompletionsCommand
 import moped.commands.HelpCommand
 import moped.commands.VersionCommand
 import org.scalameta.bazel_multideps.Build.Target.Discriminator
-import me.tongfei.progressbar.ProgressBar
 
 object Multideps {
   val app: Application = Application.fromName(
