@@ -39,6 +39,8 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import coursier.cache.CacheLocks
+import coursier.cache.CacheLogger
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -92,59 +94,67 @@ case class SaveDepsCommand(
           .withLocation(
             app.env.workingDirectory.resolve("target").resolve("cache").toFile
           )
-        for {
+        val coursierDeps = for {
           dep <- thirdparty.dependencies
           cdep <- dep.coursierDependencies(thirdparty.scala)
-        } yield {
-          val forceVersions = dep.forceVersions.overrides.map {
-            case (module, version) =>
-              thirdparty.depsByModule.get(module.coursierModule) match {
-                case Some(depsConfig) =>
-                  depsConfig.getVersion(version) match {
-                    case Some(forcedVersion) =>
-                      ValueResult(
-                        depsConfig.coursierModule(
-                          thirdparty.scala
-                        ) -> forcedVersion
-                      )
-                    case None =>
-                      // TODO: report "did you mean?"
-                      ErrorResult(
-                        Diagnostic.error(
-                          s"version '$version' not found",
-                          module.name.position
+        } yield dep -> cdep
+        val maxWidth =
+          if (coursierDeps.isEmpty) 0
+          else coursierDeps.map(_._2.repr.length()).max
+        val total = coursierDeps.length
+        coursierDeps.zipWithIndex.map {
+          case ((dep, cdep), i) =>
+            val forceVersions = dep.forceVersions.overrides.map {
+              case (module, version) =>
+                thirdparty.depsByModule.get(module.coursierModule) match {
+                  case Some(depsConfig) =>
+                    depsConfig.getVersion(version) match {
+                      case Some(forcedVersion) =>
+                        ValueResult(
+                          depsConfig.coursierModule(
+                            thirdparty.scala
+                          ) -> forcedVersion
                         )
+                      case None =>
+                        // TODO: report "did you mean?"
+                        ErrorResult(
+                          Diagnostic.error(
+                            s"version '$version' not found",
+                            module.name.position
+                          )
+                        )
+                    }
+                  case None =>
+                    ErrorResult(
+                      Diagnostic.error(
+                        s"module '${module.repr}' not found",
+                        module.name.position
                       )
-                  }
-                case None =>
-                  ErrorResult(
-                    Diagnostic.error(
-                      s"module '${module.repr}' not found",
-                      module.name.position
                     )
-                  )
-              }
-          }
-          for {
-            forceVersions <- DecodingResult.fromResults(forceVersions)
-            result <- {
-              val resolve = Resolve(cache.withLogger(p.startResolve(cdep)))
-                .addDependencies(cdep)
-                .withResolutionParams(
-                  ResolutionParams().addForceVersion(forceVersions: _*)
-                )
-                .addRepositories(
-                  thirdparty.repositories.flatMap(_.coursierRepository): _*
-                )
-              // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
-              val result = resolve.either() match {
-                case Left(error) =>
-                  ErrorResult(Diagnostic.error(error.getMessage()))
-                case Right(value) => ValueResult(value)
-              }
-              result
+                }
             }
-          } yield result
+            for {
+              forceVersions <- DecodingResult.fromResults(forceVersions)
+              result <- {
+                val logger: CacheLogger =
+                  p.startResolve(cdep, i, total, maxWidth)
+                val resolve = Resolve(cache.withLogger(logger))
+                  .addDependencies(cdep)
+                  .withResolutionParams(
+                    ResolutionParams().addForceVersion(forceVersions: _*)
+                  )
+                  .addRepositories(
+                    thirdparty.repositories.flatMap(_.coursierRepository): _*
+                  )
+                // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
+                val result = resolve.either() match {
+                  case Left(error) =>
+                    ErrorResult(Diagnostic.error(error.getMessage()))
+                  case Right(value) => ValueResult(value)
+                }
+                result
+              }
+            } yield result
         }
       } finally {
         p.stop()
