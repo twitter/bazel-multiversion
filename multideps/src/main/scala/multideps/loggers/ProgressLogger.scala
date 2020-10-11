@@ -68,7 +68,7 @@ final class ProgressLogger[T](
                   )
                   .sum
                 val pct = f"${100L * done.toDouble / total}%.2f %%"
-                s" ($pct of $ongoing on-going)"
+                s" ($pct, $ongoing on-going)"
               } else
                 s" ($ongoing on-going)"
             } else

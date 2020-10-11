@@ -12,6 +12,7 @@ import scala.util.Try
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.loggers.FancyDownloadArtifactLogger
 import multideps.loggers.ProgressLogger
 import multideps.loggers.SaveDepsLogger
 import multideps.outputs.ArtifactOutput
@@ -41,6 +42,8 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import java.{util => ju}
+import coursier.cache.loggers.RefreshLogger
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -81,6 +84,14 @@ case class SaveDepsCommand(
       ThirdpartyConfig.parseYaml(Input.path(configPath))
     }
   }
+  def newLogger = RefreshLogger.create()
+  val cache = FileCache().noCredentials
+    .withCachePolicies(List(CachePolicy.FetchMissing))
+    .withPool(CoursierResolver.downloadPool)
+    .withChecksums(Nil)
+    .withLocation(
+      app.env.workingDirectory.resolve("target").resolve("9cache").toFile
+    )
 
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
@@ -91,10 +102,6 @@ case class SaveDepsCommand(
         p.start()
         val counter = new AtomicInteger(0)
         val N = thirdparty.dependencies.size
-        val cache = FileCache().noCredentials
-          .withLocation(
-            app.env.workingDirectory.resolve("target").resolve("cache3").toFile
-          )
         val coursierDeps = for {
           dep <- thirdparty.dependencies
           cdep <- dep.coursierDependencies(thirdparty.scala)
@@ -171,36 +178,34 @@ case class SaveDepsCommand(
       index: ResolutionIndex
   ): DecodingResult[Path] = {
     // Step 1: download artifacts
-    val cache = FileCache()
-      .withCachePolicies(List(CachePolicy.FetchMissing))
-      .withPool(CoursierResolver.downloadPool)
-      .withChecksums(Nil)
     val artifacts = index.resolutions
       .flatMap(_.dependencyArtifacts().map {
         case (d, p, a) => ResolvedDependency(d, p, a)
       })
-      .distinctBy(_.dependency)
-    val outputs = mutable.LinkedHashMap.empty[Dependency, ArtifactOutput]
+      .distinctBy(_.dependency.repr)
+    val outputs = new ju.IdentityHashMap[String, ArtifactOutput]
     val counter = new AtomicInteger(0)
     val N = artifacts.size
-    val p = new ProgressLogger[Dependency](
-      "Resolved",
-      "dependency",
+    val p = new FancyDownloadArtifactLogger(app.err, artifacts.size)
+    new ProgressLogger[String](
+      "Downloaded",
+      "jars",
       new PrintWriter(app.env.standardError)
     )
     val files = artifacts.map { r =>
-      // app.info(f"[${counter.incrementAndGet()}%5s/$N] ${r.dependency.repr}")
-      cache.file(r.artifact).run.map {
+      cache.withLogger(p.newLogger()).file(r.artifact).run.map {
         case Right(file) =>
           Try {
+            import scala.collection.JavaConverters._
+
             val output = ArtifactOutput(
               index = index,
-              outputs = outputs,
+              outputs = outputs.asScala,
               dependency = r.dependency,
               artifact = r.artifact,
               artifactSha256 = Sha256.compute(file)
             )
-            outputs(r.dependency.withoutMetadata) = output
+            outputs.put(r.dependency.repr.intern(), output)
             output
           }.toEither
 
@@ -208,6 +213,7 @@ case class SaveDepsCommand(
       }
     }
     val all = Task.gather.gather(files).unsafeRun()(CoursierResolver.ec)
+    p.stop()
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
     Diagnostic.fromDiagnostics(errors.toList) match {
       case Some(error) =>

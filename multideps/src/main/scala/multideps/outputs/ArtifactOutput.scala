@@ -8,7 +8,7 @@ import org.typelevel.paiges.Doc
 
 final case class ArtifactOutput(
     index: ResolutionIndex,
-    outputs: collection.Map[Dependency, ArtifactOutput],
+    outputs: collection.Map[String, ArtifactOutput],
     dependency: Dependency,
     artifact: Artifact,
     artifactSha256: String,
@@ -23,9 +23,10 @@ final case class ArtifactOutput(
     index.dependencies
       .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
-      .map(d => outputs(d.withoutMetadata))
+      .map(d => outputs(d.repr.intern()))
       .map(_.label)
       .toSeq
+      .distinct
   def repr: String =
     s"""|Artifact(
         |  dep = "${label}",

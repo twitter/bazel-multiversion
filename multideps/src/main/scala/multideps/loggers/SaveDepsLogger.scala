@@ -24,13 +24,14 @@ final case class SaveDepsLogger(writer: Writer) {
     )
   }
   def stop(): Unit = out.close()
-  private class FancyCacheLogger(
+  private class FancySaveDepsLogger(
       dep: Dependency,
       current: Int,
       total: Int,
       width: Int
   ) extends CacheLogger {
-    val currentPadded: String = current.toString().padTo(total.toString().length(), ' ')
+    val currentPadded: String =
+      current.toString().padTo(total.toString().length(), ' ')
     val progress: String = s"[$currentPadded/$total]"
     val repr: String = dep.repr.padTo(width, ' ')
     private val p = new ProgressLogger[Dependency](
@@ -46,7 +47,6 @@ final case class SaveDepsLogger(writer: Writer) {
       p.processing(url, dep)
     }
     override def downloadedArtifact(url: String, success: Boolean): Unit = {
-      locals.incrementAndGet()
       p.processed(url, dep, errored = !success)
     }
     override def stop(): Unit = {
@@ -72,7 +72,7 @@ final case class SaveDepsLogger(writer: Writer) {
       useAnsiOutput: Boolean
   ): CacheLogger = {
     if (useAnsiOutput) {
-      new FancyCacheLogger(dep, current, total, width)
+      new FancySaveDepsLogger(dep, current, total, width)
     } else {
       CacheLogger.nop
     }

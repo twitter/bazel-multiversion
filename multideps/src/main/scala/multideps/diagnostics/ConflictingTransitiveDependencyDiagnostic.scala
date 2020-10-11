@@ -31,7 +31,7 @@ class ConflictingTransitiveDependencyDiagnostic(
     s"""transitive dependency '${module.repr}' has conflicting versions.
        |  resolved versions:${pretty(transitiveVersions)}
        |  declared versions:${pretty(declaredVersions)}
-       |  root dependencies:${pretty(roots.map(_.repr))}
+       |  root dependencies:${pretty(roots.distinct.map(_.repr))}
        |To fix this problem, $toFix
        |""".stripMargin.trim
   }
