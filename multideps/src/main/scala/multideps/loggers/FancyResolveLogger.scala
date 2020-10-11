@@ -1,18 +1,11 @@
 package multideps.loggers
 
 import java.io.PrintStream
-import java.io.Writer
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
+import java.io.PrintWriter
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-
 import coursier.cache.CacheLogger
-import coursier.core.Dependency
-import java.util.concurrent.atomic.AtomicBoolean
-import java.io.PrintWriter
 import coursier.cache.loggers.RefreshLogger
 
 final case class FancyResolveLogger(

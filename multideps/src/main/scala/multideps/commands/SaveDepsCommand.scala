@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
+import java.{util => ju}
 
 import scala.util.Try
 
@@ -12,8 +13,8 @@ import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.loggers.FancyDownloadArtifactLogger
-import multideps.loggers.ProgressLogger
 import multideps.loggers.FancyResolveLogger
+import multideps.loggers.ProgressLogger
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -22,9 +23,9 @@ import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.Sha256
 
 import coursier.Resolve
-import coursier.cache.CacheLogger
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
+import coursier.cache.loggers.RefreshLogger
 import coursier.core.Resolution
 import coursier.params.ResolutionParams
 import coursier.paths.Util
@@ -40,8 +41,6 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import java.{util => ju}
-import coursier.cache.loggers.RefreshLogger
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -82,8 +81,8 @@ case class SaveDepsCommand(
       ThirdpartyConfig.parseYaml(Input.path(configPath))
     }
   }
-  def newLogger = RefreshLogger.create()
-  val cache = FileCache().noCredentials
+  def newLogger: RefreshLogger = RefreshLogger.create()
+  val cache: FileCache[Task] = FileCache().noCredentials
     .withCachePolicies(List(CachePolicy.FetchMissing))
     .withPool(CoursierResolver.downloadPool)
     .withChecksums(Nil)
