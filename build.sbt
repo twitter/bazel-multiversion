@@ -25,7 +25,8 @@ inThisBuild(
     scalacOptions ++= List(
       "-Ywarn-unused:imports",
       "-Yrangepos"
-    )
+    ),
+    version := "0.1.0-SNAPSHOT"
   )
 )
 
@@ -42,9 +43,7 @@ lazy val multideps = project
       "-XX:+UseG1GC"
     ),
     resolvers += Resolver.typesafeIvyRepo("releases"), // For lightbend-emoji
-    forkOptions ~= { old =>
-      old.withWorkingDirectory(file(".").getAbsoluteFile().getCanonicalFile())
-    },
+    baseDirectory.in(run) := baseDirectory.in(ThisBuild).value,
     libraryDependencies ++= List(
       "me.tongfei" % "progressbar" % "0.9.0",
       "com.google.guava" % "guava" % "29.0-jre",
