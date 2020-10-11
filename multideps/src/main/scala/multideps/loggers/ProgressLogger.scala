@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.JavaConverters._
 
-import com.lightbend.emoji.ShortCodes.Defaults.defaultImplicit.emoji
 import coursier.cache.internal.Terminal.Ansi
 import coursier.cache.internal.ThreadUtil
 
@@ -24,8 +23,8 @@ final class ProgressLogger[T](
     elementName: String,
     out: Writer,
     updateOnChange: Boolean = false,
-    doneEmoji: Option[String] =
-      emoji("heavy_check_mark").map(Console.GREEN + _ + Console.RESET)
+    doneEmoji: Option[String] = Some(Console.GREEN + "✔ " + Console.RESET),
+    errorEmoji: Option[String] = Some("❗")
 ) {
 
   import ProgressLogger._
@@ -77,10 +76,12 @@ final class ProgressLogger[T](
           val doneCount = m.count(_._2.isRight)
           val done = s.done.get()
           val em =
-            if (done)
-              doneEmoji.fold("")(_ + " ")
-            else
+            if (done) {
+              val emoji = if (s.isError.get()) errorEmoji else doneEmoji
+              emoji.fold("")(_ + " ")
+            } else {
               tickers(doneCount % tickers.length) + " "
+            }
           out.write(s" $em$processedMessage $doneCount${s.totalOpt
             .filter(_ => !done)
             .fold("")(t => s" / $t")} $elementName$extra\n")
@@ -144,6 +145,7 @@ final class ProgressLogger[T](
       s"Found ${states.asScala.iterator.map(_._1).toList}, not $id"
     )
     val b = s.processed.put(url, Right(()))
+    s.isError.compareAndSet(false, errored)
     assert(b.isLeft)
     onChange()
   }
@@ -180,6 +182,7 @@ object ProgressLogger {
   private final class State(val totalOpt: Option[Int]) {
     val done = new AtomicBoolean(false)
     val processed = new ConcurrentHashMap[String, Either[(Long, Long), Unit]]
+    val isError = new AtomicBoolean(false)
   }
 
 }

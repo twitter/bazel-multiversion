@@ -1,15 +1,16 @@
 package multideps.loggers
 
+import java.io.PrintStream
 import java.io.Writer
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import java.util.concurrent.atomic.AtomicInteger
+
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
 import coursier.cache.CacheLogger
 import coursier.core.Dependency
-import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.io.PrintStream
-import java.nio.file.StandardOpenOption
-import java.util.concurrent.atomic.AtomicInteger
 
 final case class SaveDepsLogger(writer: Writer) {
   private var out: PrintStream = _
@@ -23,15 +24,15 @@ final case class SaveDepsLogger(writer: Writer) {
     )
   }
   def stop(): Unit = out.close()
-  private class SaveDepsCacheLogger(
+  private class FancyCacheLogger(
       dep: Dependency,
       current: Int,
       total: Int,
       width: Int
   ) extends CacheLogger {
-    val currentPadded = current.toString().padTo(total.toString().length(), ' ')
-    val progress = s"[$currentPadded/$total]"
-    val repr = dep.repr.padTo(width, ' ')
+    val currentPadded: String = current.toString().padTo(total.toString().length(), ' ')
+    val progress: String = s"[$currentPadded/$total]"
+    val repr: String = dep.repr.padTo(width, ' ')
     private val p = new ProgressLogger[Dependency](
       s"$progress $repr",
       "transitive dependencies",
@@ -62,11 +63,18 @@ final case class SaveDepsLogger(writer: Writer) {
       p.start()
     }
   }
+
   def startResolve(
       dep: Dependency,
       current: Int,
       total: Int,
-      width: Int
-  ): CacheLogger =
-    new SaveDepsCacheLogger(dep, current, total, width)
+      width: Int,
+      useAnsiOutput: Boolean
+  ): CacheLogger = {
+    if (useAnsiOutput) {
+      new FancyCacheLogger(dep, current, total, width)
+    } else {
+      CacheLogger.nop
+    }
+  }
 }

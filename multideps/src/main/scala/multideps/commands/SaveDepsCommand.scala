@@ -22,11 +22,13 @@ import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.Sha256
 
 import coursier.Resolve
+import coursier.cache.CacheLogger
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
 import coursier.core.Resolution
 import coursier.params.ResolutionParams
+import coursier.paths.Util
 import coursier.util.Task
 import moped.annotations.CommandName
 import moped.annotations._
@@ -39,11 +41,10 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import coursier.cache.CacheLocks
-import coursier.cache.CacheLogger
 
 @CommandName("save")
 case class SaveDepsCommand(
+    useAnsiOutput: Boolean = Util.useAnsiOutput(),
     app: Application = Application.default
 ) extends Command {
   def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
@@ -92,7 +93,7 @@ case class SaveDepsCommand(
         val N = thirdparty.dependencies.size
         val cache = FileCache().noCredentials
           .withLocation(
-            app.env.workingDirectory.resolve("target").resolve("cache").toFile
+            app.env.workingDirectory.resolve("target").resolve("cache3").toFile
           )
         val coursierDeps = for {
           dep <- thirdparty.dependencies
@@ -137,7 +138,7 @@ case class SaveDepsCommand(
               forceVersions <- DecodingResult.fromResults(forceVersions)
               result <- {
                 val logger: CacheLogger =
-                  p.startResolve(cdep, i, total, maxWidth)
+                  p.startResolve(cdep, i + 1, total, maxWidth, useAnsiOutput)
                 val resolve = Resolve(cache.withLogger(logger))
                   .addDependencies(cdep)
                   .withResolutionParams(
