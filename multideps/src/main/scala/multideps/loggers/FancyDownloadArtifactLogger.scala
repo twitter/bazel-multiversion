@@ -6,15 +6,20 @@ import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import coursier.cache.loggers.RefreshLogger
 
-class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
+class FancyDownloadArtifactLogger(
+    out: PrintStream,
+    estimate: Int,
+    useAnsiOutput: Boolean
+) { self =>
   val lock = new Object()
   val p = new ProgressLogger[lock.type](
     "Downloaded",
     "jars",
     new PrintWriter(out)
   )
-  val isStarted = new AtomicBoolean(false)
+  val isStarted = new AtomicBoolean(true)
   val locals = new AtomicInteger(0)
   private def start(): Unit = {
     if (isStarted.compareAndSet(false, true)) {
@@ -68,5 +73,13 @@ class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
         pprint.log(sizeHint)
       }
   }
-  def newLogger(): CacheLogger = new Impl()
+  // def newLogger(): CacheLogger = new Impl()
+  def newLogger(): CacheLogger = {
+    val l = RefreshLogger.create(
+      out,
+      RefreshLogger.defaultDisplay(fallbackMode = !useAnsiOutput, quiet = false)
+    )
+    l.init(None)
+    l
+  } // new Impl(dep, current, total, width)
 }

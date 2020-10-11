@@ -12,75 +12,64 @@ import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 import coursier.cache.CacheLogger
 import coursier.core.Dependency
 import java.util.concurrent.atomic.AtomicBoolean
+import java.io.PrintWriter
+import coursier.cache.loggers.RefreshLogger
 
-final case class FancyResolveLogger(writer: Writer) {
-  private var out: PrintStream = _
+final case class FancyResolveLogger(
+    out: PrintStream,
+    useAnsiOutput: Boolean,
+    size: Int
+) {
+  self =>
+  val lock = new Object
+  private val p = new ProgressLogger[lock.type](
+    s"Resolved",
+    "dependencies",
+    new PrintWriter(out)
+  )
+  private val isStarted = new AtomicBoolean(true)
   def start(): Unit = {
-    out = new PrintStream(
-      Files.newOutputStream(
-        Paths.get("target", "errors.txt"),
-        StandardOpenOption.TRUNCATE_EXISTING,
-        StandardOpenOption.CREATE
-      )
-    )
+    if (isStarted.compareAndSet(false, true)) {
+      p.start()
+      p.processingSet(lock, Some(size))
+    }
   }
-  def stop(): Unit = out.close()
-  private class Impl(
-      dep: Dependency,
-      current: Int,
-      total: Int,
-      width: Int
-  ) extends CacheLogger {
-    val currentPadded: String =
-      current.toString().padTo(total.toString().length(), ' ')
-    val progress: String = s"[$currentPadded/$total]"
-    val repr: String = dep.repr.padTo(width, ' ')
-    private val p = new ProgressLogger[Dependency](
-      s"$progress $repr",
-      "transitive dependencies",
-      writer
-    )
-    private val locals = new AtomicInteger(0)
-    private val isStarted = new AtomicBoolean(false)
+  def stop(): Unit = {
+    if (isStarted.get()) {
+      1.to(locals.get()).foreach { i =>
+        val url = i.toString()
+        p.processing(url, lock)
+        p.processed(url, lock, errored = false)
+      }
+      p.processedSet(lock)
+      p.stop(keep = true)
+    }
+  }
+  private val locals = new AtomicInteger(0)
+  private class Impl() extends CacheLogger {
     override def foundLocally(url: String): Unit = {
       locals.incrementAndGet()
     }
     override def downloadingArtifact(url: String): Unit = {
-      init(None)
-      p.processing(url, dep)
+      p.processing(url, lock)
     }
     override def downloadedArtifact(url: String, success: Boolean): Unit = {
       // NOTE: ignore success parameter because the resolution can succeed if an artifact fails to download.
-      p.processed(url, dep, errored = false)
+      p.processed(url, lock, errored = false)
     }
     override def stop(): Unit = {
-      1.to(locals.get()).foreach { i =>
-        val url = i.toString()
-        p.processing(url, dep)
-        p.processed(url, dep, errored = false)
-      }
-      p.processedSet(dep)
+      p.processedSet(lock)
       p.stop(keep = true)
     }
-    override def init(sizeHint: Option[Int]): Unit = {
-      if (isStarted.compareAndSet(false, true)) {
-        p.start()
-        p.processingSet(dep, sizeHint)
-      }
-    }
+    override def init(sizeHint: Option[Int]): Unit = {}
   }
 
-  def startResolve(
-      dep: Dependency,
-      current: Int,
-      total: Int,
-      width: Int,
-      useAnsiOutput: Boolean
-  ): CacheLogger = {
-    if (useAnsiOutput) {
-      new Impl(dep, current, total, width)
-    } else {
-      CacheLogger.nop
-    }
-  }
+  def newLogger(): CacheLogger = {
+    val l = RefreshLogger.create(
+      out,
+      RefreshLogger.defaultDisplay(fallbackMode = !useAnsiOutput, quiet = false)
+    )
+    l.init(None)
+    l
+  } // new Impl(dep, current, total, width)
 }

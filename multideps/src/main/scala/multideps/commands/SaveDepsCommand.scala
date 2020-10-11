@@ -87,24 +87,28 @@ case class SaveDepsCommand(
     .withCachePolicies(List(CachePolicy.FetchMissing))
     .withPool(CoursierResolver.downloadPool)
     .withChecksums(Nil)
-  // .withRetry(4)
-  // .withLocation(
-  //   app.env.workingDirectory.resolve("target").resolve("9cache").toFile
-  // )
+    // .withRetry(4)
+    .withLocation(
+      app.env.workingDirectory.resolve("target").resolve("10cache").toFile
+    )
 
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
-    val p = new FancyResolveLogger(new PrintWriter(app.env.standardError))
+    val counter = new AtomicInteger(0)
+    val N = thirdparty.dependencies.size
+    val coursierDeps = (for {
+      dep <- thirdparty.dependencies
+      cdep <- dep.coursierDependencies(thirdparty.scala)
+    } yield dep -> cdep).distinctBy(_._2)
+    val p = new FancyResolveLogger(
+      app.env.standardError,
+      useAnsiOutput,
+      coursierDeps.size
+    )
     val results: List[DecodingResult[Resolution]] =
       try {
         p.start()
-        val counter = new AtomicInteger(0)
-        val N = thirdparty.dependencies.size
-        val coursierDeps = (for {
-          dep <- thirdparty.dependencies
-          cdep <- dep.coursierDependencies(thirdparty.scala)
-        } yield dep -> cdep).distinctBy(_._2)
         val maxWidth =
           if (coursierDeps.isEmpty) 0
           else coursierDeps.map(_._2.repr.length()).max
@@ -143,8 +147,7 @@ case class SaveDepsCommand(
             for {
               forceVersions <- DecodingResult.fromResults(forceVersions)
               result <- {
-                val logger: CacheLogger =
-                  p.startResolve(cdep, i + 1, total, maxWidth, useAnsiOutput)
+                val logger = p.newLogger()
                 val resolve = Resolve(cache.withLogger(logger))
                   .addDependencies(cdep)
                   .withResolutionParams(
@@ -185,7 +188,8 @@ case class SaveDepsCommand(
     val outputs = new ju.IdentityHashMap[String, ArtifactOutput]
     val counter = new AtomicInteger(0)
     val N = artifacts.size
-    val p = new FancyDownloadArtifactLogger(app.err, artifacts.size)
+    val p =
+      new FancyDownloadArtifactLogger(app.err, artifacts.size, useAnsiOutput)
     new ProgressLogger[String](
       "Downloaded",
       "jars",
