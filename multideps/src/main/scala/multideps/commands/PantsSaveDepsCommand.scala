@@ -45,7 +45,7 @@ final case class PantsSaveDepsCommand(
     for {
       _ <- runPantsExport()
       thirdparty <- runPantsImport()
-      save <- save.runResult(thirdparty)
+      save <- save.copy(useAnsiOutput = true).runResult(thirdparty)
     } yield save
   }
 

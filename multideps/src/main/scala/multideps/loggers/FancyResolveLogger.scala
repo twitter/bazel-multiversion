@@ -11,8 +11,9 @@ import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
 import coursier.cache.CacheLogger
 import coursier.core.Dependency
+import java.util.concurrent.atomic.AtomicBoolean
 
-final case class SaveDepsLogger(writer: Writer) {
+final case class FancyResolveLogger(writer: Writer) {
   private var out: PrintStream = _
   def start(): Unit = {
     out = new PrintStream(
@@ -24,7 +25,7 @@ final case class SaveDepsLogger(writer: Writer) {
     )
   }
   def stop(): Unit = out.close()
-  private class FancySaveDepsLogger(
+  private class Impl(
       dep: Dependency,
       current: Int,
       total: Int,
@@ -39,18 +40,21 @@ final case class SaveDepsLogger(writer: Writer) {
       "transitive dependencies",
       writer
     )
-    val locals = new AtomicInteger(0)
+    private val locals = new AtomicInteger(0)
+    private val isStarted = new AtomicBoolean(false)
     override def foundLocally(url: String): Unit = {
       locals.incrementAndGet()
     }
     override def downloadingArtifact(url: String): Unit = {
+      init(None)
       p.processing(url, dep)
     }
     override def downloadedArtifact(url: String, success: Boolean): Unit = {
-      p.processed(url, dep, errored = !success)
+      // NOTE: ignore success parameter because the resolution can succeed if an artifact fails to download.
+      p.processed(url, dep, errored = false)
     }
     override def stop(): Unit = {
-      0.to(locals.get()).foreach { i =>
+      1.to(locals.get()).foreach { i =>
         val url = i.toString()
         p.processing(url, dep)
         p.processed(url, dep, errored = false)
@@ -59,8 +63,10 @@ final case class SaveDepsLogger(writer: Writer) {
       p.stop(keep = true)
     }
     override def init(sizeHint: Option[Int]): Unit = {
-      p.processingSet(dep, sizeHint)
-      p.start()
+      if (isStarted.compareAndSet(false, true)) {
+        p.start()
+        p.processingSet(dep, sizeHint)
+      }
     }
   }
 
@@ -72,7 +78,7 @@ final case class SaveDepsLogger(writer: Writer) {
       useAnsiOutput: Boolean
   ): CacheLogger = {
     if (useAnsiOutput) {
-      new FancySaveDepsLogger(dep, current, total, width)
+      new Impl(dep, current, total, width)
     } else {
       CacheLogger.nop
     }

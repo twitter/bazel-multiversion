@@ -5,6 +5,7 @@ import java.io.PrintStream
 import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
   val lock = new Object()
@@ -21,6 +22,8 @@ class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
       p.processingSet(lock, Some(estimate))
     }
   }
+  private val totalDownloads = new AtomicLong(0)
+  private val currentDownloads = new AtomicLong(0)
   def stop(): Unit = {
     if (isStarted.get()) {
       1.to(locals.get()).foreach { n =>
@@ -31,7 +34,7 @@ class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
       p.stop(keep = true)
     }
   }
-  class DownloadArtifactCacheLogger extends CacheLogger {
+  class Impl extends CacheLogger {
     @volatile private var size = 0L
     override def downloadedArtifact(url: String, success: Boolean): Unit =
       p.synchronized {
@@ -45,17 +48,17 @@ class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
         self.start()
         p.processing(url, lock)
       }
-    override def downloadLength(
-        url: String,
-        totalLength: Long,
-        alreadyDownloaded: Long,
-        watching: Boolean
-    ): Unit = {
-      size = totalLength
-    }
-    override def downloadProgress(url: String, downloaded: Long): Unit = {
-      p.progress(url, lock, downloaded, size)
-    }
+    // override def downloadLength(
+    //     url: String,
+    //     totalLength: Long,
+    //     alreadyDownloaded: Long,
+    //     watching: Boolean
+    // ): Unit = {
+    //   size = totalLength
+    // }
+    // override def downloadProgress(url: String, downloaded: Long): Unit = {
+    //   p.progress(url, lock, downloaded, size)
+    // }
     override def stop(): Unit =
       p.synchronized {
         pprint.log("stop")
@@ -65,5 +68,5 @@ class FancyDownloadArtifactLogger(out: PrintStream, estimate: Int) { self =>
         pprint.log(sizeHint)
       }
   }
-  def newLogger(): CacheLogger = new DownloadArtifactCacheLogger()
+  def newLogger(): CacheLogger = new Impl()
 }

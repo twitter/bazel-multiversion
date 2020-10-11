@@ -110,22 +110,23 @@ final class ProgressLogger[T](
     assert(previous eq null)
     onChange()
   }
-  def processedSet(id: T): Unit = {
+  def processedSet(id: T): Boolean = {
     val s = states.get(id)
     assert(
       s ne null,
       s"Found ${states.asScala.iterator.map(_._1).toList}, not $id"
     )
     val previous = s.done.getAndSet(true)
-    assert(!previous)
+    assert(!previous, id)
     onChange()
+    !s.isError.get()
   }
 
   def processing(url: String, id: T): Unit = {
     val s = states.get(id)
     assert(s ne null, s"$id not started")
     val previous = s.processed.putIfAbsent(url, Left((0, 0)))
-    assert(previous eq null)
+    // assert(previous eq null, url -> id)
     onChange()
   }
   def progress(url: String, id: T, done: Long, total: Long): Unit = {
@@ -146,7 +147,7 @@ final class ProgressLogger[T](
     )
     val b = s.processed.put(url, Right(()))
     s.isError.compareAndSet(false, errored)
-    assert(b.isLeft)
+    // assert(b.isLeft)
     onChange()
   }
 

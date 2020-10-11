@@ -6,7 +6,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.collection.mutable
 import scala.util.Try
 
 import multideps.configs.ThirdpartyConfig
@@ -14,7 +13,7 @@ import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.loggers.FancyDownloadArtifactLogger
 import multideps.loggers.ProgressLogger
-import multideps.loggers.SaveDepsLogger
+import multideps.loggers.FancyResolveLogger
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -26,7 +25,6 @@ import coursier.Resolve
 import coursier.cache.CacheLogger
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
-import coursier.core.Dependency
 import coursier.core.Resolution
 import coursier.params.ResolutionParams
 import coursier.paths.Util
@@ -89,28 +87,29 @@ case class SaveDepsCommand(
     .withCachePolicies(List(CachePolicy.FetchMissing))
     .withPool(CoursierResolver.downloadPool)
     .withChecksums(Nil)
-    .withLocation(
-      app.env.workingDirectory.resolve("target").resolve("9cache").toFile
-    )
+  // .withRetry(4)
+  // .withLocation(
+  //   app.env.workingDirectory.resolve("target").resolve("9cache").toFile
+  // )
 
   def resolveDependencies(
       thirdparty: ThirdpartyConfig
   ): DecodingResult[ResolutionIndex] = {
-    val p = new SaveDepsLogger(new PrintWriter(app.env.standardError))
+    val p = new FancyResolveLogger(new PrintWriter(app.env.standardError))
     val results: List[DecodingResult[Resolution]] =
       try {
         p.start()
         val counter = new AtomicInteger(0)
         val N = thirdparty.dependencies.size
-        val coursierDeps = for {
+        val coursierDeps = (for {
           dep <- thirdparty.dependencies
           cdep <- dep.coursierDependencies(thirdparty.scala)
-        } yield dep -> cdep
+        } yield dep -> cdep).distinctBy(_._2)
         val maxWidth =
           if (coursierDeps.isEmpty) 0
           else coursierDeps.map(_._2.repr.length()).max
         val total = coursierDeps.length
-        coursierDeps.zipWithIndex.map {
+        coursierDeps.zipWithIndex.par.map {
           case ((dep, cdep), i) =>
             val forceVersions = dep.forceVersions.overrides.map {
               case (module, version) =>
@@ -163,7 +162,7 @@ case class SaveDepsCommand(
                 result
               }
             } yield result
-        }
+        }.toList
       } finally {
         p.stop()
       }
@@ -231,6 +230,7 @@ case class SaveDepsCommand(
 
   def lintPostGeneration(index: ResolutionIndex): Unit = {}
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
+    return ValueResult(())
     val errors = for {
       (module, versions) <- index.artifacts.toList
       if versions.size > 1
