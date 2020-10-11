@@ -1,11 +1,12 @@
 package multideps.loggers
 
-import coursier.cache.CacheLogger
 import java.io.PrintStream
 import java.io.PrintWriter
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+
+import coursier.cache.CacheLogger
 import coursier.cache.loggers.RefreshLogger
 
 class FancyDownloadArtifactLogger(
