@@ -217,13 +217,14 @@ case class SaveDepsCommand(
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val counter = new AtomicInteger(0)
     val N = artifacts.size
-    val r = new DownloadProgressRenderer(artifacts.length)
-    val p = newProgressBar(r)
+    val pr = new DownloadProgressRenderer(artifacts.length)
+    val p = newProgressBar(pr)
     p.start()
     val all: Seq[Either[Throwable, ArtifactOutput]] =
       try {
         val files = artifacts.map { r =>
-          cache.withLogger(createLogger()).file(r.artifact).run.map {
+          val logger = pr.loggers.newCacheLogger(r.dependency)
+          cache.withLogger(logger).file(r.artifact).run.map {
             case Right(file) =>
               Try {
                 import scala.collection.JavaConverters._
