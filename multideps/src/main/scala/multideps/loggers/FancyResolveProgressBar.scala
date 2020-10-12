@@ -10,6 +10,7 @@ import org.typelevel.paiges.Doc
 import scala.collection.mutable
 import java.time.LocalTime
 import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 class FancyResolveProgressBar(
     out: Writer,
@@ -23,6 +24,12 @@ class FancyResolveProgressBar(
     override def renderStart(): Doc = {
       start = LocalTime.now()
       Doc.empty
+    }
+    override def renderStop(): Doc = {
+      Doc.text(
+        Console.GREEN + "✔ " + Console.RESET +
+          s"Resolved $totalRootDependencies dependencies in ${formatDuration()}"
+      )
     }
     override def renderStep(): ProgressStep = {
       val activeLoggers = getActiveLoggers()
@@ -50,16 +57,20 @@ class FancyResolveProgressBar(
 
     private def formatDuration(): String = {
       val elapsed = Duration.between(start, LocalTime.now())
-      val label = List("hr", "min", "sec")
-      val value =
-        List(elapsed.toHours(), elapsed.toMinutes(), elapsed.getSeconds())
+      val s = elapsed.getSeconds()
+      val n = elapsed.getNano()
+      val ms = TimeUnit.NANOSECONDS.toMillis(n).toDouble / 1000
+      val value = List[(String, Double)](
+        "hr" -> TimeUnit.SECONDS.toHours(s).toDouble,
+        "min" -> TimeUnit.SECONDS.toMinutes(s).toDouble,
+        "s" -> (s.toDouble + ms)
+      )
       value
-        .zip(label)
         .collect {
-          case (v, l) if v > 0 => s"$v$l"
+          case (l, v) if v > 0 => f"$v%.1f$l"
         }
         .mkString
-        .padTo("1hr10min10sec".length(), ' ')
+        .padTo("1min10sec999ms".length(), ' ')
     }
     private def formatCount(
         width: Int,
