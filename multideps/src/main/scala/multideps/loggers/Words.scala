@@ -4,7 +4,9 @@ object Words {
   val worker =
     Word.simple("worker", 12)
   val dependencies =
-    Word("dependency", "dependencies", 1000)
+    Word.simple("dependency", "dependencies", 1000)
   val transitiveDendencies =
-    Word("transitive dependency", "transitive dependencies", 10000)
+    Word.simple("transitive dependency", "transitive dependencies", 10000)
+  val bytes: Word = BytesWord
+  def percentage(max: Long): Word = PercentageWord(max)
 }
