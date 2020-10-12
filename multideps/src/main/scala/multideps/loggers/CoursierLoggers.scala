@@ -11,7 +11,10 @@ import coursier.core.Dependency
 
 class CoursierLoggers {
   private val loggers = new ConcurrentLinkedQueue[TrackingCoursierLogger]
-  var totalRootDependencies, totalTransitiveDependencies = 0L
+  var totalRootDependencies = 0L
+  var totalTransitiveDependencies = 0L
+  var totalDownloadSize = 0L
+  var totalMaxDownloadSize = 0L
   def getActiveLoggers(): collection.Seq[TrackingCoursierLogger] = {
     val buf = mutable.ArrayBuffer.empty[TrackingCoursierLogger]
     loggers.removeIf { logger =>
@@ -19,6 +22,8 @@ class CoursierLoggers {
       if (isDone) {
         totalRootDependencies += 1
         totalTransitiveDependencies += logger.totalArtifactCount
+        totalMaxDownloadSize += logger.maxDownloadSize()
+        totalDownloadSize += logger.downloadSize()
       } else if (logger.state.isActive) {
         buf += logger
       }

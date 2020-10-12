@@ -23,10 +23,14 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
       val currentTransitiveCount =
         activeLoggers.iterator.map(_.totalArtifactCount).sum
       val header = Doc.text(
-        s"${timer.format()} " +
-          s"${formatWorkerCount(activeLoggers.size)} " +
-          s"${formatRootDependencies()} with " +
-          s"${formatTransitiveDependencies(currentTransitiveCount)}"
+        List[String](
+          timer.format(),
+          Words.worker.format(activeLoggers.size),
+          Words.dependencies.format(loggers.totalRootDependencies),
+          Words.transitiveDendencies.formatPadded(
+            loggers.totalTransitiveDependencies + currentTransitiveCount
+          )
+        ).mkString(" ")
       )
       val rows = Doc.tabulate(
         ' ',
@@ -47,19 +51,6 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
       whatSingular: String,
       whatPlural: String,
       count: Long
-  ): String = {
-    val value =
-      if (count == 0) ""
-      else if (count == 1) s"1 $whatSingular"
-      else s"$count $whatPlural"
-    value.padTo(width, ' ')
-  }
-  private def formatCountWithKnownMax(
-      width: Int,
-      whatSingular: String,
-      whatPlural: String,
-      count: Long,
-      knownMax: Long
   ): String = {
     val value =
       if (count == 0) ""
