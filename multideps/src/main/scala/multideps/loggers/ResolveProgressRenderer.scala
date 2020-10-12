@@ -25,8 +25,8 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
       val header = Doc.text(
         List[String](
           timer.format(),
-          Words.worker.format(activeLoggers.size),
-          Words.dependencies.format(loggers.totalRootDependencies),
+          Words.worker.formatPadded(activeLoggers.size),
+          Words.dependencies.formatPadded(loggers.totalRootDependencies),
           Words.transitiveDendencies.formatPadded(
             loggers.totalTransitiveDependencies + currentTransitiveCount
           )
@@ -37,7 +37,7 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
         " ",
         activeLoggers.map { logger =>
           logger.name -> Doc.text(
-            logger.totalArtifactCount + "transitive dependencies"
+            Words.transitiveDendencies.format(logger.totalArtifactCount())
           )
         }
       )
@@ -46,35 +46,4 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
     }
   }
 
-  private def formatCount(
-      width: Int,
-      whatSingular: String,
-      whatPlural: String,
-      count: Long
-  ): String = {
-    val value =
-      if (count == 0) ""
-      else if (count == 1) s"1 $whatSingular"
-      else s"$count $whatPlural"
-    value.padTo(width, ' ')
-  }
-  private def formatWorkerCount(count: Long): String = {
-    formatCount("12 workers".length(), "worker", "workers", count)
-  }
-  private def formatRootDependencies(): String = {
-    formatCount(
-      maxRootDependenciesWidth,
-      "dependency",
-      "dependencies",
-      loggers.totalRootDependencies
-    )
-  }
-  private def formatTransitiveDependencies(activeCount: Long): String = {
-    formatCount(
-      maxRootDependenciesWidth,
-      "transitive dependency",
-      "transitive dependencies",
-      loggers.totalTransitiveDependencies + activeCount
-    )
-  }
 }

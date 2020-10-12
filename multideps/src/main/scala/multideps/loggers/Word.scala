@@ -2,7 +2,7 @@ package multideps.loggers
 
 case class Word(singular: String, plural: String, reasonableMaximumValue: Int) {
 
-  def formatPadded(count: Int): String = {
+  def formatPadded(count: Long): String = {
     format(count).padTo(reasonableMaximumValue.toString().length(), ' ')
   }
 
