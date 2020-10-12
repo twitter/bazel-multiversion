@@ -187,7 +187,7 @@ case class SaveDepsCommand(
     new InteractiveProgressBar(
       out = new PrintWriter(app.err),
       renderer = renderer,
-      intervalDuration = Duration.ofMillis(20),
+      intervalDuration = Duration.ofMillis(100),
       terminal = app.terminal
     )
 

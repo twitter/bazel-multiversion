@@ -41,6 +41,7 @@ object MultidepsEnrichments {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {
       val map = new ju.IdentityHashMap[A, B]
       xs.foreach { x =>
+        // Cache the function value to obey sorting invariants.
         map.put(x, fn(x))
       }
       xs.sortBy(x => map.get(x))

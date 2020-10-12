@@ -31,7 +31,7 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
       val header = Doc.text(
         List[String](
           "Resolving:",
-          s"elapsed ${timer.format()},",
+          s"elapsed ${timer.format()}",
           Words.remaining.formatPadded(remaining),
           Words.done.formatPadded(loggers.totalRootDependencies),
           s" (${Words.transitiveDendencies.formatPadded(totalTransitive)})"
