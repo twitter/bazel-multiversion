@@ -44,6 +44,10 @@ import multideps.loggers.FancyResolveProgressBar
 import java.io.PrintWriter
 import moped.reporters.Terminals
 import moped.reporters.Tput
+import moped.progressbars.ProgressRenderer
+import moped.progressbars.ProgressBar
+import moped.progressbars.InteractiveProgressBar
+import java.time.Duration
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -103,12 +107,8 @@ case class SaveDepsCommand(
       dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield dep -> cdep).distinctBy(_._2)
-    val p = new FancyResolveProgressBar(
-      new PrintWriter(app.err),
-      new Terminals(Tput.constant(120)),
-      // app.terminal,
-      coursierDeps.length
-    )
+    val r = new FancyResolveProgressBar(coursierDeps.length)
+    val p = newProgressBar(r)
     p.start()
     val maxWidth =
       if (coursierDeps.isEmpty) 0
@@ -150,9 +150,7 @@ case class SaveDepsCommand(
             forceVersions <- DecodingResult.fromResults(forceVersions)
             result <- {
               val resolve = Resolve(
-                cache.withLogger(
-                  p.addLogger(new FancyCacheLogger(cdep.repr)).cacheLogger
-                )
+                cache.withLogger(r.newCacheLogger(cdep))
               )
                 .addDependencies(cdep)
                 .withResolutionParams(
@@ -178,6 +176,13 @@ case class SaveDepsCommand(
         ResolutionIndex.fromResolutions(thirdparty, resolutions)
       )
   }
+  def newProgressBar(renderer: ProgressRenderer): ProgressBar =
+    new InteractiveProgressBar(
+      out = new PrintWriter(app.err),
+      renderer = renderer,
+      intervalDuration = Duration.ofMillis(20),
+      terminal = new Terminals(Tput.constant(120))
+    )
 
   private def createLogger(): CacheLogger = {
     // pprint.log(useAnsiOutput)
