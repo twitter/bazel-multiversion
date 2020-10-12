@@ -1,8 +1,8 @@
 package multideps.loggers
 
+import coursier.cache.CacheLogger
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
-import coursier.cache.CacheLogger
 
 class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   private lazy val timer = new PrettyTimer()

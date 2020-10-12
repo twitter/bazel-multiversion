@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import coursier.cache.CacheLogger
 
-class FancyCacheLogger(
+class TrackingCoursierLogger(
     val name: String,
     val isIncludedUrl: String => Boolean = _ => true
 ) {
@@ -15,8 +15,8 @@ class FancyCacheLogger(
   val state = new ProgressBarState()
   def totalArtifactCount(): Long =
     downloadedArtifactCounter.get() + cachedArtifactCounter.get()
-  def downloadedSize(): Long = 0L
-  def maxDownloadSize(): Long = 0L
+  def downloadSize(): Long = downloadSizeCounter.get()
+  def maxDownloadSize(): Long = maxDownloadCounter.get()
   val cacheLogger: CacheLogger = new CacheLogger {
     override def foundLocally(url: String): Unit = {
       state.tryStart()

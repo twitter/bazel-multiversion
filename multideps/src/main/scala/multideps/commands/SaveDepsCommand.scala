@@ -45,8 +45,6 @@ import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import moped.reporters.Terminals
-import moped.reporters.Tput
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -149,7 +147,7 @@ case class SaveDepsCommand(
             forceVersions <- DecodingResult.fromResults(forceVersions)
             result <- {
               val resolve = Resolve(
-                cache.withLogger(r.newCacheLogger(cdep))
+                cache.withLogger(r.loggers.newCacheLogger(cdep))
               )
                 .addDependencies(cdep)
                 .withResolutionParams(
