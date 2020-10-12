@@ -25,7 +25,8 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
     }
   }
   override def renderStep(): ProgressStep = {
-    val activeLoggers = loggers.getActiveLoggers().sortBy(-_.downloadProgress())
+    val activeLoggers =
+      loggers.getActiveLoggers().sortBy(-_.downloadProgress())
     if (activeLoggers.isEmpty) ProgressStep.empty
     else {
       val downloadSize = loggers.totalDownloadSize +
@@ -42,7 +43,7 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
       val rows = Doc.tabulate(
         ' ',
         " ",
-        activeLoggers.map { logger =>
+        activeLoggers.take(12).map { logger =>
           val max = Words.bytes.format(logger.maxDownloadSize())
           val percentage = Words
             .percentage(logger.maxDownloadSize())

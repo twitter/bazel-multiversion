@@ -27,7 +27,9 @@ object PrettyTimer {
     )
     value
       .collect {
-        case (l, v) if v > 0 => f"$v%.1f$l"
+        case (l, v) if v > 0 =>
+          if (v - math.floor(v) > 0.1) f"$v%.1f$l"
+          else math.floor(v).toString()
       }
       .mkString
       .padTo("10min10.4s".length(), ' ')

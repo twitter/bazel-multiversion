@@ -18,7 +18,8 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
     )
   }
   override def renderStep(): ProgressStep = {
-    val activeLoggers = loggers.getActiveLoggers()
+    val activeLoggers =
+      loggers.getActiveLoggers().sortBy(-_.totalArtifactCount())
     if (activeLoggers.isEmpty) ProgressStep.empty
     else {
       val currentTransitiveCount =
@@ -36,7 +37,7 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
       val rows = Doc.tabulate(
         ' ',
         " ",
-        activeLoggers.map { logger =>
+        activeLoggers.take(12).map { logger =>
           logger.name -> Doc.text(
             Words.transitiveDendencies.format(logger.totalArtifactCount())
           )

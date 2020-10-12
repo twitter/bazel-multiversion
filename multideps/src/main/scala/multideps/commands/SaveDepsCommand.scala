@@ -119,8 +119,8 @@ case class SaveDepsCommand(
           if (coursierDeps.isEmpty) 0
           else coursierDeps.map(_._2.repr.length()).max
         val total = coursierDeps.length
-        coursierDeps.zipWithIndex.map {
-          case ((dep, cdep), i) =>
+        coursierDeps.par.map {
+          case (dep, cdep) =>
             val forceVersions = dep.forceVersions.overrides.map {
               case (module, version) =>
                 thirdparty.depsByModule.get(module.coursierModule) match {
