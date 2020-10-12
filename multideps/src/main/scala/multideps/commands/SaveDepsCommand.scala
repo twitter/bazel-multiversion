@@ -264,7 +264,7 @@ case class SaveDepsCommand(
 
   def lintPostGeneration(index: ResolutionIndex): Unit = {}
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
-    return ValueResult(())
+    // return ValueResult(())
     val errors = for {
       (module, versions) <- index.artifacts.toList
       if versions.size > 1
