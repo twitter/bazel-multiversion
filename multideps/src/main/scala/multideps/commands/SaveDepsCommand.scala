@@ -39,6 +39,11 @@ import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import multideps.loggers.FancyCacheLogger
+import multideps.loggers.FancyResolveProgressBar
+import java.io.PrintWriter
+import moped.reporters.Terminals
+import moped.reporters.Tput
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -98,6 +103,13 @@ case class SaveDepsCommand(
       dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield dep -> cdep).distinctBy(_._2)
+    val p = new FancyResolveProgressBar(
+      new PrintWriter(app.err),
+      new Terminals(Tput.constant(120)),
+      // app.terminal,
+      coursierDeps.length
+    )
+    p.start()
     val maxWidth =
       if (coursierDeps.isEmpty) 0
       else coursierDeps.map(_._2.repr.length()).max
@@ -137,7 +149,11 @@ case class SaveDepsCommand(
           for {
             forceVersions <- DecodingResult.fromResults(forceVersions)
             result <- {
-              val resolve = Resolve(cache.withLogger(createLogger()))
+              val resolve = Resolve(
+                cache.withLogger(
+                  p.addLogger(new FancyCacheLogger(cdep.repr)).cacheLogger
+                )
+              )
                 .addDependencies(cdep)
                 .withResolutionParams(
                   ResolutionParams().addForceVersion(forceVersions: _*)
@@ -155,6 +171,7 @@ case class SaveDepsCommand(
             }
           } yield result
       }.toList
+    p.stop()
     DecodingResult
       .fromResults(results.toList)
       .map(resolutions =>
@@ -172,8 +189,8 @@ case class SaveDepsCommand(
       )
     )
     l.init(None)
-    l
-    // CacheLogger.nop
+    // l
+    CacheLogger.nop
   }
 
   def unifyDependencies(
