@@ -15,8 +15,3 @@ dependencies:
         version: 2.6.1
       - name: spark
         version: 2.5.0
-  - dependency: org.apache.spark:spark-core_2.12:3.0.1
-  - dependency: org.scalameta:scalameta:4.3.23
-    lang: scala
-    forceVersions:
-      - com.google.protobuf:protobuf-java:default

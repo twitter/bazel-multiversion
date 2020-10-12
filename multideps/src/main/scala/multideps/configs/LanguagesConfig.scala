@@ -18,7 +18,8 @@ object LanguagesConfig {
     JsonDecoder.fromJson("java | scala | scala-compiler") {
       case JsonString("java") => ValueResult(JavaLanguagesConfig)
       case JsonString("scala") => ValueResult(ScalaLanguagesConfig)
-      case JsonString("scala-compiler") => ValueResult(ScalaLanguagesConfig)
+      case JsonString("scala-compiler") =>
+        ValueResult(ScalaCompilerLanguagesConfig)
     }
   implicit val encoder: JsonEncoder[LanguagesConfig] =
     JsonEncoder.stringJsonEncoder.contramap[LanguagesConfig](_.value)

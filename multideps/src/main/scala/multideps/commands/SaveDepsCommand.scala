@@ -228,7 +228,6 @@ case class SaveDepsCommand(
             case Right(file) =>
               Try {
                 import scala.collection.JavaConverters._
-
                 val output = ArtifactOutput(
                   index = index,
                   outputs = outputs.asScala,

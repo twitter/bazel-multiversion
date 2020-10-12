@@ -35,7 +35,7 @@ final case class DependencyConfig(
     val suffix = lang match {
       case JavaLanguagesConfig => ""
       case ScalaLanguagesConfig => "_" + scalaVersion.binaryVersion
-      case ScalaCompilerLanguagesConfig => "_" + scalaVersion.default
+      case ScalaCompilerLanguagesConfig => "_" + scalaVersion.default.value
     }
     Module(
       Organization(organization.value),

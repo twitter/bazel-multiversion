@@ -22,14 +22,15 @@ final case class PercentageWord(max: Long) extends Word("99.2%".length()) {
   def format(count: Long): String = {
     if (max == 0) ""
     else {
-      val p = math.min(1, count.toDouble / max)
+      val p = math.min(100, 100 * count.toDouble / max)
       f"$p%.1f%%"
     }
   }
 }
 object BytesWord extends Word("100mb".length()) {
   def format(count: Long): String = {
-    ProgressBarRefreshDisplay.byteCount(count, si = false)
+    if (count == 0L) ""
+    else ProgressBarRefreshDisplay.byteCount(count, si = false)
   }
 }
 object Word {

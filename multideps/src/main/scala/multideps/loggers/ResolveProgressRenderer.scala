@@ -9,7 +9,8 @@ import org.typelevel.paiges.Doc
 class ResolveProgressRenderer(maxRootDependencies: Long)
     extends ProgressRenderer {
   private val maxRootDependenciesWidth = maxRootDependencies.toString().length()
-  val loggers = new CoursierLoggers
+  val loggers =
+    new CoursierLoggers(isArtifactDownload = false, _.endsWith(".pom"))
   private lazy val timer = new PrettyTimer()
   override def renderStop(): Doc = {
     Docs.emoji.success + Doc.text(
