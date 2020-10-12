@@ -11,6 +11,7 @@ import scala.collection.mutable
 import java.time.LocalTime
 import java.time.Duration
 import java.util.concurrent.TimeUnit
+import multideps.outputs.Docs
 
 class FancyResolveProgressBar(
     out: Writer,
@@ -26,9 +27,8 @@ class FancyResolveProgressBar(
       Doc.empty
     }
     override def renderStop(): Doc = {
-      Doc.text(
-        Console.GREEN + "✔ " + Console.RESET +
-          s"Resolved $totalRootDependencies dependencies in ${formatDuration()}"
+      Docs.emoji.success + Doc.text(
+        s"Resolved $totalRootDependencies dependencies in ${formatDuration()}"
       )
     }
     override def renderStep(): ProgressStep = {
@@ -37,7 +37,7 @@ class FancyResolveProgressBar(
       val header = Doc.text(
         s"${formatDuration()} " +
           s"${formatWorkerCount(activeLoggers.size)} " +
-          s"${formatRootDependencies()} " +
+          s"${formatRootDependencies()} with " +
           s"${formatTransitiveDependencies(activeCount)}"
       )
       val rows = Doc.tabulate(
@@ -48,7 +48,6 @@ class FancyResolveProgressBar(
         }
       )
       val active = header + Doc.line + rows + Doc.line
-      // pprint.log(active.render(80))
       ProgressStep(
         active = active
         // static = active + Doc.line + Doc.text("#" * 10) + Doc.line
@@ -57,20 +56,24 @@ class FancyResolveProgressBar(
 
     private def formatDuration(): String = {
       val elapsed = Duration.between(start, LocalTime.now())
-      val s = elapsed.getSeconds()
+      val sec = elapsed.getSeconds()
+      val hr = TimeUnit.SECONDS.toHours(sec).toDouble
+      val min = TimeUnit.SECONDS.toMinutes(sec).toDouble
       val n = elapsed.getNano()
-      val ms = TimeUnit.NANOSECONDS.toMillis(n).toDouble / 1000
+      val ms =
+        if (sec > 10) 0
+        else TimeUnit.NANOSECONDS.toMillis(n).toDouble / 1000
       val value = List[(String, Double)](
-        "hr" -> TimeUnit.SECONDS.toHours(s).toDouble,
-        "min" -> TimeUnit.SECONDS.toMinutes(s).toDouble,
-        "s" -> (s.toDouble + ms)
+        "hr" -> hr,
+        "min" -> min,
+        "s" -> (sec.toDouble + ms)
       )
       value
         .collect {
           case (l, v) if v > 0 => f"$v%.1f$l"
         }
         .mkString
-        .padTo("1min10sec999ms".length(), ' ')
+        .padTo("1min10.4sec".length(), ' ')
     }
     private def formatCount(
         width: Int,
