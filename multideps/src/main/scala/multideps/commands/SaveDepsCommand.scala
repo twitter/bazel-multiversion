@@ -46,6 +46,7 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
 import multideps.loggers.DownloadProgressRenderer
+import coursier.error.ResolutionError
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -60,7 +61,7 @@ case class SaveDepsCommand(
       .withPool(threads.downloadPool)
       .withChecksums(Nil)
       .withLocation(
-        app.env.workingDirectory.resolve("target").resolve("10cache").toFile
+        app.env.workingDirectory.resolve("target").resolve("11cache").toFile
       )
     try {
       for {
@@ -113,76 +114,76 @@ case class SaveDepsCommand(
     val r = new ResolveProgressRenderer(coursierDeps.length)
     val p = newProgressBar(r)
     p.start()
-    val results: List[DecodingResult[Resolution]] =
-      try {
-        val maxWidth =
-          if (coursierDeps.isEmpty) 0
-          else coursierDeps.map(_._2.repr.length()).max
-        val total = coursierDeps.length
-        coursierDeps.map {
-          case (dep, cdep) =>
-            val forceVersions = dep.forceVersions.overrides.map {
-              case (module, version) =>
-                thirdparty.depsByModule.get(module.coursierModule) match {
-                  case Some(depsConfig) =>
-                    depsConfig.getVersion(version) match {
-                      case Some(forcedVersion) =>
-                        ValueResult(
-                          depsConfig.coursierModule(
-                            thirdparty.scala
-                          ) -> forcedVersion
-                        )
-                      case None =>
-                        // TODO: report "did you mean?"
-                        ErrorResult(
-                          Diagnostic.error(
-                            s"version '$version' not found",
-                            module.name.position
-                          )
-                        )
-                    }
-                  case None =>
-                    ErrorResult(
-                      Diagnostic.error(
-                        s"module '${module.repr}' not found",
-                        module.name.position
+    val maxWidth =
+      if (coursierDeps.isEmpty) 0
+      else coursierDeps.map(_._2.repr.length()).max
+    val total = coursierDeps.length
+    try {
+      val resolves = coursierDeps.map {
+        case (dep, cdep) =>
+          val forceVersions = dep.forceVersions.overrides.map {
+            case (module, version) =>
+              thirdparty.depsByModule.get(module.coursierModule) match {
+                case Some(depsConfig) =>
+                  depsConfig.getVersion(version) match {
+                    case Some(forcedVersion) =>
+                      ValueResult(
+                        depsConfig.coursierModule(
+                          thirdparty.scala
+                        ) -> forcedVersion
                       )
+                    case None =>
+                      // TODO: report "did you mean?"
+                      ErrorResult(
+                        Diagnostic.error(
+                          s"version '$version' not found",
+                          module.name.position
+                        )
+                      )
+                  }
+                case None =>
+                  ErrorResult(
+                    Diagnostic.error(
+                      s"module '${module.repr}' not found",
+                      module.name.position
                     )
-                }
-            }
-            for {
-              forceVersions <- DecodingResult.fromResults(forceVersions)
-              result <- {
-                val resolve = Resolve(
-                  cache.withLogger(r.loggers.newCacheLogger(cdep))
-                )
-                  .addDependencies(cdep)
-                  .withResolutionParams(
-                    ResolutionParams().addForceVersion(forceVersions: _*)
                   )
-                  .addRepositories(
-                    thirdparty.repositories.flatMap(_.coursierRepository): _*
-                  )
-                // app.info(f"[${counter.incrementAndGet()}%4s/$N] ${cdep.repr}")
-                val result = resolve.either() match {
-                  case Left(error) =>
-                    ErrorResult(Diagnostic.error(error.getMessage()))
-                  case Right(value) => ValueResult(value)
-                }
-                result
               }
-            } yield result
-        }.toList
-      } finally {
-        p.stop()
+          }
+          for {
+            forceVersions <- DecodingResult.fromResults(forceVersions)
+          } yield Resolve(
+            cache.withLogger(r.loggers.newCacheLogger(cdep))
+          )
+            .addDependencies(cdep)
+            .withResolutionParams(
+              ResolutionParams().addForceVersion(forceVersions: _*)
+            )
+            .addRepositories(
+              thirdparty.repositories.flatMap(_.coursierRepository): _*
+            )
       }
-    DecodingResult
-      .fromResults(results.toList)
-      .map(resolutions =>
+
+      for {
+        rs <- DecodingResult.fromResults(resolves)
+        resolutions <- {
+          val tasks = rs.map(_.io.map(ValueResult(_)).handle {
+            case ex: ResolutionError =>
+              ErrorResult(Diagnostic.error(ex.getMessage()))
+          })
+          DecodingResult.fromResults(
+            Task.gather.gather(tasks).unsafeRun()(cache.ec)
+          )
+        }
+      } yield {
         ResolutionIndex.fromResolutions(thirdparty, resolutions)
-      )
+      }
+    } finally {
+      p.stop()
+    }
   }
-  def newProgressBar(renderer: ProgressRenderer): ProgressBar =
+
+  private def newProgressBar(renderer: ProgressRenderer): ProgressBar =
     new InteractiveProgressBar(
       out = new PrintWriter(app.err),
       renderer = renderer,

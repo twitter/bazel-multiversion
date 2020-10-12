@@ -26,6 +26,7 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
         activeLoggers.iterator.map(_.totalArtifactCount).sum
       val header = Doc.text(
         List[String](
+          "Resolving:",
           timer.format(),
           Words.worker.formatPadded(activeLoggers.size),
           Words.dependencies.formatPadded(loggers.totalRootDependencies),

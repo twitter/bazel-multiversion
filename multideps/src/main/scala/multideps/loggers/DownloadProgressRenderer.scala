@@ -4,6 +4,7 @@ import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
 import multideps.outputs.Docs
+import multideps.diagnostics.MultidepsEnrichments.XtensionSeq
 
 class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   private lazy val timer = new PrettyTimer()
@@ -25,8 +26,9 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
     }
   }
   override def renderStep(): ProgressStep = {
-    val activeLoggers =
-      loggers.getActiveLoggers().sortBy(-_.maxDownloadSize())
+    val activeLoggers = loggers
+      .getActiveLoggers()
+      .sortByCachedFunction(-_.maxDownloadSize())
     if (activeLoggers.isEmpty) ProgressStep.empty
     else {
       val downloadSize = loggers.totalDownloadSize +
@@ -35,8 +37,11 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
         activeLoggers.iterator.map(_.downloadSize()).sum
       val header = Doc.text(
         List[String](
+          "Downloading:",
           timer.format(),
-          Words.worker.formatPadded(activeLoggers.size),
+          Words.remaining.formatPadded(
+            maxArtifacts - loggers.totalRootDependencies
+          ),
           Words.bytes.formatPadded(downloadSize)
         ).mkString(" ")
       )

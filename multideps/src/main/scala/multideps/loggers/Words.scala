@@ -5,6 +5,8 @@ object Words {
     Word.simple("cached", "cached", 12)
   val worker =
     Word.simple("worker", 12)
+  val remaining =
+    Word.simple("remaining", "remaining", 12)
   val dependencies =
     Word.simple("dependency", "dependencies", 1000)
   val transitiveDendencies =

@@ -8,6 +8,7 @@ import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Reporter
+import java.{util => ju}
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
@@ -35,6 +36,15 @@ object MultidepsEnrichments {
   implicit class XtensionDependency(dep: Dependency) {
     def repr: String = s"${dep.module.repr}:${dep.version}"
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
+  }
+  implicit class XtensionSeq[A](xs: Seq[A]) {
+    def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {
+      val map = new ju.IdentityHashMap[A, B]
+      xs.foreach { x =>
+        map.put(x, fn(x))
+      }
+      xs.sortBy(x => map.get(x))
+    }
   }
   implicit class XtensionList[A](xs: List[A]) {
     def distinctBy[B](fn: A => B): List[A] = {
