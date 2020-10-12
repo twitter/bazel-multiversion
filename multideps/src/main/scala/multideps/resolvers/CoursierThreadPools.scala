@@ -6,9 +6,12 @@ import java.util.concurrent.ThreadFactory
 
 import scala.concurrent.ExecutionContext
 
-object CoursierResolver {
+class CoursierThreadPools {
+
+  def close(): Unit = downloadPool.shutdownNow()
+
   // From https://github.com/johnynek/bazel-deps/blob/dbd90f155e45e0b2529999d0b74ea65b49e6fb07/src/scala/com/github/johnynek/bazel_deps/CoursierResolver.scala#L19
-  lazy val downloadPool: ExecutorService = Executors.newFixedThreadPool(
+  val downloadPool: ExecutorService = Executors.newFixedThreadPool(
     12,
     new ThreadFactory {
       val defaultThreadFactory = Executors.defaultThreadFactory()
@@ -19,6 +22,5 @@ object CoursierResolver {
       }
     }
   )
-  val ec: ExecutionContext =
-    ExecutionContext.fromExecutorService(CoursierResolver.downloadPool)
+  val ec: ExecutionContext = ExecutionContext.fromExecutorService(downloadPool)
 }
