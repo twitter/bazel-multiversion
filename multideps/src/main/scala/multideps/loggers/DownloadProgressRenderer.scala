@@ -26,7 +26,7 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   }
   override def renderStep(): ProgressStep = {
     val activeLoggers =
-      loggers.getActiveLoggers().sortBy(-_.downloadProgress())
+      loggers.getActiveLoggers().sortBy(-_.maxDownloadSize())
     if (activeLoggers.isEmpty) ProgressStep.empty
     else {
       val downloadSize = loggers.totalDownloadSize +

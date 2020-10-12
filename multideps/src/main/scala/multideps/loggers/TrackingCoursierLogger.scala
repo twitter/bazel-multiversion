@@ -19,12 +19,6 @@ class TrackingCoursierLogger(
   def cachedArtifactsCount(): Long = cachedArtifactCounter.get()
   def downloadSize(): Long = downloadSizeCounter.get()
   def maxDownloadSize(): Long = maxDownloadCounter.get()
-  def downloadProgress(): Double = {
-    val done = downloadSize()
-    val max = maxDownloadSize()
-    if (max > 0) done.toDouble / max
-    else 0
-  }
   val cacheLogger: CacheLogger = new CacheLogger {
     override def foundLocally(url: String): Unit = {
       state.tryStart()
