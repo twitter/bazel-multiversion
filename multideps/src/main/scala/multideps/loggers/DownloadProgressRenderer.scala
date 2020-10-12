@@ -38,11 +38,11 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
       val header = Doc.text(
         List[String](
           "Downloading:",
-          timer.format(),
+          s"elapsed ${timer.format()},",
           Words.remaining.formatPadded(
             maxArtifacts - loggers.totalRootDependencies
-          ),
-          Words.bytes.formatPadded(downloadSize)
+          ) + ",",
+          Words.bytes.formatPadded(downloadSize) + " downloaded"
         ).mkString(" ")
       )
       val rows = Doc.tabulate(

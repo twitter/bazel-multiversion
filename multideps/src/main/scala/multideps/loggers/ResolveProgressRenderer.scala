@@ -24,15 +24,16 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
     else {
       val currentTransitiveCount =
         activeLoggers.iterator.map(_.totalArtifactCount).sum
+      val totalTransitive =
+        loggers.totalTransitiveDependencies + currentTransitiveCount
+      val remaining = maxRootDependencies - loggers.totalRootDependencies
       val header = Doc.text(
         List[String](
           "Resolving:",
-          timer.format(),
-          Words.worker.formatPadded(activeLoggers.size),
-          Words.dependencies.formatPadded(loggers.totalRootDependencies),
-          Words.transitiveDendencies.formatPadded(
-            loggers.totalTransitiveDependencies + currentTransitiveCount
-          )
+          s"elapsed ${timer.format()},",
+          Words.remaining.formatPadded(remaining),
+          Words.done.formatPadded(loggers.totalRootDependencies),
+          s" (${Words.transitiveDendencies.formatPadded(totalTransitive)})"
         ).mkString(" ")
       )
       val rows = Doc.tabulate(

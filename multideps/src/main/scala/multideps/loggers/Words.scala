@@ -6,9 +6,11 @@ object Words {
   val worker =
     Word.simple("worker", 12)
   val remaining =
-    Word.simple("remaining", "remaining", 12)
+    Word.simple("dependency remaining", "dependencies remaining", 10000)
   val dependencies =
     Word.simple("dependency", "dependencies", 1000)
+  val done =
+    Word.simple("done", "done", 1000)
   val transitiveDendencies =
     Word.simple("transitive dependency", "transitive dependencies", 10000)
   val bytes: Word = BytesWord

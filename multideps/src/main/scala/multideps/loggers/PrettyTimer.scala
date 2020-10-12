@@ -20,10 +20,11 @@ object PrettyTimer {
     val min = TimeUnit.SECONDS.toMinutes(sec).toDouble
     val n = elapsed.getNano()
     val ms = TimeUnit.NANOSECONDS.toMillis(n).toDouble / 1000
+    val s = (sec % 60).toDouble + ms
     val value = List[(String, Double)](
       "hr" -> hr,
       "min" -> min,
-      "s" -> (sec.toDouble + ms)
+      "s" -> s
     )
     value
       .collect {
