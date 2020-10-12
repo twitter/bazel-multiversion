@@ -19,11 +19,11 @@ object Docs {
   val openBracket: Doc = Doc.char('[')
   val closeBracket: Doc = Doc.char(']')
   object emoji {
-    val success = colors.green + Doc.text("✔ ") + colors.reset
-    val error = Doc.text("❗")
+    val success: Doc = colors.green + Doc.text("✔ ") + colors.reset
+    val error: Doc = Doc.text("❗")
   }
   object colors {
-    val green = Doc.zeroWidth(Console.GREEN)
-    val reset = Doc.zeroWidth(Console.RESET)
+    val green: Doc = Doc.zeroWidth(Console.GREEN)
+    val reset: Doc = Doc.zeroWidth(Console.RESET)
   }
 }

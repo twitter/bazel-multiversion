@@ -20,7 +20,6 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Inherit
 import os.Shellable
-import coursier.paths.Util
 
 @CommandName("pants-save")
 final case class PantsSaveDepsCommand(

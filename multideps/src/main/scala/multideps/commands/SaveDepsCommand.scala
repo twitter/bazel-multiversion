@@ -1,9 +1,11 @@
 package multideps.commands
 
 import java.io.OutputStreamWriter
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.time.Duration
 import java.util.concurrent.atomic.AtomicInteger
 import java.{util => ju}
 
@@ -12,6 +14,7 @@ import scala.util.Try
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.loggers.ResolveProgressRenderer
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.ResolutionIndex
@@ -36,18 +39,14 @@ import moped.cli.CommandParser
 import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.ValueResult
+import moped.progressbars.InteractiveProgressBar
+import moped.progressbars.ProgressBar
+import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import multideps.loggers.FancyCacheLogger
-import multideps.loggers.FancyResolveProgressBar
-import java.io.PrintWriter
 import moped.reporters.Terminals
 import moped.reporters.Tput
-import moped.progressbars.ProgressRenderer
-import moped.progressbars.ProgressBar
-import moped.progressbars.InteractiveProgressBar
-import java.time.Duration
 
 @CommandName("save")
 case class SaveDepsCommand(
@@ -107,7 +106,7 @@ case class SaveDepsCommand(
       dep <- thirdparty.dependencies
       cdep <- dep.coursierDependencies(thirdparty.scala)
     } yield dep -> cdep).distinctBy(_._2)
-    val r = new FancyResolveProgressBar(coursierDeps.length)
+    val r = new ResolveProgressRenderer(coursierDeps.length)
     val p = newProgressBar(r)
     p.start()
     val maxWidth =
@@ -181,7 +180,7 @@ case class SaveDepsCommand(
       out = new PrintWriter(app.err),
       renderer = renderer,
       intervalDuration = Duration.ofMillis(20),
-      terminal = new Terminals(Tput.constant(120))
+      terminal = app.terminal
     )
 
   private def createLogger(): CacheLogger = {

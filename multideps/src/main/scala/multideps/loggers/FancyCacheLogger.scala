@@ -1,40 +1,47 @@
 package multideps.loggers
 
-import org.typelevel.paiges.Doc
-import coursier.cache.CacheLogger
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
-class FancyCacheLogger(val name: String) { self =>
-  private val myTotalProgress = new AtomicLong(0)
-  private val BeforeStart = 0
-  private val Active = 1
-  private val AfterStop = 2
-  private val state = new AtomicInteger(BeforeStart)
-  private def start(): Unit = {
-    state.compareAndSet(BeforeStart, Active)
-  }
-  def stop(): Unit = {
-    state.set(AfterStop)
-  }
-  def progress: Doc =
-    Doc.paragraph(s"${myTotalProgress.get()} transitive dependencies")
-  def totalProgress: Long = myTotalProgress.get()
-  def isActive: Boolean = state.get() == Active
-  def isAfterStop: Boolean = state.get() == AfterStop
+import coursier.cache.CacheLogger
+
+class FancyCacheLogger(
+    val name: String,
+    val isIncludedUrl: String => Boolean = _ => true
+) {
+  private val downloadedArtifactCounter = new AtomicLong(0)
+  private val cachedArtifactCounter = new AtomicLong(0)
+  private val downloadSizeCounter = new AtomicLong(0)
+  private val maxDownloadCounter = new AtomicLong(0)
+  val state = new ProgressBarState()
+  def totalArtifactCount(): Long =
+    downloadedArtifactCounter.get() + cachedArtifactCounter.get()
+  def downloadedSize(): Long = 0L
+  def maxDownloadSize(): Long = 0L
   val cacheLogger: CacheLogger = new CacheLogger {
     override def foundLocally(url: String): Unit = {
-      start()
-      myTotalProgress.incrementAndGet()
+      state.tryStart()
+      if (isIncludedUrl(url)) cachedArtifactCounter.incrementAndGet()
     }
     override def downloadedArtifact(url: String, success: Boolean): Unit = {
-      myTotalProgress.incrementAndGet()
+      if (isIncludedUrl(url)) downloadedArtifactCounter.incrementAndGet()
+    }
+    override def downloadProgress(url: String, downloaded: Long): Unit = {
+      downloadSizeCounter.set(downloaded)
+    }
+    override def downloadLength(
+        url: String,
+        totalLength: Long,
+        alreadyDownloaded: Long,
+        watching: Boolean
+    ): Unit = {
+      maxDownloadCounter.set(totalLength)
+      downloadSizeCounter.set(alreadyDownloaded)
     }
     override def init(sizeHint: Option[Int]): Unit = {
-      start()
+      state.tryStart()
     }
     override def stop(): Unit = {
-      self.stop()
+      state.stop()
     }
   }
 }

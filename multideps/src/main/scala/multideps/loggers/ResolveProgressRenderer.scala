@@ -1,79 +1,54 @@
 package multideps.loggers
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import moped.progressbars.InteractiveProgressBar
+
+import scala.collection.mutable
+
+import multideps.outputs.Docs
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
+
+import coursier.cache.CacheLogger
+import coursier.core.Dependency
 import moped.progressbars.ProgressRenderer
-import java.io.Writer
-import moped.reporters.Terminals
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
-import scala.collection.mutable
-import java.time.LocalTime
-import java.time.Duration
-import java.util.concurrent.TimeUnit
-import multideps.outputs.Docs
-import coursier.core.Dependency
-import coursier.cache.CacheLocks
-import coursier.cache.CacheLogger
 
-class FancyResolveProgressBar(maxRootDependencies: Long)
+class ResolveProgressRenderer(maxRootDependencies: Long)
     extends ProgressRenderer {
   private val maxRootDependenciesWidth = maxRootDependencies.toString().length()
   private var totalRootDependencies, totalTransitiveDependencies = 0L
-  private var startTime = LocalTime.now()
-  override def renderStart(): Doc = {
-    startTime = LocalTime.now()
-    Doc.empty
-  }
+  private lazy val timer = new PrettyTimer()
   override def renderStop(): Doc = {
     Docs.emoji.success + Doc.text(
-      s"Resolved $totalRootDependencies dependencies in ${formatDuration()}"
+      s"Resolved $totalRootDependencies root dependencies and $totalTransitiveDependencies transitive dependencies in ${timer.format()}"
     )
   }
   override def renderStep(): ProgressStep = {
     val activeLoggers = getActiveLoggers()
-    val activeCount = activeLoggers.iterator.map(_.totalProgress).sum
-    val header = Doc.text(
-      s"${formatDuration()} " +
-        s"${formatWorkerCount(activeLoggers.size)} " +
-        s"${formatRootDependencies()} with " +
-        s"${formatTransitiveDependencies(activeCount)}"
-    )
-    val rows = Doc.tabulate(
-      ' ',
-      " ",
-      activeLoggers.map { logger =>
-        logger.name -> logger.progress
-      }
-    )
-    val active = header + Doc.line + rows + Doc.line
-    ProgressStep(
-      active = active
-      // static = active + Doc.line + Doc.text("#" * 10) + Doc.line
-    )
+    if (activeLoggers.isEmpty) ProgressStep.empty
+    else {
+      val currentTransitiveCount =
+        activeLoggers.iterator.map(_.totalArtifactCount).sum
+      val header = Doc.text(
+        s"${timer.format()} " +
+          s"${formatWorkerCount(activeLoggers.size)} " +
+          s"${formatRootDependencies()} with " +
+          s"${formatTransitiveDependencies(currentTransitiveCount)}"
+      )
+      val rows = Doc.tabulate(
+        ' ',
+        " ",
+        activeLoggers.map { logger =>
+          logger.name -> Doc.text(
+            logger.totalArtifactCount + "transitive dependencies"
+          )
+        }
+      )
+      val table = header + Doc.line + rows + Doc.line
+      ProgressStep(active = table)
+    }
   }
 
-  private def formatDuration(): String = {
-    val elapsed = Duration.between(startTime, LocalTime.now())
-    val sec = elapsed.getSeconds()
-    val hr = TimeUnit.SECONDS.toHours(sec).toDouble
-    val min = TimeUnit.SECONDS.toMinutes(sec).toDouble
-    val n = elapsed.getNano()
-    val ms =
-      if (sec > 10) 0
-      else TimeUnit.NANOSECONDS.toMillis(n).toDouble / 1000
-    val value = List[(String, Double)](
-      "hr" -> hr,
-      "min" -> min,
-      "s" -> (sec.toDouble + ms)
-    )
-    value
-      .collect {
-        case (l, v) if v > 0 => f"$v%.1f$l"
-      }
-      .mkString
-      .padTo("1min10.4sec".length(), ' ')
-  }
   private def formatCount(
       width: Int,
       whatSingular: String,
@@ -122,11 +97,11 @@ class FancyResolveProgressBar(maxRootDependencies: Long)
   private def getActiveLoggers(): collection.Seq[FancyCacheLogger] = {
     val buf = mutable.ArrayBuffer.empty[FancyCacheLogger]
     loggers.removeIf { logger =>
-      val isDone = logger.isAfterStop
+      val isDone = logger.state.isAfterStop
       if (isDone) {
         totalRootDependencies += 1
-        totalTransitiveDependencies += logger.totalProgress
-      } else if (logger.isActive) {
+        totalTransitiveDependencies += logger.totalArtifactCount
+      } else if (logger.state.isActive) {
         buf += logger
       }
       isDone
@@ -134,7 +109,6 @@ class FancyResolveProgressBar(maxRootDependencies: Long)
     buf
   }
   def newCacheLogger(dep: Dependency): CacheLogger = {
-    import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
     val logger = new FancyCacheLogger(dep.repr)
     loggers.add(logger)
     logger.cacheLogger
