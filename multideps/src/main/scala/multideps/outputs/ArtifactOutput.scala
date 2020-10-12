@@ -23,7 +23,8 @@ final case class ArtifactOutput(
     index.dependencies
       .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
-      .map(d => outputs(d.repr))
+      // TODO(olafur): fix java.util.NoSuchElementException: key not found: com.google.code.findbugs:jsr305:1.3.9
+      .flatMap(d => outputs.get(d.repr))
       .map(_.label)
       .toSeq
       .distinct
