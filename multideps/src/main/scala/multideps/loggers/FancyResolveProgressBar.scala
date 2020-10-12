@@ -43,7 +43,8 @@ class FancyResolveProgressBar(
       val active = header + Doc.line + rows
       // pprint.log(active.render(80))
       ProgressStep(
-        static = active
+        active = active
+        // static = active + Doc.line + Doc.text("#" * 10) + Doc.line
       )
     }
 
@@ -65,6 +66,19 @@ class FancyResolveProgressBar(
         whatSingular: String,
         whatPlural: String,
         count: Long
+    ): String = {
+      val value =
+        if (count == 0) ""
+        else if (count == 1) s"1 $whatSingular"
+        else s"$count $whatPlural"
+      value.padTo(width, ' ')
+    }
+    private def formatCountWithKnownMax(
+        width: Int,
+        whatSingular: String,
+        whatPlural: String,
+        count: Long,
+        knownMax: Long
     ): String = {
       val value =
         if (count == 0) ""
@@ -105,13 +119,14 @@ class FancyResolveProgressBar(
   private def getActiveLoggers(): collection.Seq[FancyCacheLogger] = {
     val buf = mutable.ArrayBuffer.empty[FancyCacheLogger]
     loggers.removeIf { logger =>
-      val isActive = logger.isActive
-      if (isActive) buf += logger
-      else {
+      val isDone = logger.isAfterStop
+      if (isDone) {
         totalRootDependencies += 1
         totalTransitiveDependencies += logger.totalProgress
+      } else if (logger.isActive) {
+        buf += logger
       }
-      isActive
+      isDone
     }
     buf
   }

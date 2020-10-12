@@ -21,6 +21,7 @@ class FancyCacheLogger(val name: String) { self =>
     Doc.paragraph(s"${myTotalProgress.get()} transitive dependencies")
   def totalProgress: Long = myTotalProgress.get()
   def isActive: Boolean = state.get() == Active
+  def isAfterStop: Boolean = state.get() == AfterStop
   val cacheLogger: CacheLogger = new CacheLogger {
     override def foundLocally(url: String): Unit = {
       start()
