@@ -2,6 +2,7 @@ package multideps.loggers
 
 import multideps.outputs.Docs
 
+import multideps.diagnostics.MultidepsEnrichments.XtensionSeq
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
@@ -19,7 +20,7 @@ class ResolveProgressRenderer(maxRootDependencies: Long)
   }
   override def renderStep(): ProgressStep = {
     val activeLoggers =
-      loggers.getActiveLoggers().sortBy(-_.totalArtifactCount())
+      loggers.getActiveLoggers().sortByCachedFunction(-_.totalArtifactCount())
     if (activeLoggers.isEmpty) ProgressStep.empty
     else {
       val currentTransitiveCount =
