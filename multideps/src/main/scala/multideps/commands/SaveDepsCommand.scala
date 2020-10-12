@@ -61,7 +61,7 @@ case class SaveDepsCommand(
       .withPool(threads.downloadPool)
       .withChecksums(Nil)
       .withLocation(
-        app.env.workingDirectory.resolve("target").resolve("11cache").toFile
+        app.env.workingDirectory.resolve("target").resolve("13cache").toFile
       )
     try {
       for {
