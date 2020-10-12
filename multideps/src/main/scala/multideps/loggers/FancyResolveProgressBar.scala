@@ -40,7 +40,7 @@ class FancyResolveProgressBar(
           logger.name -> logger.progress
         }
       )
-      val active = header + Doc.line + rows
+      val active = header + Doc.line + rows + Doc.line
       // pprint.log(active.render(80))
       ProgressStep(
         active = active
