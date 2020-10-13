@@ -52,7 +52,10 @@ scala_binary(
 scala_library(
   name = "NeedsGuavaIllegal",
   srcs = ["NeedsGuavaIllegal.scala"],
-  deps = ["@maven//:com.google.guava_guava_29.0-jre", "@maven//:com.google.guava_guava_24.1.1-jre"],
+  deps = [
+    "@maven//:com.google.guava_guava_24.1.1-jre",
+    "@maven//:com.google.guava_guava_29.0-jre", 
+  ],
 )
 
 scala_binary(

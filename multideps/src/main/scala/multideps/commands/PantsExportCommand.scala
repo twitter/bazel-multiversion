@@ -23,7 +23,7 @@ import os.Shellable
 
 @CommandName("pants-export")
 final case class PantsExportCommand(
-    export: Boolean = true,
+    useCachedExport: Boolean = false,
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
     cwd: Option[Path] = None,
@@ -72,7 +72,7 @@ final case class PantsExportCommand(
     }
   }
   def runPantsExport(): DecodingResult[Unit] = {
-    if (export) {
+    if (!useCachedExport) {
       val binary = workingDirectory.resolve("pants")
       val command = List[String](
         binary.toString(),

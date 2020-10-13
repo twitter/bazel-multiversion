@@ -148,11 +148,6 @@ def load_jvm_deps():
       ],
       sha256 = "71b79db96e5349f347f9163382a98a0b3b6ee95780240399403107c90703f296"
     )
-    http_file(
-      name = "com.google.protobuf_protobuf-java_3.13.0",
-      urls = ["https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.13.0/protobuf-java-3.13.0.jar"],
-      sha256 = "97d5b2758408690c0dc276238707492a0b6a4d71206311b6c442cdc26c5973ff"
-    )
 
 '''
     ctx.file("jvm_deps.bzl", content, executable = False)
@@ -170,13 +165,11 @@ scala_import(
   jars = ["@maven//:com.google.guava/guava-24.1.1-jre.jar"],
   deps = [
     "com.google.code.findbugs_jsr305_1.3.9", "org.checkerframework_checker-compat-qual_2.0.0",
-    "com.google.errorprone_error_prone_annotations_2.1.3", "com.google.j2objc_j2objc-annotations_1.1",
-    "org.codehaus.mojo_animal-sniffer-annotations_1.14"
+    "com.google.j2objc_j2objc-annotations_1.1", "org.codehaus.mojo_animal-sniffer-annotations_1.14"
   ],
   exports = [
     "com.google.code.findbugs_jsr305_1.3.9", "org.checkerframework_checker-compat-qual_2.0.0",
-    "com.google.errorprone_error_prone_annotations_2.1.3", "com.google.j2objc_j2objc-annotations_1.1",
-    "org.codehaus.mojo_animal-sniffer-annotations_1.14"
+    "com.google.j2objc_j2objc-annotations_1.1", "org.codehaus.mojo_animal-sniffer-annotations_1.14"
   ],
   tags = ["jvm_module=com.google.guava:guava", "jvm_version=24.1.1-jre"],
   visibility = ["//visibility:public"]
@@ -387,13 +380,13 @@ scala_import(
     "com.google.guava_failureaccess_1.0.1",
     "com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava",
     "com.google.code.findbugs_jsr305_3.0.2", "org.checkerframework_checker-qual_2.11.1",
-    "com.google.errorprone_error_prone_annotations_2.3.4"
+    "com.google.errorprone_error_prone_annotations_2.3.4", "com.google.j2objc_j2objc-annotations_1.3"
   ],
   exports = [
     "com.google.guava_failureaccess_1.0.1",
     "com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava",
     "com.google.code.findbugs_jsr305_3.0.2", "org.checkerframework_checker-qual_2.11.1",
-    "com.google.errorprone_error_prone_annotations_2.3.4"
+    "com.google.errorprone_error_prone_annotations_2.3.4", "com.google.j2objc_j2objc-annotations_1.3"
   ],
   tags = ["jvm_module=com.google.guava:guava", "jvm_version=29.0-jre"],
   visibility = ["//visibility:public"]
@@ -534,8 +527,8 @@ genrule(
 scala_import(
   name = "org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0",
   jars = ["@maven//:org.eclipse.xtext/org.eclipse.xtext.xbase.lib-2.19.0.jar"],
-  deps = ["com.google.guava_guava_27.1-jre"],
-  exports = ["com.google.guava_guava_27.1-jre"],
+  deps = ["com.google.guava_guava_24.1.1-jre"],
+  exports = ["com.google.guava_guava_24.1.1-jre"],
   tags = ["jvm_module=org.eclipse.xtext:org.eclipse.xtext.xbase.lib", "jvm_version=2.19.0"],
   visibility = ["//visibility:public"]
 )
@@ -552,21 +545,6 @@ scala_import(
   deps = ["org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0"],
   exports = ["org.eclipse.xtext_org.eclipse.xtext.xbase.lib_2.19.0"],
   tags = ["jvm_module=org.eclipse.xtend:org.eclipse.xtend.lib.macro", "jvm_version=2.19.0"],
-  visibility = ["//visibility:public"]
-)
-
-genrule(
-  name = "com.google.protobuf_protobuf-java_3.13.0_extension",
-  srcs = ["@com.google.protobuf_protobuf-java_3.13.0//file"],
-  outs = ["@maven//:com.google.protobuf/protobuf-java-3.13.0.jar"],
-  cmd = "cp $< $@"
-)
-scala_import(
-  name = "com.google.protobuf_protobuf-java_3.13.0",
-  jars = ["@maven//:com.google.protobuf/protobuf-java-3.13.0.jar"],
-  deps = [],
-  exports = [],
-  tags = ["jvm_module=com.google.protobuf:protobuf-java", "jvm_version=3.13.0"],
   visibility = ["//visibility:public"]
 )
 '''
