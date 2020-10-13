@@ -153,11 +153,6 @@ def load_jvm_deps():
       urls = ["https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/3.13.0/protobuf-java-3.13.0.jar"],
       sha256 = "97d5b2758408690c0dc276238707492a0b6a4d71206311b6c442cdc26c5973ff"
     )
-    http_file(
-      name = "com.google.protobuf_protobuf-java_2.6.1",
-      urls = ["https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/2.6.1/protobuf-java-2.6.1.jar"],
-      sha256 = "55aa554843983f431df5616112cf688d38aa17c132357afd1c109435bfdac4e6"
-    )
 
 '''
     ctx.file("jvm_deps.bzl", content, executable = False)
@@ -392,13 +387,13 @@ scala_import(
     "com.google.guava_failureaccess_1.0.1",
     "com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava",
     "com.google.code.findbugs_jsr305_3.0.2", "org.checkerframework_checker-qual_2.11.1",
-    "com.google.errorprone_error_prone_annotations_2.3.4", "com.google.j2objc_j2objc-annotations_1.3"
+    "com.google.errorprone_error_prone_annotations_2.3.4"
   ],
   exports = [
     "com.google.guava_failureaccess_1.0.1",
     "com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava",
     "com.google.code.findbugs_jsr305_3.0.2", "org.checkerframework_checker-qual_2.11.1",
-    "com.google.errorprone_error_prone_annotations_2.3.4", "com.google.j2objc_j2objc-annotations_1.3"
+    "com.google.errorprone_error_prone_annotations_2.3.4"
   ],
   tags = ["jvm_module=com.google.guava:guava", "jvm_version=29.0-jre"],
   visibility = ["//visibility:public"]
@@ -572,21 +567,6 @@ scala_import(
   deps = [],
   exports = [],
   tags = ["jvm_module=com.google.protobuf:protobuf-java", "jvm_version=3.13.0"],
-  visibility = ["//visibility:public"]
-)
-
-genrule(
-  name = "com.google.protobuf_protobuf-java_2.6.1_extension",
-  srcs = ["@com.google.protobuf_protobuf-java_2.6.1//file"],
-  outs = ["@maven//:com.google.protobuf/protobuf-java-2.6.1.jar"],
-  cmd = "cp $< $@"
-)
-scala_import(
-  name = "com.google.protobuf_protobuf-java_2.6.1",
-  jars = ["@maven//:com.google.protobuf/protobuf-java-2.6.1.jar"],
-  deps = [],
-  exports = [],
-  tags = ["jvm_module=com.google.protobuf:protobuf-java", "jvm_version=2.6.1"],
   visibility = ["//visibility:public"]
 )
 '''

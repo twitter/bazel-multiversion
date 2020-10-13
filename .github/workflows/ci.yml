@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
 jobs:
   unit:
@@ -15,9 +15,13 @@ jobs:
         java: [11]
     steps:
       - uses: actions/checkout@v2
-      - uses: olafurpg/setup-scala@v7
+      - uses: olafurpg/setup-scala@v10
         with:
           java-version: "adopt@1.${{ matrix.java }}"
-      - run: npm install -g @bazel/bazelisk
+      - run: yarn global add @bazel/bazelisk
+      - uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: bazel build tricky/...
       - run: sbt test
