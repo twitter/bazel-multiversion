@@ -55,12 +55,20 @@ case class ExportCommand(
   def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
     withThreadPool[DecodingResult[Unit]] { threads =>
       val cache: FileCache[Task] = FileCache().noCredentials
-        .withCachePolicies(List(CachePolicy.FetchMissing))
+        .withCachePolicies(
+          List(
+            // first, use what's available locally
+            CachePolicy.LocalOnly,
+            // then, try to download what's missing
+            CachePolicy.Update
+          )
+        )
+        .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
-      // .withLocation(
-      //   app.env.workingDirectory.resolve("target").resolve("16cache").toFile
-      // )
+        .withLocation(
+          app.env.workingDirectory.resolve("target").resolve("17cache").toFile
+        )
       for {
         index <- resolveDependencies(thirdparty, cache)
         _ <- lintPostResolution(index)
@@ -103,7 +111,7 @@ case class ExportCommand(
       thirdparty: ThirdpartyConfig,
       cache: FileCache[Task]
   ): DecodingResult[ResolutionIndex] = {
-    val deps = thirdparty.coursierDeps
+    val deps = thirdparty.coursierDeps // TODO: distinct by dep.repr?
     val progressBar = new ResolveProgressRenderer(deps.length)
     val resolveResults = deps.map {
       case (dep, cdep) =>

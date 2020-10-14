@@ -24,7 +24,7 @@ object PrettyTimer {
     val s = (sec % 60).toDouble + ms
     new StringBuilder()
       .append(if (hr > 0) s"${hr}hr" else "")
-      .append(if (min > 0) s"${min}hr" else "")
+      .append(if (min > 0) s"${min}min" else "")
       .append(f"$s%.1fs")
       .toString()
   }

@@ -36,14 +36,13 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
         activeLoggers.iterator.map(_.downloadSize()).sum
       val maxSize = loggers.totalMaxDownloadSize +
         activeLoggers.iterator.map(_.downloadSize()).sum
+      val remaining = maxArtifacts - loggers.totalRootDependencies
       val header = Doc.text(
         List[String](
           "Downloading:",
-          s"elapsed ${timer.format()}",
-          Words.remaining.formatPadded(
-            maxArtifacts - loggers.totalRootDependencies
-          ),
-          Words.downloadedBytes.formatPadded(downloadSize)
+          timer.formatPadded(),
+          s"$remaining/$maxArtifacts remaining",
+          s"(${Words.downloadedBytes.formatPadded(downloadSize)})"
         ).mkString(" ")
       )
       val rows = Doc.tabulate(
