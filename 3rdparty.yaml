@@ -1,5 +1,7 @@
 scala: 2.12.12
 dependencies:
+  - dependency: org.scala-lang:scala-library:2.12.12
+    versionScheme: pvp
   - dependency: com.google.guava:guava:24.1.1-jre
     crossVersions:
       - name: lsp4j
@@ -14,6 +16,5 @@ dependencies:
     targets: [protobuf2]
   - dependency: com.google.protobuf:protobuf-java:2.6.1
     targets: [protobuf3]
-  - dependency: org.scalameta:scalameta_2.12:4.3.24
+  - dependency: org.scalameta:scalameta_2.12:4.0.0
     dependencies: [protobuf3]
-

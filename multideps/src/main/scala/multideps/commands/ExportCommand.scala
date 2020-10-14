@@ -189,6 +189,7 @@ case class ExportCommand(
           .flatMap(_.versionScheme)
           .getOrElse(VersionCompatibility.Strict)
       versions = reconcileVersions(allVersions, versionCompat)
+      // TODO: use reconciled versions as 'dependencies' in generated jvm_deps.bzl
       if versions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>
