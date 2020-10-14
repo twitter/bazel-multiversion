@@ -1,24 +1,27 @@
 package multideps.commands
 
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.loggers.ProgressBars
 
 import moped.annotations.CommandName
 import moped.annotations.Inline
 import moped.annotations.PositionalArguments
 import moped.cli.Command
 import moped.cli.CommandParser
-import moped.json.DecodingResult
 import moped.json.ErrorResult
+import moped.json.Result
 import moped.json.ValueResult
 import moped.parsers.JsonParser
+import moped.progressbars.InteractiveProgressBar
+import moped.progressbars.ProcessRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import os.Inherit
 import os.Shellable
 
 @CommandName("pants-export")
@@ -27,6 +30,7 @@ final case class PantsExportCommand(
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
     cwd: Option[Path] = None,
+    lint: Boolean = false,
     @Inline
     save: ExportCommand = ExportCommand.default
 ) extends Command {
@@ -41,18 +45,24 @@ final case class PantsExportCommand(
     workingDirectory.resolve("3rdparty.yaml")
 
   def run(): Int = app.complete(runResult())
-  def runResult(): DecodingResult[Unit] = {
+  def runResult(): Result[Unit] = {
     for {
       _ <- runPantsExport()
       thirdparty <- runPantsImport()
       save <-
         save
-          .copy(useAnsiOutput = true, quiet = true)
+          .copy(
+            lint = lint,
+            lintCommand = save.lintCommand.copy(
+              app = app
+                .copy(env = app.env.copy(workingDirectory = workingDirectory))
+            )
+          )
           .runResult(thirdparty)
     } yield save
   }
 
-  def runPantsImport(): DecodingResult[ThirdpartyConfig] = {
+  def runPantsImport(): Result[ThirdpartyConfig] = {
     if (!Files.isRegularFile(outputPath)) {
       ErrorResult(
         Diagnostic.error(
@@ -71,30 +81,43 @@ final case class PantsExportCommand(
       } yield thirdparty
     }
   }
-  def runPantsExport(): DecodingResult[Unit] = {
-    if (!useCachedExport) {
-      val binary = workingDirectory.resolve("pants")
+  def runPantsExport(): Result[Unit] = {
+    val binary = workingDirectory.resolve("pants")
+    if (useCachedExport) {
+      ValueResult(())
+    } else if (!Files.isRegularFile(binary)) {
+      ErrorResult(
+        Diagnostic.error(
+          s"no Pants script detected at '$binary'. " +
+            s"To fix this problem change the working directory to the root of a Pants build."
+        )
+      )
+    } else {
       val command = List[String](
         binary.toString(),
         "bazel-multideps"
       ) ++ pantsTargets
       val commandString = command.mkString(" ")
-      app.reporter.info(commandString)
-      val proc = app
-        .process(command.map(Shellable.StringShellable(_)): _*)
-        .call(cwd = workingDirectory, stdout = Inherit)
-      if (proc.exitCode != 0) {
-        ErrorResult(
-          Diagnostic.error(
-            s"Pants exited with code '${proc.exitCode}'. " +
-              s"To reproduce this error, run the command:\n\t$commandString"
+      val pr = new ProcessRenderer(command, command, clock = app.env.clock)
+      val p = new InteractiveProgressBar(
+        out = new PrintWriter(app.env.standardError),
+        renderer = pr
+      )
+      val proc = ProgressBars.run(p) {
+        app
+          .process(command.map(Shellable.StringShellable(_)): _*)
+          .call(
+            cwd = workingDirectory,
+            stdout = pr.output,
+            stderr = pr.output,
+            check = false
           )
-        )
+      }
+      if (proc.exitCode != 0) {
+        pr.asErrorResult(proc.exitCode)
       } else {
         ValueResult(())
       }
-    } else {
-      ValueResult(())
     }
   }
 }

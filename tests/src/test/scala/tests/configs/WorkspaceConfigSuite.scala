@@ -118,7 +118,7 @@ class WorkspaceConfigSuite extends munit.FunSuite {
        |    version: "0.7.13"
        |    lang: scala
        |""".stripMargin,
-    """|typo.yaml:1 error: unknown field name 'deps'
+    """|typo.yaml:1 error: unknown field name 'deps' with value [{"organization": "org.scalameta", "name": "munit", "version": "0.7.13", "lang": "scala"}]
        |deps:
        |^
        |""".stripMargin

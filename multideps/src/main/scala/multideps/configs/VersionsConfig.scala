@@ -1,12 +1,12 @@
 package multideps.configs
 
 import moped.json.DecodingContext
-import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.JsonDecoder
 import moped.json.JsonEncoder
 import moped.json.JsonObject
 import moped.json.JsonString
+import moped.json.Result
 import moped.json.SelectMemberCursor
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
@@ -40,7 +40,7 @@ object VersionsConfig {
     moped.macros.deriveEncoder[VersionsConfig]
   implicit lazy val decoder: JsonDecoder[VersionsConfig] =
     new JsonDecoder[VersionsConfig] {
-      def decode(context: DecodingContext): DecodingResult[VersionsConfig] = {
+      def decode(context: DecodingContext): Result[VersionsConfig] = {
         context.json match {
           case s: JsonString => ValueResult(VersionsConfig(s))
           case obj @ JsonObject(members) =>
@@ -59,7 +59,7 @@ object VersionsConfig {
                       )
                     )
                 }
-                DecodingResult.fromResults(results).map { extras =>
+                Result.fromResults(results).map { extras =>
                   VersionsConfig(default, extras.toMap)
                 }
               case Some(other) =>

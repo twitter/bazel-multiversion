@@ -7,17 +7,10 @@ on:
 jobs:
   unit:
     name: Tests
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        java: [11]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v10
-        with:
-          java-version: "adopt@1.${{ matrix.java }}"
       - run: yarn global add @bazel/bazelisk
       - uses: arduino/setup-protoc@v1
         with:
@@ -25,3 +18,16 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: bazel build tricky/...
       - run: sbt test
+  checks:
+    name: Scalafmt and Scalafix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v10
+      - run: yarn global add @bazel/bazelisk
+      - uses: arduino/setup-protoc@v1
+        with:
+          version: "3.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: sbt scalafmtCheckAll
+      - run: sbt 'scalafixAll --check'

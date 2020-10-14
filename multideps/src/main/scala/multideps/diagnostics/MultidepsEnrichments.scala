@@ -4,11 +4,15 @@ import java.{util => ju}
 
 import scala.collection.mutable
 
+import coursier.core.Configuration
 import coursier.core.Dependency
+import coursier.error.ResolutionError
+import coursier.util.Task
 import moped.cli.Application
-import moped.json.DecodingResult
 import moped.json.ErrorResult
+import moped.json.Result
 import moped.json.ValueResult
+import moped.reporters.Diagnostic
 import moped.reporters.Reporter
 
 object MultidepsEnrichments {
@@ -25,7 +29,9 @@ object MultidepsEnrichments {
       else xs.mkString(", ")
   }
   implicit class XtensionApplication(app: Application) {
-    def complete(result: DecodingResult[Unit]): Int =
+    def isTesting: Boolean =
+      app.env.isSettingTrue("MULTIDEPS_TESTING")
+    def complete(result: Result[Unit]): Int =
       result match {
         case ValueResult(()) =>
           app.reporter.exitCode()
@@ -34,8 +40,18 @@ object MultidepsEnrichments {
           1
       }
   }
+  private val isEmptyConfiguration = Set(
+    Configuration.empty,
+    Configuration.compile,
+    Configuration.defaultCompile,
+    Configuration.default,
+    Configuration.runtime
+  )
   implicit class XtensionDependency(dep: Dependency) {
-    def repr: String = s"${dep.module.repr}:${dep.version}"
+    def configRepr: String =
+      if (isEmptyConfiguration(dep.configuration)) ""
+      else s"_${dep.configuration.value}"
+    def repr: String = s"${dep.module.repr}:${dep.version}${configRepr}"
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
@@ -58,6 +74,13 @@ object MultidepsEnrichments {
       }
       buf.toList
     }
+  }
+  implicit class XtensionTaskIO[T](t: Task[T]) {
+    def toResult: Task[Result[T]] =
+      t.map(ValueResult(_)).handle {
+        case ex: ResolutionError =>
+          ErrorResult(Diagnostic.error(ex.getMessage()))
+      }
   }
 
 }
