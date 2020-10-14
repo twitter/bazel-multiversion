@@ -6,9 +6,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
 import java.{util => ju}
-import coursier.version.VersionCompatibility
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
@@ -25,8 +25,11 @@ import multideps.resolvers.Sha256
 
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
+import coursier.core.Dependency
+import coursier.core.Version
 import coursier.paths.Util
 import coursier.util.Task
+import coursier.version.VersionCompatibility
 import moped.annotations.CommandName
 import moped.annotations._
 import moped.cli.Application
@@ -178,13 +181,20 @@ case class ExportCommand(
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
     // return ValueResult(())
     val errors = for {
-      (module, versions) <- index.artifacts.toList
+      (module, allVersions) <- index.artifacts.toList
+      versionCompat =
+        index.thirdparty.depsByModule
+          .getOrElse(module, Nil)
+          .headOption
+          .flatMap(_.versionScheme)
+          .getOrElse(VersionCompatibility.Strict)
+      versions = reconcileVersions(allVersions, versionCompat)
       if versions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>
           val allDeclaredVersions = declaredDeps.flatMap(_.allVersions)
           val unspecified =
-            (versions.map(_.version) -- allDeclaredVersions).toList
+            (allVersions.map(_.version) -- allDeclaredVersions).toList
           unspecified match {
             case Nil =>
               Nil
@@ -208,6 +218,30 @@ case class ExportCommand(
       case Some(diagnostic) => ErrorResult(diagnostic)
       case None => ValueResult(())
     }
+  }
+
+  private def reconcileVersions(
+      versions: collection.Set[Dependency],
+      compat: VersionCompatibility
+  ): List[Dependency] = {
+    val parsed = versions.map(d => d -> Version(d.version)).toMap
+    val retained = mutable.Map.empty[Dependency, Version]
+    parsed.foreach {
+      case (dep, version) =>
+        retained.find {
+          case (_, other) =>
+            compat.isCompatible(other.repr, version.repr)
+        } match {
+          case Some((compatibleDep, compatibleVersion)) =>
+            if (compatibleVersion < version) {
+              retained.remove(compatibleDep)
+              retained(dep) = version
+            }
+          case None =>
+            retained(dep) = version
+        }
+    }
+    retained.keys.toList
   }
 
   private def withThreadPool[T](fn: CoursierThreadPools => T): T = {

@@ -1,6 +1,10 @@
 package multideps.configs
 
+import java.{util => ju}
+
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 import multideps.diagnostics.MultidepsEnrichments.XtensionList
 import multideps.loggers.ResolveProgressRenderer
 
@@ -20,8 +24,6 @@ import moped.parsers.JsonParser
 import moped.parsers.YamlParser
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import java.{util => ju}
-import scala.collection.mutable
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),

@@ -10,14 +10,18 @@ import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import coursier.core.Publication
+import coursier.version.VersionCompatibility
 import moped.json.DecodingContext
 import moped.json.DecodingResult
+import moped.json.ErrorResult
 import moped.json.JsonCodec
+import moped.json.JsonDecoder
 import moped.json.JsonElement
 import moped.json.JsonObject
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.macros.ClassShape
+import moped.reporters.Diagnostic
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
@@ -32,7 +36,7 @@ final case class DependencyConfig(
     dependencies: List[String] = Nil,
     exports: List[String] = Nil,
     targets: List[String] = Nil,
-    versionScheme: Option[String] = None,
+    versionScheme: Option[VersionCompatibility] = None,
     force: Boolean = true
 ) {
   def coursierModule(scalaVersion: VersionsConfig): Module = {
@@ -73,6 +77,25 @@ final case class DependencyConfig(
 }
 
 object DependencyConfig {
+  implicit val versionSchemeCodec: JsonCodec[VersionCompatibility] = new JsonCodec[VersionCompatibility] {
+    def decode(context: DecodingContext): DecodingResult[VersionCompatibility] =
+      JsonDecoder.stringJsonDecoder.decode(context).flatMap {
+        case "semver" => ValueResult(VersionCompatibility.SemVerSpec)
+        case other =>
+          VersionCompatibility(other).map(ValueResult(_)).getOrElse {
+            ErrorResult(
+              Diagnostic.error(
+                s"invalid version scheme '$other'",
+                context.json.position
+              )
+            )
+          }
+      }
+    def encode(value: VersionCompatibility): JsonElement =
+      JsonString(value.name)
+    def shape: ClassShape = ClassShape.empty
+
+  }
   private val Full: Regex = "(.+):::(.+):(.+)".r
   private val Half: Regex = "(.+)::(.+):(.+)".r
   private val Java: Regex = "(.+):(.+):(.+)".r
