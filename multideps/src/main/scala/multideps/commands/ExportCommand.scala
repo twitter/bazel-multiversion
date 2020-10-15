@@ -48,6 +48,7 @@ import coursier.core.Type
 @CommandName("export")
 case class ExportCommand(
     useAnsiOutput: Boolean = Util.useAnsiOutput(),
+    lint: Boolean = true,
     app: Application = Application.default
 ) extends Command {
   def run(): Int = {
@@ -70,20 +71,22 @@ case class ExportCommand(
         .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
-        .withLocation(
-          app.env.workingDirectory.resolve("target").resolve("18cache").toFile
-        )
       for {
         index <- resolveDependencies(thirdparty, cache)
-        _ <- lintPostResolution(index)
+        _ <-
+          if (lint) lintPostResolution(index)
+          else ValueResult(())
         output <- unifyDependencies(index, cache)
         _ = app.info(s"generated: $output")
-        lint <- LintCommand()
-          .copy(
-            queryExpressions = List("@maven//:all"),
-            app = app
-          )
-          .runResult()
+        lint <-
+          if (lint)
+            LintCommand()
+              .copy(
+                queryExpressions = List("@maven//:all"),
+                app = app
+              )
+              .runResult()
+          else ValueResult(())
       } yield lint
     }
   }
@@ -191,7 +194,7 @@ case class ExportCommand(
   }
 
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
-    return ValueResult(())
+    // return ValueResult(())
     val errors = for {
       (module, allVersions) <- index.artifacts.toList
       versionCompat =

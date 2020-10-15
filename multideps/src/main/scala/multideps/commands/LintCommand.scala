@@ -32,9 +32,7 @@ case class LintCommand(
       queryExpression,
       "--output=proto"
     )
-    val process = os
-      .proc(command)
-      .call(cwd = os.Path(app.env.workingDirectory), stderr = os.Pipe)
+    val process = os.proc(command).call(stderr = os.Inherit)
     QueryResult.parseFrom(process.out.bytes)
   }
 

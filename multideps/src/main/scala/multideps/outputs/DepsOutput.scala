@@ -6,7 +6,7 @@ final case class DepsOutput(
     artifacts: Seq[ArtifactOutput]
 ) {
   def render: String = {
-    val width = 120
+    val width = 120000
     val httpFiles = Doc
       .intercalate(Doc.line, artifacts.map(_.httpFile.toDoc))
       .nested(4)
