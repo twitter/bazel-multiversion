@@ -43,6 +43,7 @@ import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import coursier.core.Type
 
 @CommandName("export")
 case class ExportCommand(
@@ -70,7 +71,7 @@ case class ExportCommand(
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
         .withLocation(
-          app.env.workingDirectory.resolve("target").resolve("17cache").toFile
+          app.env.workingDirectory.resolve("target").resolve("18cache").toFile
         )
       for {
         index <- resolveDependencies(thirdparty, cache)
@@ -145,9 +146,12 @@ case class ExportCommand(
     val progressBar = new DownloadProgressRenderer(artifacts.length)
     val files = artifacts.map { r =>
       val logger = progressBar.loggers.newCacheLogger(r.dependency)
-      cache.withLogger(logger).file(r.artifact).run.map {
+      val artifact = r.artifact.withUrl(
+        r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
+      )
+      cache.withLogger(logger).file(artifact).run.map {
         case Right(file) =>
-          Try {
+          List(Try {
             val output = ArtifactOutput(
               index = index,
               outputs = outputs.asScala,
@@ -157,12 +161,20 @@ case class ExportCommand(
             )
             outputs.put(r.dependency.repr, output)
             output
-          }.toEither
+          }.toEither)
 
-        case Left(value) => Left(value)
+        case Left(value) =>
+          if (r.artifact.optional) Nil
+          else if (r.publication.`type` == Type("tar.gz")) Nil
+          else {
+            pprint.log(r.dependency.repr)
+            pprint.log(r.publication)
+            pprint.log(r.artifact)
+            List(Left(value))
+          }
       }
     }
-    val all = runParallelTasks(files, progressBar, cache.ec)
+    val all = runParallelTasks(files, progressBar, cache.ec).flatten
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
     Diagnostic.fromDiagnostics(errors.toList) match {
       case Some(error) =>
@@ -179,7 +191,7 @@ case class ExportCommand(
   }
 
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
-    // return ValueResult(())
+    return ValueResult(())
     val errors = for {
       (module, allVersions) <- index.artifacts.toList
       versionCompat =

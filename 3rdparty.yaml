@@ -1,4 +1,6 @@
 scala: 2.12.12
+repositories:
+  - https://artifactory-ci.twitter.biz/repo1.maven.org/
 dependencies:
   - dependency: org.scala-lang:scala-library:2.12.12
     versionScheme: pvp

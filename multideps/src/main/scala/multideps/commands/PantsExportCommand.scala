@@ -47,7 +47,11 @@ final case class PantsExportCommand(
       thirdparty <- runPantsImport()
       save <-
         save
-          .copy(useAnsiOutput = true)
+          .copy(
+            useAnsiOutput = true,
+            app =
+              app.copy(env = app.env.copy(workingDirectory = workingDirectory))
+          )
           .runResult(thirdparty)
     } yield save
   }

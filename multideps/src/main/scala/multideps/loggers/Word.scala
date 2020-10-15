@@ -1,7 +1,5 @@
 package multideps.loggers
 
-
-
 sealed abstract class Word(paddingWidth: Int) {
   final def formatPadded(count: Long): String =
     format(count).padTo(paddingWidth, ' ')
@@ -14,7 +12,7 @@ final case class SimpleWord(
 ) extends Word(reasonableMaximumValue.toString.length) {
   def format(count: Long): String = {
     if (count == 1) s"$count $singular"
-    else s"$count $plural"
+    else f"$count%,d $plural"
   }
 }
 

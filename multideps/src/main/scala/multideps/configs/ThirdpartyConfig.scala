@@ -24,6 +24,7 @@ import moped.parsers.JsonParser
 import moped.parsers.YamlParser
 import moped.reporters.Diagnostic
 import moped.reporters.Input
+import coursier.Repositories
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),
@@ -55,14 +56,16 @@ final case class ThirdpartyConfig(
       cdep: Dependency
   ): DecodingResult[Resolve[Task]] =
     DecodingResult.fromResults(decodeForceVersions(dep)).map { forceVersions =>
+      val repos = repositories.flatMap(_.coursierRepository)
       Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
         .addDependencies(cdep)
         .withResolutionParams(
           ResolutionParams().addForceVersion(forceVersions: _*)
         )
-        .addRepositories(
-          repositories.flatMap(_.coursierRepository): _*
+        .withRepositories(
+          if (repos.isEmpty) Resolve.defaultRepositories else repos
         )
+
     }
 
   private type ForceVersionResult =
