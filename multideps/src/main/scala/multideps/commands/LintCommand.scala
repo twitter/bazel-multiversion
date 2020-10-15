@@ -40,7 +40,8 @@ case class LintCommand(
 
   def runResult(): DecodingResult[Unit] = {
     val expr = queryExpressions.mkString(" ")
-    val result = runQuery(s"deps(kind(scala_jar, $expr))")
+    // val result = runQuery(s"allpaths($expr, @maven//:all)")
+    val result = runQuery(s"deps($expr)")
     val roots =
       runQuery(expr).getTargetList().asScala.map(_.getRule().getName())
     val index = new DependenciesIndex(result)

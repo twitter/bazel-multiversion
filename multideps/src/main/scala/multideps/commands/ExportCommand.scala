@@ -45,6 +45,10 @@ import moped.reporters.Input
 import moped.reporters.NoPosition
 import coursier.core.Type
 import coursier.util.Artifact
+import java.nio.file.Paths
+import coursier.error.ResolutionError
+import java.io.File
+import coursier.cache.ArtifactError
 
 @CommandName("export")
 case class ExportCommand(
@@ -72,12 +76,13 @@ case class ExportCommand(
         .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
+        .withLocation(Paths.get("target", "my-clean-cache").toFile())
       for {
         index <- resolveDependencies(thirdparty, cache)
         _ <-
           if (lint) lintPostResolution(index)
           else ValueResult(())
-        output <- unifyDependencies(index, cache)
+        output <- downloadShas(index, cache)
         _ = app.info(s"generated: $output")
         lint <-
           if (lint)
@@ -137,7 +142,7 @@ case class ExportCommand(
     } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
   }
 
-  def unifyDependencies(
+  def downloadShas(
       index: ResolutionIndex,
       cache: FileCache[Task]
   ): DecodingResult[Path] = {
@@ -151,40 +156,57 @@ case class ExportCommand(
     val files = artifacts.map { r =>
       val logger = progressBar.loggers.newCacheLogger(r.dependency)
       val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
-      val isSha256 = url.endsWith(".sha256")
-      val artifact = r.artifact.withUrl(url)
-      // pprint.log(url)
-      def file(artifact: Artifact) =
-        cache.withLogger(logger).file(artifact).run
-      file(artifact)
-        .flatMap {
-          case Left(value) if isSha256 => file(r.artifact)
-          case other => Task.point(other)
-        }
-        .map {
-          case Right(file) =>
-            List(Try {
-              val output = ArtifactOutput(
-                index = index,
-                outputs = outputs.asScala,
-                dependency = r.dependency,
-                artifact = r.artifact,
-                artifactSha256 = Sha256.compute(file)
-              )
-              outputs.put(r.dependency.repr, output)
-              output
-            }.toEither)
+      type Fetch[T] = Task[Either[ArtifactError, T]]
+      def tryFetch(artifact: Artifact, policy: CachePolicy): Fetch[File] =
+        cache
+          .withCachePolicies(List(policy))
+          .withLogger(logger)
+          .file(artifact)
+          .run
+      val shaAttempts: List[Fetch[File]] = for {
+        // Attempt 1: Fetch "*.jar.sha256" URL locally
+        // Attempt 2: Fetch "*.jar" URL locally
+        // Attempt 3: Fetch "*.jar.sha256" URL remotely
+        // Attempt 4: Fetch "*.jar" URL remotely
+        url <- List(
+          r.artifact.checksumUrls.get("SHA-256"),
+          Some(r.artifact.url)
+        ).flatten
+        policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
+      } yield tryFetch(r.artifact.withUrl(url), policy)
+      val shas = shaAttempts.tail.foldLeft(shaAttempts.head) {
+        case (task, nextAttempt) =>
+          task.flatMap {
+            case Left(_) =>
+              // Fetch failed, try next (Url, CachePolicy) combination
+              nextAttempt
+            case success => Task.point(success)
+          }
+      }
+      shas.map {
+        case Right(file) =>
+          List(Try {
+            val output = ArtifactOutput(
+              index = index,
+              outputs = outputs.asScala,
+              dependency = r.dependency,
+              artifact = r.artifact,
+              artifactSha256 = Sha256.compute(file)
+            )
+            outputs.put(r.dependency.repr, output)
+            output
+          }.toEither)
 
-          case Left(value) =>
-            if (r.artifact.optional) Nil
-            else if (r.publication.`type` == Type("tar.gz")) Nil
-            else {
-              pprint.log(r.dependency.repr)
-              pprint.log(r.publication)
-              pprint.log(r.artifact)
-              List(Left(value))
-            }
-        }
+        case Left(value) =>
+          if (r.artifact.optional) Nil
+          else if (r.publication.`type` == Type("tar.gz")) Nil
+          else {
+            pprint.log(r.dependency.repr)
+            pprint.log(r.publication)
+            pprint.log(r.artifact)
+            List(Left(value))
+          }
+      }
     }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
@@ -194,9 +216,14 @@ case class ExportCommand(
       case None =>
         val artifacts = all.collect { case Right(a) => a }
         if (artifacts.isEmpty) {
-          ErrorResult(Diagnostic.error("no resolved artifacts"))
+          ErrorResult(
+            Diagnostic.error(
+              "no resolved artifacts." +
+                "To fix this problem, make sure your configuration declares a non-empty list of 'dependencies'."
+            )
+          )
         } else {
-          val rendered = DepsOutput(artifacts).render
+          val rendered = DepsOutput(artifacts.sortBy(_.dependency.repr)).render
           val out =
             app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
           Files.createDirectories(out.getParent())

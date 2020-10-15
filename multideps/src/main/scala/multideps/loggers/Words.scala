@@ -15,6 +15,6 @@ object Words {
     Word.simple("transitive dependency", "transitive dependencies", 10000)
   val bytes: Word = BytesWord
   val downloadedBytes: Word = DownloadedBytesWord
-  val jarFiles: Word = Word.simple("jar file", 1000)
+  val shaFiles: Word = Word.simple("sha file", 1000)
   def percentage(max: Long): Word = PercentageWord(max)
 }

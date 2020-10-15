@@ -1,8 +1,8 @@
 scala: 2.12.12
 dependencies:
   - dependency: com.google.guava:guava:24.1.1-jre
-    crossVersions:
-      - name: lsp4j
-        version: 27.1-jre
-      - name: latest
-        version: 29.0-jre
+  - dependency: com.google.guava:guava:27.1-jre
+  - dependency: com.google.guava:guava:29.0-jre
+  - dependency: org.scala-lang:scala-library:2.11.12
+  - dependency: org.scala-lang:scala-library:2.12.12
+  - dependency: org.scala-lang:scala-library:2.13.3

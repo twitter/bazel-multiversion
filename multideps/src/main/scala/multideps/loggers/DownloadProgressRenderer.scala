@@ -10,10 +10,10 @@ import org.typelevel.paiges.Doc
 class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   private lazy val timer = new PrettyTimer()
   val loggers =
-    new CoursierLoggers(isArtifactDownload = true, _.endsWith(".jar"))
+    new CoursierLoggers(isArtifactDownload = true, _.contains(".jar"))
   override def renderStop(): Doc = {
     if (loggers.totalDownloadSize > 0) {
-      val jars = Words.jarFiles.format(loggers.totalTransitiveDependencies)
+      val jars = Words.shaFiles.format(loggers.totalTransitiveDependencies)
       val bytes = Words.bytes.format(loggers.totalDownloadSize)
       val cached =
         if (loggers.totalCachedArtifacts > 0)
