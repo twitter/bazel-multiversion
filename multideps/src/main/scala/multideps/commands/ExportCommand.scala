@@ -44,6 +44,7 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
 import coursier.core.Type
+import coursier.util.Artifact
 
 @CommandName("export")
 case class ExportCommand(
@@ -149,33 +150,41 @@ case class ExportCommand(
     val progressBar = new DownloadProgressRenderer(artifacts.length)
     val files = artifacts.map { r =>
       val logger = progressBar.loggers.newCacheLogger(r.dependency)
-      val artifact = r.artifact.withUrl(
-        r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
-      )
-      cache.withLogger(logger).file(artifact).run.map {
-        case Right(file) =>
-          List(Try {
-            val output = ArtifactOutput(
-              index = index,
-              outputs = outputs.asScala,
-              dependency = r.dependency,
-              artifact = r.artifact,
-              artifactSha256 = Sha256.compute(file)
-            )
-            outputs.put(r.dependency.repr, output)
-            output
-          }.toEither)
+      val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
+      val isSha256 = url.endsWith(".sha256")
+      val artifact = r.artifact.withUrl(url)
+      // pprint.log(url)
+      def file(artifact: Artifact) =
+        cache.withLogger(logger).file(artifact).run
+      file(artifact)
+        .flatMap {
+          case Left(value) if isSha256 => file(r.artifact)
+          case other => Task.point(other)
+        }
+        .map {
+          case Right(file) =>
+            List(Try {
+              val output = ArtifactOutput(
+                index = index,
+                outputs = outputs.asScala,
+                dependency = r.dependency,
+                artifact = r.artifact,
+                artifactSha256 = Sha256.compute(file)
+              )
+              outputs.put(r.dependency.repr, output)
+              output
+            }.toEither)
 
-        case Left(value) =>
-          if (r.artifact.optional) Nil
-          else if (r.publication.`type` == Type("tar.gz")) Nil
-          else {
-            pprint.log(r.dependency.repr)
-            pprint.log(r.publication)
-            pprint.log(r.artifact)
-            List(Left(value))
-          }
-      }
+          case Left(value) =>
+            if (r.artifact.optional) Nil
+            else if (r.publication.`type` == Type("tar.gz")) Nil
+            else {
+              pprint.log(r.dependency.repr)
+              pprint.log(r.publication)
+              pprint.log(r.artifact)
+              List(Left(value))
+            }
+        }
     }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
@@ -184,12 +193,16 @@ case class ExportCommand(
         ErrorResult(error)
       case None =>
         val artifacts = all.collect { case Right(a) => a }
-        val rendered = DepsOutput(artifacts).render
-        val out =
-          app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
-        Files.createDirectories(out.getParent())
-        Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
-        ValueResult(out)
+        if (artifacts.isEmpty) {
+          ErrorResult(Diagnostic.error("no resolved artifacts"))
+        } else {
+          val rendered = DepsOutput(artifacts).render
+          val out =
+            app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
+          Files.createDirectories(out.getParent())
+          Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
+          ValueResult(out)
+        }
     }
   }
 
@@ -240,6 +253,7 @@ case class ExportCommand(
       versions: collection.Set[Dependency],
       compat: VersionCompatibility
   ): List[Dependency] = {
+    return versions.toList
     val parsed = versions.map(d => d -> Version(d.version)).toMap
     val retained = mutable.Map.empty[Dependency, Version]
     parsed.foreach {

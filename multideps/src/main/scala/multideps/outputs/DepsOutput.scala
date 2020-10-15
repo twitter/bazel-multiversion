@@ -5,6 +5,7 @@ import org.typelevel.paiges.Doc
 final case class DepsOutput(
     artifacts: Seq[ArtifactOutput]
 ) {
+  require(artifacts.nonEmpty)
   def render: String = {
     val width = 120000
     val httpFiles = Doc
