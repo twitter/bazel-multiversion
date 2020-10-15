@@ -49,6 +49,7 @@ final case class PantsExportCommand(
         save
           .copy(
             useAnsiOutput = true,
+            lint = false,
             app =
               app.copy(env = app.env.copy(workingDirectory = workingDirectory))
           )
