@@ -30,6 +30,7 @@ final case class PantsExportCommand(
     @PositionalArguments()
     pantsTargets: List[String] = List("3rdparty/jvm::"),
     cwd: Option[Path] = None,
+    lint: Boolean = false,
     @Inline
     save: ExportCommand = ExportCommand.default
 ) extends Command {
@@ -52,7 +53,7 @@ final case class PantsExportCommand(
         save
           .copy(
             useAnsiOutput = true,
-            lint = false,
+            lint = lint,
             app =
               app.copy(env = app.env.copy(workingDirectory = workingDirectory))
           )

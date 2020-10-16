@@ -13,6 +13,7 @@ import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Reporter
+import coursier.core.Configuration
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
@@ -37,8 +38,21 @@ object MultidepsEnrichments {
           1
       }
   }
+  private val isEmptyConfiguration = Set(
+    Configuration.empty,
+    Configuration.compile,
+    Configuration.defaultCompile,
+    Configuration.default,
+    Configuration.runtime,
+    Configuration.test
+  )
   implicit class XtensionDependency(dep: Dependency) {
-    def repr: String = s"${dep.module.repr}:${dep.version}"
+    def configRepr: String =
+      if (isEmptyConfiguration(dep.configuration)) ""
+      else s"_${dep.configuration.value}"
+    def repr: String = {
+      s"${dep.module.repr}:${dep.version}${configRepr}"
+    }
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {

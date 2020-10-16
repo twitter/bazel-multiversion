@@ -1,5 +1,6 @@
 scala: 2.12.12
 dependencies:
+  - dependency: org.apache.thrift:libthrift:0.10.0
   - dependency: com.google.guava:guava:29.0-jre
   - dependency: com.google.guava:guava:24.1.1-jre
   - dependency: com.google.protobuf:protobuf-java:3.13.0

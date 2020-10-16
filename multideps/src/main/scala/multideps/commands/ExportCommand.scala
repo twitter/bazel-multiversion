@@ -49,6 +49,7 @@ import java.nio.file.Paths
 import java.io.File
 import coursier.cache.ArtifactError
 import multideps.outputs.Docs
+import coursier.core.Resolution
 
 @CommandName("export")
 case class ExportCommand(
@@ -144,11 +145,12 @@ case class ExportCommand(
       cache: FileCache[Task]
   ): DecodingResult[Path] = {
     val artifacts = index.resolutions
-      .flatMap(d =>
-        d.res.dependencyArtifacts().map {
-          case (d, p, a) => ResolvedDependency(d, p, a)
+      .flatMap { d =>
+        d.res.dependencyArtifacts().collect {
+          case (d, p, a) if Resolution.defaultTypes.contains(p.`type`) =>
+            ResolvedDependency(d, p, a)
         }
-      )
+      }
       .distinctBy(_.dependency.repr)
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val progressBar = new DownloadProgressRenderer(artifacts.length)
@@ -199,12 +201,7 @@ case class ExportCommand(
         case Left(value) =>
           if (r.artifact.optional) Nil
           else if (r.publication.`type` == Type("tar.gz")) Nil
-          else {
-            pprint.log(r.dependency.repr)
-            pprint.log(r.publication)
-            pprint.log(r.artifact)
-            List(Left(value))
-          }
+          else List(Left(value))
       }
     }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten

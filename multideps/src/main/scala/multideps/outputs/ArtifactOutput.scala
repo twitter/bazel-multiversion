@@ -15,15 +15,13 @@ final case class ArtifactOutput(
     sourcesArtifact: Option[Artifact] = None,
     sourcesArtifactSha256: Option[String] = None
 ) {
-  // val label =
-  //   s"${dependency.module.organization.value}/${dependency.module.name.value}/${dependency.version}"
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
-  val label: String = dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
+  val label: String =
+    dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
   def dependencies: Seq[String] =
     index.dependencies
       .getOrElse(dependency.withoutMetadata, Nil)
       .iterator
-      // TODO(olafur): fix java.util.NoSuchElementException: key not found: com.google.code.findbugs:jsr305:1.3.9
       .flatMap(d => outputs.get(d.repr))
       .map(_.label)
       .toSeq
@@ -37,7 +35,8 @@ final case class ArtifactOutput(
   val org = dependency.module.organization.value
   val moduleName = dependency.module.name.value
   val version = dependency.version
-  val mavenLabel: String = s"@maven//:${org}/${moduleName}-${version}.jar"
+  val mavenLabel: String =
+    s"@maven//:${org}/${moduleName}-${version}${dependency.configRepr}.jar"
   // require(artifactsnonEmpty)
   // def label: String = ""
   // def name = ""
@@ -56,7 +55,7 @@ final case class ArtifactOutput(
   def genrule: TargetOutput =
     TargetOutput(
       kind = "genrule",
-      "name" -> Docs.literal(label + "_extension"),
+      "name" -> Docs.literal(s"genrules/$label"),
       "srcs" -> Docs.array(s"@${label}//file"),
       "outs" -> Docs.array(mavenLabel),
       "cmd" -> Docs.literal("cp $< $@")
