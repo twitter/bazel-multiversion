@@ -6,22 +6,29 @@ import multideps.outputs.Docs
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
+import java.time.Duration
+import scala.math.Ordered._
 
 class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   private lazy val timer = new PrettyTimer()
   val loggers =
     new CoursierLoggers(isArtifactDownload = true, _.contains(".jar"))
+  override def renderStart(): Doc = {
+    timer.elapsed() // start timer
+    super.renderStart()
+  }
   override def renderStop(): Doc = {
-    if (loggers.totalDownloadSize > 0) {
+    if (
+      timer.elapsed > Duration.ofSeconds(1) ||
+      loggers.totalDownloadSize > 0
+    ) {
       val jars = Words.shaFiles.format(loggers.totalTransitiveDependencies)
       val bytes = Words.bytes.format(loggers.totalDownloadSize)
       val cached =
         if (loggers.totalCachedArtifacts > 0)
           s", ${loggers.totalCachedArtifacts} cached files"
         else ""
-      Docs.emoji.success + Doc.text(
-        s"Downloaded $jars ($bytes$cached) in $timer"
-      )
+      Docs.emoji.success + Doc.text(s"Computed $jars ($bytes$cached) in $timer")
     } else {
       Doc.empty
     }

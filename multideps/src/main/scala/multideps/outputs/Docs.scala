@@ -22,7 +22,10 @@ object Docs {
     val success: Doc = colors.green + Doc.text("✔ ") + colors.reset
     val error: Doc = Doc.text("❗")
   }
+  def successMessage(message: String): String =
+    (emoji.success + Doc.text(message)).render(1000)
   object colors {
+    val bold: Doc = Doc.zeroWidth(Console.BOLD)
     val green: Doc = Doc.zeroWidth(Console.GREEN)
     val reset: Doc = Doc.zeroWidth(Console.RESET)
   }

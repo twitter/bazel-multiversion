@@ -46,14 +46,15 @@ import moped.reporters.NoPosition
 import coursier.core.Type
 import coursier.util.Artifact
 import java.nio.file.Paths
-import coursier.error.ResolutionError
 import java.io.File
 import coursier.cache.ArtifactError
+import multideps.outputs.Docs
 
 @CommandName("export")
 case class ExportCommand(
     useAnsiOutput: Boolean = Util.useAnsiOutput(),
     lint: Boolean = true,
+    outputPath: Path = Paths.get("3rdparty", "jvm_deps.bzl"),
     app: Application = Application.default
 ) extends Command {
   def run(): Int = {
@@ -76,14 +77,14 @@ case class ExportCommand(
         .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
-        .withLocation(Paths.get("target", "my-clean-cache").toFile())
       for {
         index <- resolveDependencies(thirdparty, cache)
-        _ <-
+        _ <- {
           if (lint) lintPostResolution(index)
           else ValueResult(())
+        }
         output <- downloadShas(index, cache)
-        _ = app.info(s"generated: $output")
+        _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
         lint <-
           if (lint)
             LintCommand()
@@ -124,7 +125,7 @@ case class ExportCommand(
       thirdparty: ThirdpartyConfig,
       cache: FileCache[Task]
   ): DecodingResult[ResolutionIndex] = {
-    val deps = thirdparty.coursierDeps // TODO: distinct by dep.repr?
+    val deps = thirdparty.coursierDeps
     val progressBar = new ResolveProgressRenderer(deps.length)
     val resolveResults = deps.map {
       case (dep, cdep) =>
@@ -133,11 +134,7 @@ case class ExportCommand(
     for {
       resolves <- DecodingResult.fromResults(resolveResults)
       resolutions <- DecodingResult.fromResults(
-        runParallelTasks(
-          resolves.map(_.io.toDecodingResult),
-          progressBar,
-          cache.ec
-        )
+        runParallelTasks(resolves, progressBar, cache.ec)
       )
     } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
   }
@@ -147,9 +144,11 @@ case class ExportCommand(
       cache: FileCache[Task]
   ): DecodingResult[Path] = {
     val artifacts = index.resolutions
-      .flatMap(_.dependencyArtifacts().map {
-        case (d, p, a) => ResolvedDependency(d, p, a)
-      })
+      .flatMap(d =>
+        d.res.dependencyArtifacts().map {
+          case (d, p, a) => ResolvedDependency(d, p, a)
+        }
+      )
       .distinctBy(_.dependency.repr)
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val progressBar = new DownloadProgressRenderer(artifacts.length)
@@ -225,7 +224,8 @@ case class ExportCommand(
         } else {
           val rendered = DepsOutput(artifacts.sortBy(_.dependency.repr)).render
           val out =
-            app.env.workingDirectory.resolve("3rdparty").resolve("jvm_deps.bzl")
+            if (outputPath.isAbsolute()) outputPath
+            else app.env.workingDirectory.resolve(outputPath)
           Files.createDirectories(out.getParent())
           Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
           ValueResult(out)
@@ -234,34 +234,33 @@ case class ExportCommand(
   }
 
   def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
-    // return ValueResult(())
     val errors = for {
-      (module, allVersions) <- index.artifacts.toList
-      versionCompat =
-        index.thirdparty.depsByModule
-          .getOrElse(module, Nil)
-          .headOption
-          .flatMap(_.versionScheme)
-          .getOrElse(VersionCompatibility.Strict)
-      versions = reconcileVersions(allVersions, versionCompat)
-      // TODO: use reconciled versions as 'dependencies' in generated jvm_deps.bzl
-      if versions.size > 1
+      (module, deps) <- index.artifacts.toList
+      allVersions = deps.map(d => index.reconciledVersion(d))
+      if allVersions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>
           val allDeclaredVersions = declaredDeps.flatMap(_.allVersions)
-          val unspecified =
-            (allVersions.map(_.version) -- allDeclaredVersions).toList
+          val unspecified = (allVersions -- allDeclaredVersions).toList
           unspecified match {
             case Nil =>
               Nil
             case _ =>
+              val pos = declaredDeps
+                .collectFirst {
+                  case d if !d.organization.position.isNone =>
+                    d.organization.position
+                }
+                .getOrElse(NoPosition)
+              val rootDependencies =
+                deps.filter(d => allVersions.contains(d.version))
               List(
                 new ConflictingTransitiveDependencyDiagnostic(
                   module,
                   unspecified.toList,
-                  allDeclaredVersions,
-                  versions.iterator.flatMap(index.roots.get(_)).flatten.toList,
-                  NoPosition
+                  declaredDeps,
+                  rootDependencies.toList,
+                  pos
                 )
               )
           }
@@ -323,12 +322,7 @@ case class ExportCommand(
           terminal = app.terminal
         )
       }
-    try {
-      p.start()
-      thunk
-    } finally {
-      p.stop()
-    }
+    ProgressBars.run(p)(thunk)
   }
 
   private def runParallelTasks[T](

@@ -4,9 +4,9 @@ import java.{util => ju}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-
-import multideps.diagnostics.MultidepsEnrichments.XtensionList
+import multideps.diagnostics.MultidepsEnrichments._
 import multideps.loggers.ResolveProgressRenderer
+import multideps.outputs.DependencyResolution
 
 import coursier.Resolve
 import coursier.cache.FileCache
@@ -54,18 +54,19 @@ final case class ThirdpartyConfig(
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
       cdep: Dependency
-  ): DecodingResult[Resolve[Task]] =
+  ): DecodingResult[Task[DecodingResult[DependencyResolution]]] =
     DecodingResult.fromResults(decodeForceVersions(dep)).map { forceVersions =>
       val repos = repositories.flatMap(_.coursierRepository)
-      Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
-        .addDependencies(cdep)
-        .withResolutionParams(
-          ResolutionParams().addForceVersion(forceVersions: _*)
-        )
-        .withRepositories(
-          if (repos.isEmpty) Resolve.defaultRepositories else repos
-        )
-
+      val resolve =
+        Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
+          .addDependencies(cdep)
+          .withResolutionParams(
+            ResolutionParams().addForceVersion(forceVersions: _*)
+          )
+          .withRepositories(
+            if (repos.isEmpty) Resolve.defaultRepositories else repos
+          )
+      resolve.io.map(r => DependencyResolution(dep, r)).toDecodingResult
     }
 
   private type ForceVersionResult =

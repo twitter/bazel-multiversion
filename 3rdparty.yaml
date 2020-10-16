@@ -1,8 +1,9 @@
 scala: 2.12.12
 dependencies:
-  - dependency: com.google.guava:guava:24.1.1-jre
-  - dependency: com.google.guava:guava:27.1-jre
   - dependency: com.google.guava:guava:29.0-jre
-  - dependency: org.scala-lang:scala-library:2.11.12
+  - dependency: com.google.guava:guava:24.1.1-jre
+  - dependency: com.google.protobuf:protobuf-java:3.13.0
+    versionScheme: semver-spec
   - dependency: org.scala-lang:scala-library:2.12.12
-  - dependency: org.scala-lang:scala-library:2.13.3
+    versionScheme: pvp
+  - dependency: org.scalameta:scalameta_2.12:4.0.0

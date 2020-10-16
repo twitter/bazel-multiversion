@@ -5,6 +5,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 import multideps.configs.ThirdpartyConfig
+import multideps.loggers.ProgressBars
+import multideps.loggers.ProcessRenderer
 import multideps.diagnostics.MultidepsEnrichments._
 
 import moped.annotations.CommandName
@@ -18,8 +20,9 @@ import moped.json.ValueResult
 import moped.parsers.JsonParser
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import os.Inherit
 import os.Shellable
+import moped.progressbars.InteractiveProgressBar
+import java.io.PrintWriter
 
 @CommandName("pants-export")
 final case class PantsExportCommand(
@@ -84,17 +87,23 @@ final case class PantsExportCommand(
         "bazel-multideps"
       ) ++ pantsTargets
       val commandString = command.mkString(" ")
-      app.reporter.info(commandString)
-      val proc = app
-        .process(command.map(Shellable.StringShellable(_)): _*)
-        .call(cwd = workingDirectory, stdout = Inherit)
-      if (proc.exitCode != 0) {
-        ErrorResult(
-          Diagnostic.error(
-            s"Pants exited with code '${proc.exitCode}'. " +
-              s"To reproduce this error, run the command:\n\t$commandString"
+      val pr = new ProcessRenderer(command)
+      val p = new InteractiveProgressBar(
+        out = new PrintWriter(app.env.standardError),
+        renderer = pr
+      )
+      val proc = ProgressBars.run(p) {
+        app
+          .process(command.map(Shellable.StringShellable(_)): _*)
+          .call(
+            cwd = workingDirectory,
+            stdout = pr.output,
+            stderr = pr.output,
+            check = false
           )
-        )
+      }
+      if (proc.exitCode != 0) {
+        pr.asErrorResult(proc.exitCode)
       } else {
         ValueResult(())
       }

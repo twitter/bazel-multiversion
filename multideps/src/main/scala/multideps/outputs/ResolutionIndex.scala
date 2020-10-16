@@ -9,35 +9,84 @@ import multideps.resolvers.ResolvedDependency
 
 import coursier.core.Dependency
 import coursier.core.Module
-import coursier.core.Resolution
+import coursier.core.Version
+import coursier.version.VersionCompatibility
 
 final case class ResolutionIndex(
     thirdparty: ThirdpartyConfig,
-    resolutions: List[Resolution],
+    resolutions: List[DependencyResolution],
     artifacts: collection.Map[Module, collection.Set[Dependency]],
     roots: collection.Map[Dependency, collection.Set[Dependency]]
 ) {
-  val allDependencies: List[ResolvedDependency] = resolutions
-    .flatMap(_.dependencyArtifacts().map {
+  lazy val allDependencies: List[ResolvedDependency] = resolutions
+    .flatMap(_.res.dependencyArtifacts().map {
       case (d, p, a) => ResolvedDependency(d, p, a)
     })
     .distinctBy(_.dependency)
-  val dependencies: Map[Dependency, Seq[Dependency]] = {
+  lazy val dependencies: Map[Dependency, Seq[Dependency]] = {
     (for {
-      r <- resolutions.iterator
-      dep <- r.dependencies.iterator
-    } yield dep.withoutMetadata -> r.dependenciesOf(
+      r <- resolutions
+      dep <- r.res.dependencies
+    } yield dep.withoutMetadata -> r.res.dependenciesOf(
       dep,
       withRetainedVersions = true,
       withFallbackConfig = true
     )).toMap
+  }
+  private lazy val reconciledVersions: Map[Dependency, String] = {
+    for {
+      (module, deps) <- artifacts
+      if deps.size > 1
+      compat =
+        thirdparty.depsByModule
+          .getOrElse(module, Nil)
+          .headOption
+          .flatMap(_.versionScheme)
+          .getOrElse(VersionCompatibility.Strict)
+      versions = reconcileVersions(deps, compat)
+      dep <- deps
+      reconciledVersion <- versions.get(dep)
+      if dep.version != reconciledVersion
+    } yield dep -> reconciledVersion
+  }.toMap
+  def reconciledVersion(dep: Dependency): String =
+    reconciledVersions.getOrElse(dep, dep.version)
+  private def reconcileVersions(
+      deps: collection.Set[Dependency],
+      compat: VersionCompatibility
+  ): Map[Dependency, String] = {
+    // The "winners" are the highest selected versions
+    val winners = mutable.Set.empty[Version]
+    val versions = deps.map(d => Version(d.version))
+    versions.foreach { version =>
+      val isCompatible = winners.exists { winner =>
+        if (compat.isCompatible(version.repr, winner.repr)) {
+          if (winner < version) {
+            winners.remove(winner)
+            winners.add(version)
+          }
+          true
+        } else {
+          false
+        }
+      }
+      if (!isCompatible) {
+        winners.add(version)
+      }
+    }
+    (for {
+      dep <- deps
+      winner <- winners
+      if dep.version != winner.repr &&
+        compat.isCompatible(dep.version, winner.repr)
+    } yield dep -> winner.repr).toMap
   }
 }
 
 object ResolutionIndex {
   def fromResolutions(
       thirdparty: ThirdpartyConfig,
-      resolutions: List[Resolution]
+      resolutions: List[DependencyResolution]
   ): ResolutionIndex = {
     val artifacts =
       mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
@@ -45,7 +94,8 @@ object ResolutionIndex {
       mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
     for {
       resolution <- resolutions
-      (dependency, publication, artifact) <- resolution.dependencyArtifacts()
+      (dependency, publication, artifact) <-
+        resolution.res.dependencyArtifacts()
     } {
       val artifactsBuffer = artifacts.getOrElseUpdate(
         dependency.module,
@@ -54,7 +104,7 @@ object ResolutionIndex {
       artifactsBuffer += dependency
       val rootsBuffer =
         roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
-      rootsBuffer ++= resolution.rootDependencies
+      rootsBuffer ++= resolution.res.rootDependencies
     }
     ResolutionIndex(
       thirdparty,
