@@ -148,7 +148,7 @@ case class ExportCommand(
       .flatMap { d =>
         d.res.dependencyArtifacts().collect {
           case (d, p, a) if Resolution.defaultTypes.contains(p.`type`) =>
-            ResolvedDependency(d, p, a)
+            ResolvedDependency(d.withVersion(index.reconciledVersion(d)), p, a)
         }
       }
       .distinctBy(_.dependency.repr)

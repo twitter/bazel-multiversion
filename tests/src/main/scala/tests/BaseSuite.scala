@@ -16,7 +16,9 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
       .append("/.bazeliskrc\n")
       .append(Utils.readFile(Paths.get(".bazeliskrc")))
       .append("/BUILD\n")
-      .append("# Empty package")
+      .append("# Empty package\n")
+      .append("/3rdparty/BUILD\n")
+      .append("# Empty package\n")
       .toString()
   }
   def checkCommand(
