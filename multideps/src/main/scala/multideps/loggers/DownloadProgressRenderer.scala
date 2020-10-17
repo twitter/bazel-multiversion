@@ -1,13 +1,15 @@
 package multideps.loggers
 
+import java.time.Duration
+
+import scala.math.Ordered._
+
 import multideps.diagnostics.MultidepsEnrichments.XtensionSeq
 import multideps.outputs.Docs
 
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
-import java.time.Duration
-import scala.math.Ordered._
 
 class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
   private lazy val timer = new PrettyTimer()

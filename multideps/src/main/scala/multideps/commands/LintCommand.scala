@@ -1,9 +1,15 @@
 package multideps.commands
 
+import java.io.PrintWriter
+
 import scala.collection.JavaConverters._
 
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.indexes.DependenciesIndex
+import multideps.indexes.TargetIndex
+import multideps.loggers.ProcessRenderer
+import multideps.loggers.ProgressBars
+import multideps.resolvers.SimpleDependency
 
 import moped.annotations.CommandName
 import moped.annotations.PositionalArguments
@@ -12,15 +18,10 @@ import moped.cli.Command
 import moped.cli.CommandParser
 import moped.json.DecodingResult
 import moped.json.ValueResult
+import moped.progressbars.InteractiveProgressBar
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target
-import multideps.loggers.ProgressBars
-import multideps.loggers.ProcessRenderer
-import moped.progressbars.InteractiveProgressBar
-import java.io.PrintWriter
-import multideps.indexes.TargetIndex
-import multideps.resolvers.SimpleDependency
 
 @CommandName("lint")
 case class LintCommand(

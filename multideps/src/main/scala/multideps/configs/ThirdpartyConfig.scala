@@ -4,6 +4,7 @@ import java.{util => ju}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.loggers.ResolveProgressRenderer
 import multideps.outputs.DependencyResolution
@@ -24,7 +25,6 @@ import moped.parsers.JsonParser
 import moped.parsers.YamlParser
 import moped.reporters.Diagnostic
 import moped.reporters.Input
-import coursier.Repositories
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),

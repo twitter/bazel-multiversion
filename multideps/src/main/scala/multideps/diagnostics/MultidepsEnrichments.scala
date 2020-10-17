@@ -4,6 +4,7 @@ import java.{util => ju}
 
 import scala.collection.mutable
 
+import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.error.ResolutionError
 import coursier.util.Task
@@ -13,7 +14,6 @@ import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Reporter
-import coursier.core.Configuration
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {

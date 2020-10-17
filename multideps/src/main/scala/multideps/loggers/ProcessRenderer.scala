@@ -1,18 +1,21 @@
 package multideps.loggers
 
-import scala.collection.JavaConverters._
+import java.time.Duration
+import java.util.concurrent.ConcurrentLinkedDeque
 
+import scala.collection.JavaConverters._
+import scala.math.Ordered._
+
+import multideps.outputs.Docs
+
+import fansi.ErrorMode
+import fansi.Str
+import moped.json.ErrorResult
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
-import org.typelevel.paiges.Doc
-import java.time.Duration
-import scala.math.Ordered._
-import java.util.concurrent.ConcurrentLinkedDeque
-import moped.json.ErrorResult
 import moped.reporters.Diagnostic
-import fansi.Str
-import fansi.ErrorMode
-import multideps.outputs.Docs
+import org.typelevel.paiges.Doc
+import os.ProcessOutput
 
 class ProcessRenderer(
     command: List[String],
@@ -20,9 +23,9 @@ class ProcessRenderer(
     minimumDuration: Duration = Duration.ofSeconds(1)
 ) extends ProgressRenderer {
   val lines = new ConcurrentLinkedDeque[String]()
-  val output = os.ProcessOutput.Readlines(line => lines.addLast(line))
+  val output: ProcessOutput.Readlines = os.ProcessOutput.Readlines(line => lines.addLast(line))
   lazy val timer = new PrettyTimer
-  val commandString = command
+  val commandString: String = command
     .map { arg =>
       if (arg.contains(" ")) s"'$arg'"
       else arg

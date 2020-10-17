@@ -1,13 +1,14 @@
 package multideps.commands
 
+import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 
 import multideps.configs.ThirdpartyConfig
-import multideps.loggers.ProgressBars
-import multideps.loggers.ProcessRenderer
 import multideps.diagnostics.MultidepsEnrichments._
+import multideps.loggers.ProcessRenderer
+import multideps.loggers.ProgressBars
 
 import moped.annotations.CommandName
 import moped.annotations.Inline
@@ -18,11 +19,10 @@ import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.ValueResult
 import moped.parsers.JsonParser
+import moped.progressbars.InteractiveProgressBar
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Shellable
-import moped.progressbars.InteractiveProgressBar
-import java.io.PrintWriter
 
 @CommandName("pants-export")
 final case class PantsExportCommand(

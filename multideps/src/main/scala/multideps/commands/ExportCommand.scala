@@ -1,9 +1,11 @@
 package multideps.commands
 
+import java.io.File
 import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Duration
 import java.{util => ju}
 
@@ -18,16 +20,21 @@ import multideps.diagnostics.MultidepsEnrichments._
 import multideps.loggers._
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
+import multideps.outputs.Docs
 import multideps.outputs.ResolutionIndex
 import multideps.resolvers.CoursierThreadPools
 import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.Sha256
 
+import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
+import coursier.core.Resolution
+import coursier.core.Type
 import coursier.core.Version
 import coursier.paths.Util
+import coursier.util.Artifact
 import coursier.util.Task
 import coursier.version.VersionCompatibility
 import moped.annotations.CommandName
@@ -43,13 +50,6 @@ import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import coursier.core.Type
-import coursier.util.Artifact
-import java.nio.file.Paths
-import java.io.File
-import coursier.cache.ArtifactError
-import multideps.outputs.Docs
-import coursier.core.Resolution
 
 @CommandName("export")
 case class ExportCommand(

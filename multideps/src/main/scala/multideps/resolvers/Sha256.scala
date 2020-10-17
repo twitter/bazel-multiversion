@@ -4,6 +4,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.nio.file.Files
 import java.security.MessageDigest
+
 import moped.internal.console.Utils
 
 object Sha256 {

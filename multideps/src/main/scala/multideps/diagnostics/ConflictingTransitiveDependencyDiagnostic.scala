@@ -1,5 +1,6 @@
 package multideps.diagnostics
 
+import multideps.configs.DependencyConfig
 import multideps.diagnostics.MultidepsEnrichments._
 
 import coursier.core.Dependency
@@ -7,7 +8,6 @@ import coursier.core.Module
 import moped.reporters.Diagnostic
 import moped.reporters.ErrorSeverity
 import moped.reporters.Position
-import multideps.configs.DependencyConfig
 
 class ConflictingTransitiveDependencyDiagnostic(
     val module: Module,
@@ -16,7 +16,7 @@ class ConflictingTransitiveDependencyDiagnostic(
     val rootDependencies: List[Dependency],
     pos: Position
 ) extends Diagnostic(ErrorSeverity, "", pos) {
-  val declaredVersions = declaredDeps.flatMap(_.allVersions)
+  val declaredVersions: List[String] = declaredDeps.flatMap(_.allVersions)
   require(transitiveVersions.nonEmpty)
   require(declaredVersions.nonEmpty)
   private val roots = rootDependencies.filterNot(_.module == module)
