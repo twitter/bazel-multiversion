@@ -14,6 +14,7 @@ import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
 import munit.TestOptions
+import java.nio.file.SimpleFileVisitor
 
 abstract class BaseSuite extends MopedSuite(Multideps.app) {
   override val temporaryDirectory: DirectoryFixture = new DirectoryFixture {
@@ -26,7 +27,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     override def afterEach(context: AfterEach): Unit = {
       Files.walkFileTree(
         path,
-        new DeleteVisitor {
+        new SimpleFileVisitor[Path] {
           override def visitFileFailed(
               file: Path,
               exc: IOException
@@ -37,6 +38,21 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
           ): FileVisitResult = {
             if (!file.getFileName().toString().startsWith("bazel-")) {
               Files.deleteIfExists(file)
+            }
+            FileVisitResult.CONTINUE
+          }
+
+          override def postVisitDirectory(
+              dir: Path,
+              exc: IOException
+          ): FileVisitResult = {
+            val ls = Files.list(dir)
+            try {
+              if (!ls.iterator().hasNext()) {
+                Files.deleteIfExists(dir)
+              }
+            } finally {
+              ls.close()
             }
             FileVisitResult.CONTINUE
           }
