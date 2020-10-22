@@ -21,6 +21,7 @@ import multideps.loggers._
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.Docs
+import moped.annotations.Inline
 import multideps.outputs.ResolutionIndex
 import multideps.resolvers.CoursierThreadPools
 import multideps.resolvers.ResolvedDependency
@@ -53,11 +54,13 @@ import moped.reporters.NoPosition
 
 @CommandName("export")
 case class ExportCommand(
-    useAnsiOutput: Boolean = Util.useAnsiOutput(),
     lint: Boolean = true,
     outputPath: Path = Paths.get("3rdparty", "jvm_deps.bzl"),
-    app: Application = Application.default
+    @Inline
+    lintCommand: LintCommand = LintCommand()
 ) extends Command {
+  def app = lintCommand.app
+  def useAnsiOutput = lintCommand.useAnsiOutput
   def run(): Int = {
     app.complete(runResult())
   }
@@ -88,9 +91,10 @@ case class ExportCommand(
         _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
         lint <-
           if (lint)
-            LintCommand()
+            lintCommand
               .copy(
                 queryExpressions = List("@maven//:all"),
+                useAnsiOutput = useAnsiOutput,
                 app = app
               )
               .runResult()

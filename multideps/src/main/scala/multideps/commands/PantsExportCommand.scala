@@ -52,10 +52,11 @@ final case class PantsExportCommand(
       save <-
         save
           .copy(
-            useAnsiOutput = true,
             lint = lint,
-            app =
-              app.copy(env = app.env.copy(workingDirectory = workingDirectory))
+            lintCommand = save.lintCommand.copy(
+              app = app
+                .copy(env = app.env.copy(workingDirectory = workingDirectory))
+            )
           )
           .runResult(thirdparty)
     } yield save

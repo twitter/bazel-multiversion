@@ -7,7 +7,9 @@ import scala.collection.JavaConverters._
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.indexes.DependenciesIndex
 import multideps.indexes.TargetIndex
+import multideps.loggers.StaticProgressRenderer
 import multideps.loggers.ProcessRenderer
+import coursier.paths.Util
 import multideps.loggers.ProgressBars
 import multideps.resolvers.SimpleDependency
 
@@ -22,10 +24,12 @@ import moped.progressbars.InteractiveProgressBar
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target
+import multideps.loggers.StaticProgressBar
 
 @CommandName("lint")
 case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
+    useAnsiOutput: Boolean = Util.useAnsiOutput(),
     app: Application = Application.default
 ) extends Command {
   private def runQuery(queryExpression: String): DecodingResult[QueryResult] = {
@@ -37,18 +41,22 @@ case class LintCommand(
       "--notool_deps",
       "--output=proto"
     )
-    val pr = new ProcessRenderer(command)
+    val pr0 = new ProcessRenderer(command)
+    val pr = StaticProgressRenderer.ifAnsiDisabled(
+      pr0,
+      useAnsiOutput
+    )
     val pb = new InteractiveProgressBar(
       out = new PrintWriter(app.env.standardError),
       renderer = pr
     )
     val process = ProgressBars.run(pb) {
-      os.proc(command).call(stderr = pr.output, check = false)
+      os.proc(command).call(stderr = pr0.output, check = false)
     }
     if (process.exitCode == 0) {
       ValueResult(QueryResult.parseFrom(process.out.bytes))
     } else {
-      pr.asErrorResult(process.exitCode)
+      pr0.asErrorResult(process.exitCode)
     }
   }
 
