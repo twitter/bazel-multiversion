@@ -17,6 +17,13 @@ import munit.TestOptions
 import java.nio.file.SimpleFileVisitor
 
 abstract class BaseSuite extends MopedSuite(Multideps.app) {
+  override def environmentVariables: Map[String, String] =
+    // Leak the user's environment variable because Bazel needs access to PATH
+    // to compile
+    sys.env.updated(
+      "NO_COLOR", // Disable progress bars.
+      "true"
+    )
   override val temporaryDirectory: DirectoryFixture = new DirectoryFixture {
     private val tmp = Paths.get(System.getProperty("java.io.tmpdir"))
     private var path: Path = _

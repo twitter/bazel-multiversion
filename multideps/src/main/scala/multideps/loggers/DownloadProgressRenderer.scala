@@ -69,7 +69,7 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
         }
       )
       val table = header + Doc.line + rows + Doc.line
-      ProgressStep(active = table)
+      ProgressStep(dynamic = table)
     }
   }
 }

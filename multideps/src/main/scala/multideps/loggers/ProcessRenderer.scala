@@ -23,7 +23,8 @@ class ProcessRenderer(
     minimumDuration: Duration = Duration.ofSeconds(1)
 ) extends ProgressRenderer {
   val lines = new ConcurrentLinkedDeque[String]()
-  val output: ProcessOutput.Readlines = os.ProcessOutput.Readlines(line => lines.addLast(line))
+  val output: ProcessOutput.Readlines =
+    os.ProcessOutput.Readlines(line => lines.addLast(line))
   lazy val timer = new PrettyTimer
   val commandString: String = command
     .map { arg =>
@@ -58,7 +59,7 @@ class ProcessRenderer(
         Doc.text(timer.formatPadded()) + Doc.space +
           Doc.text(commandString) + Doc.line +
           Doc.text(lastLineClean) + endLine
-      ProgressStep(active = active)
+      ProgressStep(dynamic = active)
     } else {
       ProgressStep.empty
     }

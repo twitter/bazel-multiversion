@@ -20,7 +20,7 @@ class ExportCommandSuite extends tests.BaseSuite {
     s"""|  - dependency: com.lihaoyi:fansi_2.12:0.2.8
         |    versionScheme: pvp
         |  - dependency: com.lihaoyi:pprint_2.12:0.5.6
-        |${scalaLibrary("MyApp.scala", "object MyApp { val x: String = 42 }")}
+        |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
         |""".stripMargin,
     buildQuery = "//src/..."
   )
