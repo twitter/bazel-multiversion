@@ -6,17 +6,24 @@ import multideps.outputs.Docs
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
+import java.time.Clock
+import moped.progressbars.Timer
 
-class ResolveProgressRenderer(maxRootDependencies: Long)
-    extends ProgressRenderer {
+class ResolveProgressRenderer(
+    maxRootDependencies: Long,
+    clock: Clock,
+    isTesting: Boolean
+) extends ProgressRenderer {
   private val maxRootDependenciesWidth = maxRootDependencies.toString().length()
   val loggers =
     new CoursierLoggers(isArtifactDownload = false, _.endsWith(".pom"))
-  private lazy val timer = new PrettyTimer()
+  private lazy val timer = new Timer(clock)
   override def renderStop(): Doc = {
-    Docs.emoji.success + Doc.text(
-      s"Resolved ${loggers.totalRootDependencies} root dependencies and ${loggers.totalTransitiveDependencies} transitive dependencies in ${timer.format()}"
-    )
+    if (isTesting) Doc.empty
+    else
+      Docs.emoji.success + Doc.text(
+        s"Resolved ${loggers.totalRootDependencies} root dependencies and ${loggers.totalTransitiveDependencies} transitive dependencies in ${timer.format()}"
+      )
   }
   override def renderStep(): ProgressStep = {
     val activeLoggers =

@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.indexes.DependenciesIndex
 import multideps.indexes.TargetIndex
-import multideps.loggers.ProcessRenderer
+import moped.progressbars.ProcessRenderer
 import multideps.loggers.ProgressBars
 import multideps.loggers.StaticProgressRenderer
 import multideps.resolvers.SimpleDependency
@@ -38,7 +38,7 @@ case class LintCommand(
       "--notool_deps",
       "--output=proto"
     )
-    val pr0 = new ProcessRenderer(command)
+    val pr0 = new ProcessRenderer(command, command, clock = app.env.clock)
     val pr = StaticProgressRenderer.ifAnsiDisabled(
       pr0,
       app.env.isColorEnabled

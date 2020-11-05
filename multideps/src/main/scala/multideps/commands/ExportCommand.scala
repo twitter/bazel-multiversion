@@ -127,7 +127,11 @@ case class ExportCommand(
       cache: FileCache[Task]
   ): Result[ResolutionIndex] = {
     val deps = thirdparty.coursierDeps
-    val progressBar = new ResolveProgressRenderer(deps.length)
+    val progressBar = new ResolveProgressRenderer(
+      deps.length,
+      app.env.clock,
+      isTesting = app.isTesting
+    )
     val resolveResults = deps.map {
       case (dep, cdep) =>
         thirdparty.toResolve(dep, cache, progressBar, cdep)
@@ -153,7 +157,8 @@ case class ExportCommand(
       }
       .distinctBy(_.dependency.repr)
     val outputs = new ju.HashMap[String, ArtifactOutput]
-    val progressBar = new DownloadProgressRenderer(artifacts.length)
+    val progressBar =
+      new DownloadProgressRenderer(artifacts.length, app.env.clock)
     val files = artifacts.map { r =>
       val logger = progressBar.loggers.newCacheLogger(r.dependency)
       val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
@@ -308,7 +313,8 @@ case class ExportCommand(
       out = out,
       renderer = renderer,
       intervalDuration = Duration.ofMillis(100),
-      terminal = app.terminal
+      terminal = app.terminal,
+      isDynamicPartEnabled = app.env.isColorEnabled
     )
     ProgressBars.run(p)(thunk)
   }

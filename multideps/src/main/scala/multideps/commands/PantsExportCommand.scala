@@ -7,7 +7,7 @@ import java.nio.file.Path
 
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments._
-import multideps.loggers.ProcessRenderer
+import moped.progressbars.ProcessRenderer
 import multideps.loggers.ProgressBars
 
 import moped.annotations.CommandName
@@ -89,7 +89,7 @@ final case class PantsExportCommand(
         "bazel-multideps"
       ) ++ pantsTargets
       val commandString = command.mkString(" ")
-      val pr = new ProcessRenderer(command)
+      val pr = new ProcessRenderer(command, command, clock = app.env.clock)
       val p = new InteractiveProgressBar(
         out = new PrintWriter(app.env.standardError),
         renderer = pr

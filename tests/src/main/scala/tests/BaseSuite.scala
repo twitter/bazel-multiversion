@@ -15,15 +15,21 @@ import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
 import munit.TestOptions
+import java.time.Clock
 
 abstract class BaseSuite extends MopedSuite(Multideps.app) {
   override def environmentVariables: Map[String, String] =
     // Leak the user's environment variable because Bazel needs access to PATH
     // to compile
-    sys.env.updated(
-      "NO_COLOR", // Disable progress bars.
-      "true"
-    )
+    sys.env
+      .updated(
+        "NO_COLOR", // Disable progress bars.
+        "true"
+      )
+      .updated(
+        "MULTIDEPS_TESTING",
+        "true"
+      )
   override val temporaryDirectory: DirectoryFixture = new DirectoryFixture {
     private val tmp = Paths.get(System.getProperty("java.io.tmpdir"))
     private var path: Path = _
@@ -155,7 +161,6 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     }
     val exit = app().run(arguments)
     assertEquals(exit, expectedExit, clues(app.capturedOutput))
-    pprint.log(expectedOutput)
     assertNoDiff(app.capturedOutput, expectedOutput)
   }
 }

@@ -29,6 +29,9 @@ object MultidepsEnrichments {
       else xs.mkString(", ")
   }
   implicit class XtensionApplication(app: Application) {
+    def isTesting: Boolean =
+      "true" == app.env.environmentVariables
+        .getOrElse("MULTIDEPS_TESTING", "false")
     def complete(result: Result[Unit]): Int =
       result match {
         case ValueResult(()) =>

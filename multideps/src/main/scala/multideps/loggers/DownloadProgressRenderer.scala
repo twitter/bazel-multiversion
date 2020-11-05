@@ -9,19 +9,22 @@ import multideps.outputs.Docs
 
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
+import moped.progressbars.Timer
 import org.typelevel.paiges.Doc
+import java.time.Clock
 
-class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
-  private lazy val timer = new PrettyTimer()
+class DownloadProgressRenderer(maxArtifacts: Long, clock: Clock)
+    extends ProgressRenderer {
+  private lazy val timer = new Timer(clock)
   val loggers =
     new CoursierLoggers(isArtifactDownload = true, _.contains(".jar"))
   override def renderStart(): Doc = {
-    timer.elapsed() // start timer
+    timer.duration() // start timer
     super.renderStart()
   }
   override def renderStop(): Doc = {
     if (
-      timer.elapsed > Duration.ofSeconds(1) ||
+      timer.duration() > Duration.ofSeconds(1) ||
       loggers.totalDownloadSize > 0
     ) {
       val jars = Words.shaFiles.format(loggers.totalTransitiveDependencies)
