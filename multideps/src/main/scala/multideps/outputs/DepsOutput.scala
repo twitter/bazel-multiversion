@@ -6,6 +6,10 @@ final case class DepsOutput(
     artifacts: Seq[ArtifactOutput]
 ) {
   require(artifacts.nonEmpty)
+  def validate(): Unit = {
+    // val names = artifacts.map()
+
+  }
   def render: String = {
     val width = 120000
     val httpFiles = Doc

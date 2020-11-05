@@ -49,6 +49,8 @@ final case class ResolutionIndex(
       if dep.version != reconciledVersion
     } yield dep -> reconciledVersion
   }.toMap
+  def reconciledDependency(dep: Dependency): Dependency =
+    dep.withVersion(reconciledVersion(dep))
   def reconciledVersion(dep: Dependency): String =
     reconciledVersions.getOrElse(dep, dep.version)
   private def reconcileVersions(

@@ -18,15 +18,7 @@ final case class ArtifactOutput(
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
   val label: String =
     dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
-  def dependencies: Seq[String] =
-    index.dependencies
-      .getOrElse(dependency.withoutMetadata, Nil)
-      .iterator
-      .flatMap(d => outputs.get(d.repr))
-      .map(_.label)
-      .toSeq
-      .distinct
-  def repr: String =
+  val repr: String =
     s"""|Artifact(
         |  dep = "${label}",
         |  url = "${artifact.url}",
@@ -37,11 +29,14 @@ final case class ArtifactOutput(
   val version = dependency.version
   val mavenLabel: String =
     s"@maven//:${org}/${moduleName}-${version}${dependency.configRepr}.jar"
-  // require(artifactsnonEmpty)
-  // def label: String = ""
-  // def name = ""
-  val open: Doc = Doc.text("(")
-  val close: Doc = Doc.text(")")
+  lazy val dependencies: Seq[String] =
+    index.dependencies
+      .getOrElse(dependency.withoutMetadata, Nil)
+      .iterator
+      .map(d => outputs(index.reconciledDependency(d).repr))
+      .map(_.label)
+      .toSeq
+      .distinct
   def httpFile: TargetOutput =
     TargetOutput(
       kind = "http_file",
@@ -49,9 +44,6 @@ final case class ArtifactOutput(
       "urls" -> Docs.array(artifact.url),
       "sha256" -> Docs.literal(artifactSha256)
     )
-  def build: Doc =
-    genrule.toDoc /
-      scalaImport.toDoc
   def genrule: TargetOutput =
     TargetOutput(
       kind = "genrule",
@@ -71,7 +63,9 @@ final case class ArtifactOutput(
         s"jvm_module=${dependency.module.repr}",
         s"jvm_version=${dependency.version}"
       ),
-      // TODO(olafur): only make root deps public
       "visibility" -> Docs.array("//visibility:public")
     )
+  def build: Doc =
+    genrule.toDoc /
+      scalaImport.toDoc
 }

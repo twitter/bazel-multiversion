@@ -56,7 +56,8 @@ object MultidepsEnrichments {
     def repr: String = {
       s"${dep.module.repr}:${dep.version}${configRepr}"
     }
-    def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
+    def withoutMetadata: Dependency =
+      dep //  Dependency(dep.module, dep.version)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {

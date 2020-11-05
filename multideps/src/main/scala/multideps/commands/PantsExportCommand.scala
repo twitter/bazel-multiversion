@@ -82,8 +82,17 @@ final case class PantsExportCommand(
     }
   }
   def runPantsExport(): Result[Unit] = {
-    if (!useCachedExport) {
-      val binary = workingDirectory.resolve("pants")
+    val binary = workingDirectory.resolve("pants")
+    if (useCachedExport) {
+      ValueResult(())
+    } else if (!Files.isRegularFile(binary)) {
+      ErrorResult(
+        Diagnostic.error(
+          s"no Pants script detected at '$binary'. " +
+            s"To fix this problem change the working directory to the root of a Pants build."
+        )
+      )
+    } else {
       val command = List[String](
         binary.toString(),
         "bazel-multideps"
@@ -109,8 +118,6 @@ final case class PantsExportCommand(
       } else {
         ValueResult(())
       }
-    } else {
-      ValueResult(())
     }
   }
 }
