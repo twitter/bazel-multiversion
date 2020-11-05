@@ -1,8 +1,8 @@
 package multideps.loggers
 
 import moped.progressbars.ProgressRenderer
-import org.typelevel.paiges.Doc
 import moped.progressbars.ProgressStep
+import org.typelevel.paiges.Doc
 
 class StaticProgressRenderer(underlying: ProgressRenderer)
     extends ProgressRenderer {

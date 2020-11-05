@@ -12,13 +12,13 @@ import coursier.core.Organization
 import coursier.core.Publication
 import coursier.version.VersionCompatibility
 import moped.json.DecodingContext
-import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.JsonCodec
 import moped.json.JsonDecoder
 import moped.json.JsonElement
 import moped.json.JsonObject
 import moped.json.JsonString
+import moped.json.Result
 import moped.json.ValueResult
 import moped.macros.ClassShape
 import moped.reporters.Diagnostic
@@ -81,7 +81,7 @@ object DependencyConfig {
     new JsonCodec[VersionCompatibility] {
       def decode(
           context: DecodingContext
-      ): DecodingResult[VersionCompatibility] =
+      ): Result[VersionCompatibility] =
         JsonDecoder.stringJsonDecoder.decode(context).flatMap {
           case "semver" => ValueResult(VersionCompatibility.SemVerSpec)
           case other =>
@@ -144,7 +144,7 @@ object DependencyConfig {
     automaticCodec(default)
   implicit val codec: JsonCodec[DependencyConfig] =
     new JsonCodec[DependencyConfig] {
-      def decode(context: DecodingContext): DecodingResult[DependencyConfig] = {
+      def decode(context: DecodingContext): Result[DependencyConfig] = {
         context.json match {
           case FromJsonString(dep) => ValueResult(dep)
           case obj: JsonObject =>

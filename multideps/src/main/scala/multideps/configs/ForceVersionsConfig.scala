@@ -4,12 +4,12 @@ import scala.util.matching.Regex
 
 import moped.internal.diagnostics.TypeMismatchDiagnostic
 import moped.json.DecodingContext
-import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.JsonArray
 import moped.json.JsonDecoder
 import moped.json.JsonEncoder
 import moped.json.JsonString
+import moped.json.Result
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 
@@ -30,7 +30,7 @@ object ForceVersionsConfig {
     new JsonDecoder[ForceVersionsConfig] {
       def decode(
           context: DecodingContext
-      ): DecodingResult[ForceVersionsConfig] = {
+      ): Result[ForceVersionsConfig] = {
         context.json match {
           case JsonArray(elements) =>
             val overrides = elements.map {
@@ -50,7 +50,7 @@ object ForceVersionsConfig {
                 ErrorResult(Diagnostic.typeMismatch("ORG:ARTIFACT", context))
 
             }
-            DecodingResult
+            Result
               .fromResults(overrides)
               .map(x => ForceVersionsConfig(x.toMap))
           case _ =>

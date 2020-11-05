@@ -15,8 +15,8 @@ import moped.annotations.Inline
 import moped.annotations.PositionalArguments
 import moped.cli.Command
 import moped.cli.CommandParser
-import moped.json.DecodingResult
 import moped.json.ErrorResult
+import moped.json.Result
 import moped.json.ValueResult
 import moped.parsers.JsonParser
 import moped.progressbars.InteractiveProgressBar
@@ -45,7 +45,7 @@ final case class PantsExportCommand(
     workingDirectory.resolve("3rdparty.yaml")
 
   def run(): Int = app.complete(runResult())
-  def runResult(): DecodingResult[Unit] = {
+  def runResult(): Result[Unit] = {
     for {
       _ <- runPantsExport()
       thirdparty <- runPantsImport()
@@ -62,7 +62,7 @@ final case class PantsExportCommand(
     } yield save
   }
 
-  def runPantsImport(): DecodingResult[ThirdpartyConfig] = {
+  def runPantsImport(): Result[ThirdpartyConfig] = {
     if (!Files.isRegularFile(outputPath)) {
       ErrorResult(
         Diagnostic.error(
@@ -81,7 +81,7 @@ final case class PantsExportCommand(
       } yield thirdparty
     }
   }
-  def runPantsExport(): DecodingResult[Unit] = {
+  def runPantsExport(): Result[Unit] = {
     if (!useCachedExport) {
       val binary = workingDirectory.resolve("pants")
       val command = List[String](

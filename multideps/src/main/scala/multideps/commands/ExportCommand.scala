@@ -21,7 +21,6 @@ import multideps.loggers._
 import multideps.outputs.ArtifactOutput
 import multideps.outputs.DepsOutput
 import multideps.outputs.Docs
-import moped.annotations.Inline
 import multideps.outputs.ResolutionIndex
 import multideps.resolvers.CoursierThreadPools
 import multideps.resolvers.ResolvedDependency
@@ -34,17 +33,16 @@ import coursier.core.Dependency
 import coursier.core.Resolution
 import coursier.core.Type
 import coursier.core.Version
-import coursier.paths.Util
 import coursier.util.Artifact
 import coursier.util.Task
 import coursier.version.VersionCompatibility
 import moped.annotations.CommandName
+import moped.annotations.Inline
 import moped.annotations._
-import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
-import moped.json.DecodingResult
 import moped.json.ErrorResult
+import moped.json.Result
 import moped.json.ValueResult
 import moped.progressbars.InteractiveProgressBar
 import moped.progressbars.ProgressRenderer
@@ -63,12 +61,11 @@ case class ExportCommand(
   def run(): Int = {
     app.complete(runResult())
   }
-  def runResult(): DecodingResult[Unit] = {
+  def runResult(): Result[Unit] = {
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
-  def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
-    pprint.log(app.env.workingDirectory)
-    withThreadPool[DecodingResult[Unit]] { threads =>
+  def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
+    withThreadPool[Result[Unit]] { threads =>
       val cache: FileCache[Task] = FileCache().noCredentials
         .withCachePolicies(
           List(
@@ -102,7 +99,7 @@ case class ExportCommand(
     }
   }
 
-  private def parseThirdpartyConfig(): DecodingResult[ThirdpartyConfig] = {
+  private def parseThirdpartyConfig(): Result[ThirdpartyConfig] = {
     val configPath =
       app.env.workingDirectory.resolve("3rdparty.yaml")
     if (!Files.isRegularFile(configPath)) {
@@ -128,7 +125,7 @@ case class ExportCommand(
   private def resolveDependencies(
       thirdparty: ThirdpartyConfig,
       cache: FileCache[Task]
-  ): DecodingResult[ResolutionIndex] = {
+  ): Result[ResolutionIndex] = {
     val deps = thirdparty.coursierDeps
     val progressBar = new ResolveProgressRenderer(deps.length)
     val resolveResults = deps.map {
@@ -136,8 +133,8 @@ case class ExportCommand(
         thirdparty.toResolve(dep, cache, progressBar, cdep)
     }
     for {
-      resolves <- DecodingResult.fromResults(resolveResults)
-      resolutions <- DecodingResult.fromResults(
+      resolves <- Result.fromResults(resolveResults)
+      resolutions <- Result.fromResults(
         runParallelTasks(resolves, progressBar, cache.ec)
       )
     } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
@@ -146,7 +143,7 @@ case class ExportCommand(
   def downloadShas(
       index: ResolutionIndex,
       cache: FileCache[Task]
-  ): DecodingResult[Path] = {
+  ): Result[Path] = {
     val artifacts = index.resolutions
       .flatMap { d =>
         d.res.dependencyArtifacts().collect {
@@ -233,7 +230,7 @@ case class ExportCommand(
     }
   }
 
-  def lintPostResolution(index: ResolutionIndex): DecodingResult[Unit] = {
+  def lintPostResolution(index: ResolutionIndex): Result[Unit] = {
     val errors = for {
       (module, deps) <- index.artifacts.toList
       allVersions = deps.map(d => index.reconciledVersion(d))

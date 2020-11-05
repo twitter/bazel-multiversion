@@ -7,10 +7,9 @@ import scala.collection.JavaConverters._
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.indexes.DependenciesIndex
 import multideps.indexes.TargetIndex
-import multideps.loggers.StaticProgressRenderer
 import multideps.loggers.ProcessRenderer
-import coursier.paths.Util
 import multideps.loggers.ProgressBars
+import multideps.loggers.StaticProgressRenderer
 import multideps.resolvers.SimpleDependency
 
 import moped.annotations.CommandName
@@ -18,20 +17,19 @@ import moped.annotations.PositionalArguments
 import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
-import moped.json.DecodingResult
+import moped.json.Result
 import moped.json.ValueResult
 import moped.progressbars.InteractiveProgressBar
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target
-import multideps.loggers.StaticProgressBar
 
 @CommandName("lint")
 case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
-  private def runQuery(queryExpression: String): DecodingResult[QueryResult] = {
+  private def runQuery(queryExpression: String): Result[QueryResult] = {
     val command = List(
       "bazel",
       "query",
@@ -61,7 +59,7 @@ case class LintCommand(
 
   def run(): Int = app.complete(runResult())
 
-  def runResult(): DecodingResult[Unit] = {
+  def runResult(): Result[Unit] = {
     val expr = queryExpressions.mkString(" ")
     for {
       result <- runQuery(s"allpaths($expr, @maven//:all)")

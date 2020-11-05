@@ -16,9 +16,9 @@ import coursier.core.Module
 import coursier.params.ResolutionParams
 import coursier.util.Task
 import moped.json.DecodingContext
-import moped.json.DecodingResult
 import moped.json.ErrorResult
 import moped.json.JsonCodec
+import moped.json.Result
 import moped.json.ValueResult
 import moped.parsers.ConfigurationParser
 import moped.parsers.JsonParser
@@ -54,8 +54,8 @@ final case class ThirdpartyConfig(
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
       cdep: Dependency
-  ): DecodingResult[Task[DecodingResult[DependencyResolution]]] =
-    DecodingResult.fromResults(decodeForceVersions(dep)).map { forceVersions =>
+  ): Result[Task[Result[DependencyResolution]]] =
+    Result.fromResults(decodeForceVersions(dep)).map { forceVersions =>
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
@@ -66,11 +66,11 @@ final case class ThirdpartyConfig(
           .withRepositories(
             if (repos.isEmpty) Resolve.defaultRepositories else repos
           )
-      resolve.io.map(r => DependencyResolution(dep, r)).toDecodingResult
+      resolve.io.map(r => DependencyResolution(dep, r)).toResult
     }
 
   private type ForceVersionResult =
-    mutable.Buffer[DecodingResult[(Module, String)]]
+    mutable.Buffer[Result[(Module, String)]]
   private val forceVersionsByTarget
       : collection.Map[String, ForceVersionResult] = {
     val map = new ju.HashMap[String, ForceVersionResult]().asScala
@@ -122,14 +122,14 @@ final case class ThirdpartyConfig(
 
   private val decodeVersionsCache =
     new ju.IdentityHashMap[DependencyConfig, List[
-      DecodingResult[(Module, String)]
+      Result[(Module, String)]
     ]]().asScala
   private def decodeForceVersions(
       dep: DependencyConfig
-  ): List[DecodingResult[(Module, String)]] = {
+  ): List[Result[(Module, String)]] = {
     decodeVersionsCache.getOrElseUpdate(
       dep, {
-        val buf = mutable.ListBuffer.empty[DecodingResult[(Module, String)]]
+        val buf = mutable.ListBuffer.empty[Result[(Module, String)]]
         if (dep.force) {
           buf += ValueResult(dep.coursierModule(scala) -> dep.version)
         }
@@ -153,16 +153,16 @@ final case class ThirdpartyConfig(
 }
 
 object ThirdpartyConfig {
-  def parseYaml(input: Input): DecodingResult[ThirdpartyConfig] = {
+  def parseYaml(input: Input): Result[ThirdpartyConfig] = {
     parse(input, YamlParser)
   }
-  def parseJson(input: Input): DecodingResult[ThirdpartyConfig] = {
+  def parseJson(input: Input): Result[ThirdpartyConfig] = {
     parse(input, JsonParser)
   }
   private def parse(
       input: Input,
       parser: ConfigurationParser
-  ): DecodingResult[ThirdpartyConfig] = {
+  ): Result[ThirdpartyConfig] = {
     parser
       .parse(input)
       .flatMap(json =>

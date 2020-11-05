@@ -5,6 +5,7 @@ import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
 import multideps.Multideps
@@ -14,7 +15,6 @@ import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
 import munit.TestOptions
-import java.nio.file.SimpleFileVisitor
 
 abstract class BaseSuite extends MopedSuite(Multideps.app) {
   override def environmentVariables: Map[String, String] =
@@ -143,6 +143,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
       .append("# Empty package\n")
       .toString()
   }
+
   def checkCommand(
       arguments: => List[String],
       expectedOutput: String,

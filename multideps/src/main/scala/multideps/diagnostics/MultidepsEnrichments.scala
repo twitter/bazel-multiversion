@@ -9,8 +9,8 @@ import coursier.core.Dependency
 import coursier.error.ResolutionError
 import coursier.util.Task
 import moped.cli.Application
-import moped.json.DecodingResult
 import moped.json.ErrorResult
+import moped.json.Result
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Reporter
@@ -29,7 +29,7 @@ object MultidepsEnrichments {
       else xs.mkString(", ")
   }
   implicit class XtensionApplication(app: Application) {
-    def complete(result: DecodingResult[Unit]): Int =
+    def complete(result: Result[Unit]): Int =
       result match {
         case ValueResult(()) =>
           app.reporter.exitCode()
@@ -77,7 +77,7 @@ object MultidepsEnrichments {
     }
   }
   implicit class XtensionTaskIO[T](t: Task[T]) {
-    def toDecodingResult: Task[DecodingResult[T]] =
+    def toResult: Task[Result[T]] =
       t.map(ValueResult(_)).handle {
         case ex: ResolutionError =>
           ErrorResult(Diagnostic.error(ex.getMessage()))

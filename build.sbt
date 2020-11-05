@@ -1,6 +1,6 @@
 lazy val V = new {
   def scala212 = "2.12.12"
-  def moped = "0.1.6"
+  def moped = "0.1.7"
 }
 inThisBuild(
   List(

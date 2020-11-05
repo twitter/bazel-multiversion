@@ -3,10 +3,10 @@ package multideps.configs
 import coursier.core.Repository
 import coursier.maven.MavenRepository
 import moped.json.DecodingContext
-import moped.json.DecodingResult
 import moped.json.JsonCodec
 import moped.json.JsonElement
 import moped.json.JsonString
+import moped.json.Result
 import moped.json.ValueResult
 import moped.macros.ClassShape
 
@@ -25,7 +25,7 @@ object RepositoryConfig {
     moped.macros.deriveCodec(default)
   implicit val codec: JsonCodec[RepositoryConfig] =
     new JsonCodec[RepositoryConfig] {
-      def decode(context: DecodingContext): DecodingResult[RepositoryConfig] =
+      def decode(context: DecodingContext): Result[RepositoryConfig] =
         context.json match {
           case JsonString(value) => ValueResult(RepositoryConfig(url = value))
           case _ => automaticCodec.decode(context)
