@@ -80,7 +80,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
   ): Unit = {
     test(name) {
       checkCommand(
-        arguments = List("export", "--no-use-ansi-output"),
+        arguments = List("export"),
         expectedExit = 0,
         expectedOutput =
           """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
@@ -105,7 +105,6 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
             .mkString("\n")
         assertNoDiff(obtainedQuery, expectedQuery)
       }
-      pprint.log(FileLayout.asString(workingDirectory.resolve("src")))
       if (buildQuery.nonEmpty) {
         app()
           .process("bazel", "build", buildQuery)
@@ -155,7 +154,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     }
     val exit = app().run(arguments)
     assertEquals(exit, expectedExit, clues(app.capturedOutput))
-    assertNoDiff(app.capturedOutput, expectedOutput)
+    pprint.log(expectedOutput)
     assertNoDiff(app.capturedOutput, expectedOutput)
   }
 }

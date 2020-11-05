@@ -77,25 +77,28 @@ final case class DependencyConfig(
 }
 
 object DependencyConfig {
-  implicit val versionSchemeCodec: JsonCodec[VersionCompatibility] = new JsonCodec[VersionCompatibility] {
-    def decode(context: DecodingContext): DecodingResult[VersionCompatibility] =
-      JsonDecoder.stringJsonDecoder.decode(context).flatMap {
-        case "semver" => ValueResult(VersionCompatibility.SemVerSpec)
-        case other =>
-          VersionCompatibility(other).map(ValueResult(_)).getOrElse {
-            ErrorResult(
-              Diagnostic.error(
-                s"invalid version scheme '$other'",
-                context.json.position
+  implicit val versionSchemeCodec: JsonCodec[VersionCompatibility] =
+    new JsonCodec[VersionCompatibility] {
+      def decode(
+          context: DecodingContext
+      ): DecodingResult[VersionCompatibility] =
+        JsonDecoder.stringJsonDecoder.decode(context).flatMap {
+          case "semver" => ValueResult(VersionCompatibility.SemVerSpec)
+          case other =>
+            VersionCompatibility(other).map(ValueResult(_)).getOrElse {
+              ErrorResult(
+                Diagnostic.error(
+                  s"invalid version scheme '$other'",
+                  context.json.position
+                )
               )
-            )
-          }
-      }
-    def encode(value: VersionCompatibility): JsonElement =
-      JsonString(value.name)
-    def shape: ClassShape = ClassShape.empty
+            }
+        }
+      def encode(value: VersionCompatibility): JsonElement =
+        JsonString(value.name)
+      def shape: ClassShape = ClassShape.empty
 
-  }
+    }
   private val Full: Regex = "(.+):::(.+):(.+)".r
   private val Half: Regex = "(.+)::(.+):(.+)".r
   private val Java: Regex = "(.+):(.+):(.+)".r

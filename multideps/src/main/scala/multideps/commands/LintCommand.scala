@@ -29,7 +29,6 @@ import multideps.loggers.StaticProgressBar
 @CommandName("lint")
 case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
-    useAnsiOutput: Boolean = Util.useAnsiOutput(),
     app: Application = Application.default
 ) extends Command {
   private def runQuery(queryExpression: String): DecodingResult[QueryResult] = {
@@ -44,7 +43,7 @@ case class LintCommand(
     val pr0 = new ProcessRenderer(command)
     val pr = StaticProgressRenderer.ifAnsiDisabled(
       pr0,
-      useAnsiOutput
+      app.env.isColorEnabled
     )
     val pb = new InteractiveProgressBar(
       out = new PrintWriter(app.env.standardError),

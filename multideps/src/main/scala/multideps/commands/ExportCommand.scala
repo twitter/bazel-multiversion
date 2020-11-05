@@ -60,7 +60,6 @@ case class ExportCommand(
     lintCommand: LintCommand = LintCommand()
 ) extends Command {
   def app = lintCommand.app
-  def useAnsiOutput = lintCommand.useAnsiOutput
   def run(): Int = {
     app.complete(runResult())
   }
@@ -68,6 +67,7 @@ case class ExportCommand(
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
   def runResult(thirdparty: ThirdpartyConfig): DecodingResult[Unit] = {
+    pprint.log(app.env.workingDirectory)
     withThreadPool[DecodingResult[Unit]] { threads =>
       val cache: FileCache[Task] = FileCache().noCredentials
         .withCachePolicies(
@@ -94,7 +94,6 @@ case class ExportCommand(
             lintCommand
               .copy(
                 queryExpressions = List("@maven//:all"),
-                useAnsiOutput = useAnsiOutput,
                 app = app
               )
               .runResult()
@@ -308,21 +307,12 @@ case class ExportCommand(
   }
   private def withProgressBar[T](renderer: ProgressRenderer)(thunk: => T): T = {
     val out = new PrintWriter(app.err)
-    val p =
-      if (useAnsiOutput)
-        new InteractiveProgressBar(
-          out = out,
-          renderer = renderer,
-          intervalDuration = Duration.ofMillis(100),
-          terminal = app.terminal
-        )
-      else {
-        new StaticProgressBar(
-          renderer = renderer,
-          out = out,
-          terminal = app.terminal
-        )
-      }
+    val p = new InteractiveProgressBar(
+      out = out,
+      renderer = renderer,
+      intervalDuration = Duration.ofMillis(100),
+      terminal = app.terminal
+    )
     ProgressBars.run(p)(thunk)
   }
 
