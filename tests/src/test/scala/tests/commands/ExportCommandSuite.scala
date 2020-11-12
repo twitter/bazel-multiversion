@@ -25,9 +25,18 @@ class ExportCommandSuite extends tests.BaseSuite {
   )
 
   checkDeps(
-    "missing".only,
+    "missing",
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
+        |""".stripMargin,
+    expectedQuery = "a"
+  )
+
+  checkDeps(
+    "missing".only,
+    s"""|  - dependency: jline:jline:2.14.6
+        |  - dependency: jline:jline:2.14.6
+        |    classifier: test
         |""".stripMargin,
     expectedQuery = "a"
   )

@@ -5,11 +5,13 @@ import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 import coursier.core.Dependency
 import coursier.util.Artifact
 import org.typelevel.paiges.Doc
+import multideps.configs.DependencyConfig
 
 final case class ArtifactOutput(
     index: ResolutionIndex,
     outputs: collection.Map[String, ArtifactOutput],
     dependency: Dependency,
+    config: DependencyConfig,
     artifact: Artifact,
     artifactSha256: String,
     sourcesArtifact: Option[Artifact] = None,
@@ -27,25 +29,16 @@ final case class ArtifactOutput(
   val org = dependency.module.organization.value
   val moduleName = dependency.module.name.value
   val version = dependency.version
+  // pprint.log(dependency.configRepr)
   val mavenLabel: String =
-    s"@maven//:${org}/${moduleName}-${version}${dependency.configRepr}.jar"
+    s"@maven//:${org}/${moduleName}-${version}${config.classifierRepr}.jar"
   lazy val dependencies: Seq[String] =
     index.dependencies
       .getOrElse(dependency.toId, Nil)
       .iterator
-      .flatMap { d =>
-        val key = index.reconciledDependency(d)
-        if (d.optional) outputs.get(key.repr)
-        else if (!outputs.contains(key.repr)) {
-          pprint.log(label)
-          pprint.log(key.repr)
-          pprint.log(d.optional)
-          None
-        } else {
-          Some(outputs(key.repr))
-        }
-      }
+      .flatMap(d => outputs.get(index.reconciledDependency(d).repr))
       .map(_.label)
+      .filterNot(_ == label)
       .toSeq
       .distinct
   def httpFile: TargetOutput =

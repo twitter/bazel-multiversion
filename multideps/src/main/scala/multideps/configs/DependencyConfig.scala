@@ -40,6 +40,11 @@ final case class DependencyConfig(
     force: Boolean = true,
     transitive: Boolean = true
 ) {
+
+  val classifierRepr = classifier match {
+    case Some(value) => s"_$value"
+    case None => ""
+  }
   def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
       case JavaLanguagesConfig => ""

@@ -15,7 +15,6 @@ import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
 import munit.TestOptions
-import java.time.Clock
 
 abstract class BaseSuite extends MopedSuite(Multideps.app) {
   override def environmentVariables: Map[String, String] =

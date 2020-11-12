@@ -48,8 +48,8 @@ object MultidepsEnrichments {
     Configuration.compile,
     Configuration.defaultCompile,
     Configuration.default,
-    Configuration.runtime,
-    Configuration.test
+    Configuration.runtime
+    // Configuration.test
   )
   implicit class XtensionDependency(dep: Dependency) {
     def toId: DependencyId =

@@ -5,8 +5,6 @@ import scala.collection.mutable
 import multideps.resolvers.DependencyId
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
-import multideps.diagnostics.MultidepsEnrichments.XtensionList
-import multideps.resolvers.ResolvedDependency
 
 import coursier.core.Dependency
 import coursier.core.Module
@@ -36,19 +34,17 @@ final case class ResolutionIndex(
     } yield dep -> reconciledVersion
   }.toMap
   lazy val dependencies: Map[DependencyId, Seq[Dependency]] = {
-    (for {
+    val isVisited = mutable.Set.empty[String]
+    val res = for {
       r <- resolutions
-      dep <- r.res.dependencies
+      transitive = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
+      dep <- r.res.rootDependencies
+      if !isVisited(dep.repr)
     } yield {
-      val transitive = r.res
-        .dependenciesOf(
-          dep,
-          withRetainedVersions = true,
-          withFallbackConfig = true
-        )
-        .map(reconciledDependency)
+      isVisited += dep.repr
       dep.toId -> transitive
-    }).toMap
+    }
+    res.toMap
   }
   def reconciledDependency(dep: Dependency): Dependency =
     dep.withVersion(reconciledVersion(dep))

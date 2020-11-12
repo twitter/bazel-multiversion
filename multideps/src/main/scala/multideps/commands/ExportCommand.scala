@@ -154,7 +154,7 @@ case class ExportCommand(
           case (d, p, a)
               if Resolution.defaultTypes.contains(p.`type`) &&
                 d.version == index.reconciledVersion(d) =>
-            ResolvedDependency(d.withOptional(a.optional), p, a)
+            ResolvedDependency(root.dep, d, p, a)
         }
       }
       .distinctBy(_.dependency.toId)
@@ -204,6 +204,7 @@ case class ExportCommand(
                 index = index,
                 outputs = outputs.asScala,
                 dependency = r.dependency,
+                config = r.config,
                 artifact = r.artifact,
                 artifactSha256 = Sha256.compute(file)
               )
@@ -212,13 +213,14 @@ case class ExportCommand(
             }.toEither)
 
           case Left(value) =>
-            if (true) {
-              pprint.log(r.artifact.url)
-              pprint.log(r.artifact.optional)
-            }
-            if (r.artifact.optional) Nil
-            else if (r.publication.`type` == Type("tar.gz")) Nil
-            else List(Left(value))
+            // Ignore download failures. It's common that some dependencies have
+            // pom files but no jar files. For example,
+            // https://repo1.maven.org/maven2/io/monix/monix_2.12/2.3.2/ There
+            // exists `Artifact.optional` and `Dependency.optional`, which seem
+            // helpful to distinguish these kinds of dependencies but they are
+            // true by default so I'm not sure if they're intended to be used
+            // for that purpose.
+            Nil
         }
       }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten
