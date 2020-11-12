@@ -4,8 +4,6 @@ import java.{util => ju}
 
 import scala.collection.mutable
 
-import multideps.resolvers.DependencyId
-
 import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.error.ResolutionError
@@ -52,12 +50,6 @@ object MultidepsEnrichments {
     // Configuration.test
   )
   implicit class XtensionDependency(dep: Dependency) {
-    def toId: DependencyId =
-      DependencyId(
-        dep.module.organization.value,
-        dep.module.name.value,
-        dep.version
-      )
     def configRepr: String =
       if (isEmptyConfiguration(dep.configuration)) ""
       else s"_${dep.configuration.value}"

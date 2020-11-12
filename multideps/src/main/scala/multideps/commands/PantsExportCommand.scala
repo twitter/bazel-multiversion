@@ -7,7 +7,6 @@ import java.nio.file.Path
 
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments._
-import moped.progressbars.ProcessRenderer
 import multideps.loggers.ProgressBars
 
 import moped.annotations.CommandName
@@ -20,6 +19,7 @@ import moped.json.Result
 import moped.json.ValueResult
 import moped.parsers.JsonParser
 import moped.progressbars.InteractiveProgressBar
+import moped.progressbars.ProcessRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import os.Shellable

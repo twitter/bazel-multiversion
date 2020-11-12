@@ -1,13 +1,14 @@
 package multideps.loggers
 
+import java.time.Clock
+
 import multideps.diagnostics.MultidepsEnrichments.XtensionSeq
 import multideps.outputs.Docs
 
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
-import org.typelevel.paiges.Doc
-import java.time.Clock
 import moped.progressbars.Timer
+import org.typelevel.paiges.Doc
 
 class ResolveProgressRenderer(
     maxRootDependencies: Long,

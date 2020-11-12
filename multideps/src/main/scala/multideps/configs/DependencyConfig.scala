@@ -3,6 +3,7 @@ package multideps.configs
 import scala.util.matching.Regex
 
 import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
+import multideps.resolvers.DependencyId
 
 import coursier.core.Configuration
 import coursier.core.Dependency
@@ -41,7 +42,15 @@ final case class DependencyConfig(
     transitive: Boolean = true
 ) {
 
-  val classifierRepr = classifier match {
+  def toId: DependencyId =
+    DependencyId(
+      organization.value,
+      name,
+      version,
+      classifier
+    )
+
+  val classifierRepr: String = classifier match {
     case Some(value) => s"_$value"
     case None => ""
   }

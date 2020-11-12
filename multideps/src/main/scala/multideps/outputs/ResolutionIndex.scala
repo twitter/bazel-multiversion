@@ -2,9 +2,9 @@ package multideps.outputs
 
 import scala.collection.mutable
 
-import multideps.resolvers.DependencyId
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
+import multideps.resolvers.DependencyId
 
 import coursier.core.Dependency
 import coursier.core.Module
@@ -42,7 +42,7 @@ final case class ResolutionIndex(
       if !isVisited(dep.repr)
     } yield {
       isVisited += dep.repr
-      dep.toId -> transitive
+      r.dep.toId -> transitive
     }
     res.toMap
   }

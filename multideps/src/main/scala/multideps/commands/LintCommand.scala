@@ -7,7 +7,6 @@ import scala.collection.JavaConverters._
 import multideps.diagnostics.MultidepsEnrichments._
 import multideps.indexes.DependenciesIndex
 import multideps.indexes.TargetIndex
-import moped.progressbars.ProcessRenderer
 import multideps.loggers.ProgressBars
 import multideps.loggers.StaticProgressRenderer
 import multideps.resolvers.SimpleDependency
@@ -20,6 +19,7 @@ import moped.cli.CommandParser
 import moped.json.Result
 import moped.json.ValueResult
 import moped.progressbars.InteractiveProgressBar
+import moped.progressbars.ProcessRenderer
 import moped.reporters.Diagnostic
 import org.scalameta.bazel_multideps.Build.QueryResult
 import org.scalameta.bazel_multideps.Build.Target

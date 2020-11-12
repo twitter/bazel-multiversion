@@ -1,11 +1,11 @@
 package multideps.outputs
 
+import multideps.configs.DependencyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
 import coursier.core.Dependency
 import coursier.util.Artifact
 import org.typelevel.paiges.Doc
-import multideps.configs.DependencyConfig
 
 final case class ArtifactOutput(
     index: ResolutionIndex,
@@ -34,7 +34,7 @@ final case class ArtifactOutput(
     s"@maven//:${org}/${moduleName}-${version}${config.classifierRepr}.jar"
   lazy val dependencies: Seq[String] =
     index.dependencies
-      .getOrElse(dependency.toId, Nil)
+      .getOrElse(config.toId, Nil)
       .iterator
       .flatMap(d => outputs.get(index.reconciledDependency(d).repr))
       .map(_.label)

@@ -1,5 +1,6 @@
 package multideps.loggers
 
+import java.time.Clock
 import java.time.Duration
 
 import scala.math.Ordered._
@@ -11,7 +12,6 @@ import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import moped.progressbars.Timer
 import org.typelevel.paiges.Doc
-import java.time.Clock
 
 class DownloadProgressRenderer(maxArtifacts: Long, clock: Clock)
     extends ProgressRenderer {

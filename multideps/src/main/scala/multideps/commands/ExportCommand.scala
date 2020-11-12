@@ -31,7 +31,6 @@ import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
 import coursier.core.Resolution
-import coursier.core.Type
 import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
@@ -157,12 +156,7 @@ case class ExportCommand(
             ResolvedDependency(root.dep, d, p, a)
         }
       }
-      .distinctBy(_.dependency.toId)
-    val distinctArtifacts = artifacts.distinctBy(_.dependency.repr)
-    require(
-      distinctArtifacts.size == artifacts.size,
-      s"${distinctArtifacts.size} != ${artifacts.size}"
-    )
+      .distinctBy(_.config.toId)
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val progressBar =
       new DownloadProgressRenderer(artifacts.length, app.env.clock)

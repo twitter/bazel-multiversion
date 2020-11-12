@@ -1,9 +1,10 @@
 package multideps.resolvers
 
+import multideps.configs.DependencyConfig
+
 import coursier.core.Dependency
 import coursier.core.Publication
 import coursier.util.Artifact
-import multideps.configs.DependencyConfig
 
 final case class ResolvedDependency(
     config: DependencyConfig,
