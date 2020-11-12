@@ -149,66 +149,78 @@ case class ExportCommand(
       cache: FileCache[Task]
   ): Result[Path] = {
     val artifacts = index.resolutions
-      .flatMap { d =>
-        d.res.dependencyArtifacts().collect {
-          case (d, p, a) if Resolution.defaultTypes.contains(p.`type`) =>
-            ResolvedDependency(d.withVersion(index.reconciledVersion(d)), p, a)
+      .flatMap { root =>
+        root.res.dependencyArtifacts().collect {
+          case (d, p, a)
+              if Resolution.defaultTypes.contains(p.`type`) &&
+                d.version == index.reconciledVersion(d) =>
+            ResolvedDependency(d.withOptional(a.optional), p, a)
         }
       }
-      .distinctBy(_.dependency.repr)
+      .distinctBy(_.dependency.toId)
+    val distinctArtifacts = artifacts.distinctBy(_.dependency.repr)
+    require(
+      distinctArtifacts.size == artifacts.size,
+      s"${distinctArtifacts.size} != ${artifacts.size}"
+    )
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val progressBar =
       new DownloadProgressRenderer(artifacts.length, app.env.clock)
-    val files = artifacts.map { r =>
-      val logger = progressBar.loggers.newCacheLogger(r.dependency)
-      val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
-      type Fetch[T] = Task[Either[ArtifactError, T]]
-      def tryFetch(artifact: Artifact, policy: CachePolicy): Fetch[File] =
-        cache
-          .withCachePolicies(List(policy))
-          .withLogger(logger)
-          .file(artifact)
-          .run
-      val shaAttempts: List[Fetch[File]] = for {
-        // Attempt 1: Fetch "*.jar.sha256" URL locally
-        // Attempt 2: Fetch "*.jar" URL locally
-        // Attempt 3: Fetch "*.jar.sha256" URL remotely
-        // Attempt 4: Fetch "*.jar" URL remotely
-        url <- List(
-          r.artifact.checksumUrls.get("SHA-256"),
-          Some(r.artifact.url)
-        ).flatten
-        policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
-      } yield tryFetch(r.artifact.withUrl(url), policy)
-      val shas = shaAttempts.tail.foldLeft(shaAttempts.head) {
-        case (task, nextAttempt) =>
-          task.flatMap {
-            case Left(_) =>
-              // Fetch failed, try next (Url, CachePolicy) combination
-              nextAttempt
-            case success => Task.point(success)
-          }
-      }
-      shas.map {
-        case Right(file) =>
-          List(Try {
-            val output = ArtifactOutput(
-              index = index,
-              outputs = outputs.asScala,
-              dependency = r.dependency,
-              artifact = r.artifact,
-              artifactSha256 = Sha256.compute(file)
-            )
-            outputs.put(r.dependency.repr, output)
-            output
-          }.toEither)
+    val files: List[Task[List[Either[Throwable, ArtifactOutput]]]] =
+      artifacts.map { r =>
+        val logger = progressBar.loggers.newCacheLogger(r.dependency)
+        val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
+        type Fetch[T] = Task[Either[ArtifactError, T]]
+        def tryFetch(artifact: Artifact, policy: CachePolicy): Fetch[File] =
+          cache
+            .withCachePolicies(List(policy))
+            .withLogger(logger)
+            .file(artifact)
+            .run
+        val shaAttempts: List[Fetch[File]] = for {
+          // Attempt 1: Fetch "*.jar.sha256" URL locally
+          // Attempt 2: Fetch "*.jar" URL locally
+          // Attempt 3: Fetch "*.jar.sha256" URL remotely
+          // Attempt 4: Fetch "*.jar" URL remotely
+          url <- List(
+            r.artifact.checksumUrls.get("SHA-256"),
+            Some(r.artifact.url)
+          ).flatten
+          policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
+        } yield tryFetch(r.artifact.withUrl(url), policy)
+        val shas = shaAttempts.tail.foldLeft(shaAttempts.head) {
+          case (task, nextAttempt) =>
+            task.flatMap {
+              case Left(_) =>
+                // Fetch failed, try next (Url, CachePolicy) combination
+                nextAttempt
+              case success => Task.point(success)
+            }
+        }
+        shas.map {
+          case Right(file) =>
+            List(Try {
+              val output = ArtifactOutput(
+                index = index,
+                outputs = outputs.asScala,
+                dependency = r.dependency,
+                artifact = r.artifact,
+                artifactSha256 = Sha256.compute(file)
+              )
+              outputs.put(index.reconciledDependency(r.dependency).repr, output)
+              output
+            }.toEither)
 
-        case Left(value) =>
-          if (r.artifact.optional) Nil
-          else if (r.publication.`type` == Type("tar.gz")) Nil
-          else List(Left(value))
+          case Left(value) =>
+            if (true) {
+              pprint.log(r.artifact.url)
+              pprint.log(r.artifact.optional)
+            }
+            if (r.artifact.optional) Nil
+            else if (r.publication.`type` == Type("tar.gz")) Nil
+            else List(Left(value))
+        }
       }
-    }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten
     val errors = all.collect { case Left(error) => Diagnostic.exception(error) }
     Diagnostic.fromDiagnostics(errors.toList) match {

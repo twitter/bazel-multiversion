@@ -4,6 +4,8 @@ import java.{util => ju}
 
 import scala.collection.mutable
 
+import multideps.resolvers.DependencyId
+
 import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.error.ResolutionError
@@ -50,14 +52,19 @@ object MultidepsEnrichments {
     Configuration.test
   )
   implicit class XtensionDependency(dep: Dependency) {
+    def toId: DependencyId =
+      DependencyId(
+        dep.module.organization.value,
+        dep.module.name.value,
+        dep.version
+      )
     def configRepr: String =
       if (isEmptyConfiguration(dep.configuration)) ""
       else s"_${dep.configuration.value}"
     def repr: String = {
       s"${dep.module.repr}:${dep.version}${configRepr}"
     }
-    def withoutMetadata: Dependency =
-      dep //  Dependency(dep.module, dep.version)
+    def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {

@@ -31,9 +31,20 @@ final case class ArtifactOutput(
     s"@maven//:${org}/${moduleName}-${version}${dependency.configRepr}.jar"
   lazy val dependencies: Seq[String] =
     index.dependencies
-      .getOrElse(dependency.withoutMetadata, Nil)
+      .getOrElse(dependency.toId, Nil)
       .iterator
-      .map(d => outputs(index.reconciledDependency(d).repr))
+      .flatMap { d =>
+        val key = index.reconciledDependency(d)
+        if (d.optional) outputs.get(key.repr)
+        else if (!outputs.contains(key.repr)) {
+          pprint.log(label)
+          pprint.log(key.repr)
+          pprint.log(d.optional)
+          None
+        } else {
+          Some(outputs(key.repr))
+        }
+      }
       .map(_.label)
       .toSeq
       .distinct

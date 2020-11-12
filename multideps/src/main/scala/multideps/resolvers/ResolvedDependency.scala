@@ -8,4 +8,7 @@ final case class ResolvedDependency(
     dependency: Dependency,
     publication: Publication,
     artifact: Artifact
-)
+    // reconciledDependency: Dependency
+) {
+  // def isCanonical = dependency == reconciledDependency
+}

@@ -2,6 +2,7 @@ package multideps.outputs
 
 import scala.collection.mutable
 
+import multideps.resolvers.DependencyId
 import multideps.configs.ThirdpartyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 import multideps.diagnostics.MultidepsEnrichments.XtensionList
@@ -18,21 +19,6 @@ final case class ResolutionIndex(
     artifacts: collection.Map[Module, collection.Set[Dependency]],
     roots: collection.Map[Dependency, collection.Set[Dependency]]
 ) {
-  lazy val allDependencies: List[ResolvedDependency] = resolutions
-    .flatMap(_.res.dependencyArtifacts().map {
-      case (d, p, a) => ResolvedDependency(d, p, a)
-    })
-    .distinctBy(_.dependency)
-  lazy val dependencies: Map[Dependency, Seq[Dependency]] = {
-    (for {
-      r <- resolutions
-      dep <- r.res.dependencies
-    } yield dep.withoutMetadata -> r.res.dependenciesOf(
-      dep,
-      withRetainedVersions = true,
-      withFallbackConfig = true
-    )).toMap
-  }
   private lazy val reconciledVersions: Map[Dependency, String] = {
     for {
       (module, deps) <- artifacts
@@ -49,6 +35,21 @@ final case class ResolutionIndex(
       if dep.version != reconciledVersion
     } yield dep -> reconciledVersion
   }.toMap
+  lazy val dependencies: Map[DependencyId, Seq[Dependency]] = {
+    (for {
+      r <- resolutions
+      dep <- r.res.dependencies
+    } yield {
+      val transitive = r.res
+        .dependenciesOf(
+          dep,
+          withRetainedVersions = true,
+          withFallbackConfig = true
+        )
+        .map(reconciledDependency)
+      dep.toId -> transitive
+    }).toMap
+  }
   def reconciledDependency(dep: Dependency): Dependency =
     dep.withVersion(reconciledVersion(dep))
   def reconciledVersion(dep: Dependency): String =
