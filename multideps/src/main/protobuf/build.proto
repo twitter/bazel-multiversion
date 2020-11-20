@@ -82,7 +82,6 @@ message FilesetEntry {
   // This field is optional because there will be some time when the new
   // PB is used by tools depending on blaze query, but the new blaze version
   // is not yet released.
-  // TODO(bazel-team): Make this field required once a version of Blaze is
   // released that outputs this field.
   optional SymlinkBehavior symlink_behavior = 5 [default = COPY];
 
@@ -387,7 +386,6 @@ message SourceFile {
   // Labels of .bzl (Starlark) files that are transitively loaded in this BUILD
   // file. This is present only when the SourceFile represents a BUILD file that
   // loaded .bzl files.
-  // TODO(bazel-team): Rename this field.
   repeated string subinclude = 3;
 
   // Labels of package groups that are mentioned in the visibility declaration

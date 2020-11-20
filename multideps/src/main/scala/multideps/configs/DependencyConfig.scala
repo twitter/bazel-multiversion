@@ -3,6 +3,7 @@ package multideps.configs
 import scala.util.matching.Regex
 
 import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
+import multideps.resolvers.DependencyId
 
 import coursier.core.Configuration
 import coursier.core.Dependency
@@ -10,14 +11,18 @@ import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import coursier.core.Publication
+import coursier.version.VersionCompatibility
 import moped.json.DecodingContext
-import moped.json.DecodingResult
+import moped.json.ErrorResult
 import moped.json.JsonCodec
+import moped.json.JsonDecoder
 import moped.json.JsonElement
 import moped.json.JsonObject
 import moped.json.JsonString
+import moped.json.Result
 import moped.json.ValueResult
 import moped.macros.ClassShape
+import moped.reporters.Diagnostic
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
@@ -29,8 +34,26 @@ final case class DependencyConfig(
     forceVersions: ForceVersionsConfig = ForceVersionsConfig(),
     modules: List[String] = Nil,
     lang: LanguagesConfig = JavaLanguagesConfig,
-    exports: List[String] = Nil
+    dependencies: List[String] = Nil,
+    exports: List[String] = Nil,
+    targets: List[String] = Nil,
+    versionScheme: Option[VersionCompatibility] = None,
+    force: Boolean = true,
+    transitive: Boolean = true
 ) {
+
+  def toId: DependencyId =
+    DependencyId(
+      organization.value,
+      name,
+      version,
+      classifier
+    )
+
+  val classifierRepr: String = classifier match {
+    case Some(value) => s"_$value"
+    case None => ""
+  }
   def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
       case JavaLanguagesConfig => ""
@@ -62,12 +85,35 @@ final case class DependencyConfig(
         ),
         publication = Publication.empty,
         optional = false,
-        transitive = true
+        transitive = transitive
       )
     )
+
 }
 
 object DependencyConfig {
+  implicit val versionSchemeCodec: JsonCodec[VersionCompatibility] =
+    new JsonCodec[VersionCompatibility] {
+      def decode(
+          context: DecodingContext
+      ): Result[VersionCompatibility] =
+        JsonDecoder.stringJsonDecoder.decode(context).flatMap {
+          case "semver" => ValueResult(VersionCompatibility.SemVerSpec)
+          case other =>
+            VersionCompatibility(other).map(ValueResult(_)).getOrElse {
+              ErrorResult(
+                Diagnostic.error(
+                  s"invalid version scheme '$other'",
+                  context.json.position
+                )
+              )
+            }
+        }
+      def encode(value: VersionCompatibility): JsonElement =
+        JsonString(value.name)
+      def shape: ClassShape = ClassShape.empty
+
+    }
   private val Full: Regex = "(.+):::(.+):(.+)".r
   private val Half: Regex = "(.+)::(.+):(.+)".r
   private val Java: Regex = "(.+):(.+):(.+)".r
@@ -113,7 +159,7 @@ object DependencyConfig {
     automaticCodec(default)
   implicit val codec: JsonCodec[DependencyConfig] =
     new JsonCodec[DependencyConfig] {
-      def decode(context: DecodingContext): DecodingResult[DependencyConfig] = {
+      def decode(context: DecodingContext): Result[DependencyConfig] = {
         context.json match {
           case FromJsonString(dep) => ValueResult(dep)
           case obj: JsonObject =>

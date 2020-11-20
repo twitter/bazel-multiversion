@@ -8,9 +8,9 @@ final case class TargetOutput(
 ) {
   def toDoc: Doc = {
     val arguments = Doc.intercalate(
-      Doc.comma + Doc.line,
+      Doc.comma + Doc.space,
       attributes.map { case (key, value) => Docs.attr(key, value) }
     )
-    Doc.text(kind) + arguments.bracketBy(Docs.open, Docs.close)
+    Doc.text(kind) + arguments.tightBracketBy(Docs.open, Docs.close)
   }
 }

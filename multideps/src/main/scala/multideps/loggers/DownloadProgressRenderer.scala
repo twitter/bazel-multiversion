@@ -1,27 +1,39 @@
 package multideps.loggers
 
+import java.time.Clock
+import java.time.Duration
+
+import scala.math.Ordered._
+
 import multideps.diagnostics.MultidepsEnrichments.XtensionSeq
 import multideps.outputs.Docs
 
 import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
+import moped.progressbars.Timer
 import org.typelevel.paiges.Doc
 
-class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
-  private lazy val timer = new PrettyTimer()
+class DownloadProgressRenderer(maxArtifacts: Long, clock: Clock)
+    extends ProgressRenderer {
+  private lazy val timer = new Timer(clock)
   val loggers =
-    new CoursierLoggers(isArtifactDownload = true, _.endsWith(".jar"))
+    new CoursierLoggers(isArtifactDownload = true, _.contains(".jar"))
+  override def renderStart(): Doc = {
+    timer.duration() // start timer
+    super.renderStart()
+  }
   override def renderStop(): Doc = {
-    if (loggers.totalDownloadSize > 0) {
-      val jars = Words.jarFiles.format(loggers.totalTransitiveDependencies)
+    if (
+      timer.duration() > Duration.ofSeconds(1) &&
+      loggers.totalDownloadSize > 0
+    ) {
+      val shas = Words.shaFiles.format(loggers.totalTransitiveDependencies)
       val bytes = Words.bytes.format(loggers.totalDownloadSize)
       val cached =
         if (loggers.totalCachedArtifacts > 0)
           s", ${loggers.totalCachedArtifacts} cached files"
         else ""
-      Docs.emoji.success + Doc.text(
-        s"Downloaded $jars ($bytes$cached) in $timer"
-      )
+      Docs.emoji.success + Doc.text(s"Computed $shas ($bytes$cached) in $timer")
     } else {
       Doc.empty
     }
@@ -36,14 +48,13 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
         activeLoggers.iterator.map(_.downloadSize()).sum
       val maxSize = loggers.totalMaxDownloadSize +
         activeLoggers.iterator.map(_.downloadSize()).sum
+      val remaining = maxArtifacts - loggers.totalRootDependencies
       val header = Doc.text(
         List[String](
           "Downloading:",
-          s"elapsed ${timer.format()}",
-          Words.remaining.formatPadded(
-            maxArtifacts - loggers.totalRootDependencies
-          ),
-          Words.downloadedBytes.formatPadded(downloadSize)
+          timer.formatPadded(),
+          s"$remaining/$maxArtifacts remaining",
+          s"(${Words.downloadedBytes.formatPadded(downloadSize)})"
         ).mkString(" ")
       )
       val rows = Doc.tabulate(
@@ -61,7 +72,7 @@ class DownloadProgressRenderer(maxArtifacts: Long) extends ProgressRenderer {
         }
       )
       val table = header + Doc.line + rows + Doc.line
-      ProgressStep(active = table)
+      ProgressStep(dynamic = table)
     }
   }
 }

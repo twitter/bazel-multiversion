@@ -51,7 +51,7 @@ protobuf_deps()
 
 
 # For bazel-multideps
-load("//:3rdparty/jvm_deps.bzl", "jvm_deps")
+load("//3rdparty:jvm_deps.bzl", "jvm_deps")
 jvm_deps()
 load("@maven//:jvm_deps.bzl", "load_jvm_deps")
 load_jvm_deps()

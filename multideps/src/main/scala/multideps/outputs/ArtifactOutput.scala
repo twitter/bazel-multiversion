@@ -1,5 +1,6 @@
 package multideps.outputs
 
+import multideps.configs.DependencyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
 import coursier.core.Dependency
@@ -10,25 +11,16 @@ final case class ArtifactOutput(
     index: ResolutionIndex,
     outputs: collection.Map[String, ArtifactOutput],
     dependency: Dependency,
+    config: DependencyConfig,
     artifact: Artifact,
     artifactSha256: String,
     sourcesArtifact: Option[Artifact] = None,
     sourcesArtifactSha256: Option[String] = None
 ) {
-  // val label =
-  //   s"${dependency.module.organization.value}/${dependency.module.name.value}/${dependency.version}"
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
-  val label: String = dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
-  def dependencies: Seq[String] =
-    index.dependencies
-      .getOrElse(dependency.withoutMetadata, Nil)
-      .iterator
-      // TODO(olafur): fix java.util.NoSuchElementException: key not found: com.google.code.findbugs:jsr305:1.3.9
-      .flatMap(d => outputs.get(d.repr))
-      .map(_.label)
-      .toSeq
-      .distinct
-  def repr: String =
+  val label: String =
+    dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
+  val repr: String =
     s"""|Artifact(
         |  dep = "${label}",
         |  url = "${artifact.url}",
@@ -37,12 +29,18 @@ final case class ArtifactOutput(
   val org = dependency.module.organization.value
   val moduleName = dependency.module.name.value
   val version = dependency.version
-  val mavenLabel: String = s"@maven//:${org}/${moduleName}-${version}.jar"
-  // require(artifactsnonEmpty)
-  // def label: String = ""
-  // def name = ""
-  val open: Doc = Doc.text("(")
-  val close: Doc = Doc.text(")")
+  // pprint.log(dependency.configRepr)
+  val mavenLabel: String =
+    s"@maven//:${org}/${moduleName}-${version}${config.classifierRepr}.jar"
+  lazy val dependencies: Seq[String] =
+    index.dependencies
+      .getOrElse(config.toId, Nil)
+      .iterator
+      .flatMap(d => outputs.get(index.reconciledDependency(d).repr))
+      .map(_.label)
+      .filterNot(_ == label)
+      .toSeq
+      .distinct
   def httpFile: TargetOutput =
     TargetOutput(
       kind = "http_file",
@@ -50,13 +48,10 @@ final case class ArtifactOutput(
       "urls" -> Docs.array(artifact.url),
       "sha256" -> Docs.literal(artifactSha256)
     )
-  def build: Doc =
-    genrule.toDoc /
-      scalaImport.toDoc
   def genrule: TargetOutput =
     TargetOutput(
       kind = "genrule",
-      "name" -> Docs.literal(label + "_extension"),
+      "name" -> Docs.literal(s"genrules/$label"),
       "srcs" -> Docs.array(s"@${label}//file"),
       "outs" -> Docs.array(mavenLabel),
       "cmd" -> Docs.literal("cp $< $@")
@@ -72,7 +67,9 @@ final case class ArtifactOutput(
         s"jvm_module=${dependency.module.repr}",
         s"jvm_version=${dependency.version}"
       ),
-      // TODO(olafur): only make root deps public
       "visibility" -> Docs.array("//visibility:public")
     )
+  def build: Doc =
+    genrule.toDoc /
+      scalaImport.toDoc
 }
