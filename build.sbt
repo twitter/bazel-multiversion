@@ -71,6 +71,7 @@ lazy val multideps = project
 lazy val tests = project
   .in(file("tests"))
   .settings(
+    Test / parallelExecution := false,
     testFrameworks := List(new TestFramework("munit.Framework")),
     libraryDependencies ++= List(
       "org.scalameta" %% "munit" % "0.7.13",

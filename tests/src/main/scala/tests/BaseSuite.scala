@@ -79,17 +79,19 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
       name: TestOptions,
       deps: String,
       buildQuery: String = "",
-      expectedQuery: String = ""
+      expectedQuery: String = "",
+      expectedExit: Int = 0,
+      expectedOutput: String =
+        """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
+           |""".stripMargin
   )(implicit
       loc: munit.Location
   ): Unit = {
     test(name) {
       checkCommand(
         arguments = List("export"),
-        expectedExit = 0,
-        expectedOutput =
-          """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
-             |""".stripMargin,
+        expectedExit = expectedExit,
+        expectedOutput = expectedOutput,
         workingDirectoryLayout = s"""|/3rdparty.yaml
                                      |scala: 2.12.12
                                      |dependencies:
@@ -158,6 +160,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     if (workingDirectoryLayout.nonEmpty) {
       FileLayout.fromString(workingDirectoryLayout, workingDirectory)
     }
+    app().reporter.reset()
     val exit = app().run(arguments)
     assertEquals(exit, expectedExit, clues(app.capturedOutput))
     assertNoDiff(app.capturedOutput, expectedOutput)
