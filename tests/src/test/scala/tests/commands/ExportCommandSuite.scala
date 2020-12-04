@@ -9,7 +9,7 @@ class ExportCommandSuite extends tests.BaseSuite {
        |""".stripMargin,
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:3:16 error: transitive dependency 'com.google.guava:guava' has conflicting versions.
-         |    resolved versions: "27.1-jre"
+         |    found versions: "27.1-jre"
          |    declared versions: "29.0-jre"
          |    root dependencies:
          |  To fix this problem, add 'dependencies = ''' to the root dependencies OR add 'targets' to the transitive dependency.
