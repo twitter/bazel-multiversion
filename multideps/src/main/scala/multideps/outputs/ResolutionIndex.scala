@@ -26,7 +26,15 @@ final case class ResolutionIndex(
           .getOrElse(module, Nil)
           .headOption
           .flatMap(_.versionScheme)
-          .getOrElse(VersionCompatibility.Strict)
+          .getOrElse {
+            val m = module.name.value
+            if (
+              m.endsWith("_2.11") || m
+                .endsWith("_2.12") || m.endsWith("_2.13") || m.endsWith("_3")
+            )
+              VersionCompatibility.PackVer
+            else VersionCompatibility.EarlySemVer
+          }
       versions = reconcileVersions(deps, compat)
       dep <- deps
       reconciledVersion <- versions.get(dep)
