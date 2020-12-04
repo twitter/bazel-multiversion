@@ -10,7 +10,6 @@ import java.time.Duration
 import java.{util => ju}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
@@ -29,9 +28,7 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
-import coursier.core.Dependency
 import coursier.core.Resolution
-import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
 import coursier.version.VersionCompatibility
@@ -285,6 +282,7 @@ case class ExportCommand(
     }
   }
 
+  /*
   private def reconcileVersions(
       versions: collection.Set[Dependency],
       compat: VersionCompatibility
@@ -309,6 +307,7 @@ case class ExportCommand(
     }
     retained.keys.toList
   }
+   */
 
   private def withThreadPool[T](fn: CoursierThreadPools => T): T = {
     val threads = new CoursierThreadPools()

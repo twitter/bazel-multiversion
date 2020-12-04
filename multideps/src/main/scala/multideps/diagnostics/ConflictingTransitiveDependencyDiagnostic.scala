@@ -34,7 +34,7 @@ class ConflictingTransitiveDependencyDiagnostic(
         "add 'dependencies = ''' to the root dependencies OR add 'targets' to the transitive dependency."
     val rootDependnecies = pretty(roots.distinct.take(5).map(_.repr))
     s"""transitive dependency '${module.repr}' has conflicting versions.
-       |    resolved versions:${pretty(transitiveVersions)}
+       |    found versions:${pretty(transitiveVersions)}
        |    declared versions:${pretty(declaredVersions)}
        |    root dependencies:${rootDependnecies}
        |  To fix this problem, $toFix
