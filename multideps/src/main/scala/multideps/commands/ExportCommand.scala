@@ -28,7 +28,9 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
+import coursier.core.Dependency
 import coursier.core.Resolution
+import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
 import coursier.version.VersionCompatibility
@@ -259,14 +261,40 @@ case class ExportCommand(
                     d.organization.position
                 }
                 .getOrElse(NoPosition)
-              val rootDependencies =
-                deps.filter(d => allVersions.contains(d.version))
+              val rootsForVersions: Map[String, Set[Dependency]] =
+                Map(
+                  allVersions.toList.map(v =>
+                    v ->
+                      deps.filter(_.version == v).flatMap(index.roots).toSet
+                  ): _*
+                )
+              val sortedVersions = allVersions.toVector
+                .sortBy(v => Version(v))
+                .sortBy(v => rootsForVersions(v).size)
+                .reverse
+              val popularVersion = sortedVersions.head
+              val okRoots = rootsForVersions(popularVersion)
+              val okDepsConfig =
+                okRoots.flatMap(d => index.thirdparty.depsByModule(d.module))
+              val unpopularRoots =
+                allVersions
+                  .filter(_ != popularVersion)
+                  .flatMap(rootsForVersions)
+                  .toList
+                  .sortBy(_.toString)
+              val unpopularDepsConfig = unpopularRoots.flatMap(d =>
+                index.thirdparty.depsByModule(d.module)
+              )
               List(
                 new ConflictingTransitiveDependencyDiagnostic(
                   module,
                   unspecified.toList,
                   declaredDeps,
-                  rootDependencies.toList,
+                  popularVersion,
+                  okRoots.toList,
+                  okDepsConfig.toList,
+                  unpopularRoots,
+                  unpopularDepsConfig,
                   pos
                 )
               )
