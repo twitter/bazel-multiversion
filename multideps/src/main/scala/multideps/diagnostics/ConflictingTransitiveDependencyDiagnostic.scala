@@ -11,32 +11,39 @@ import moped.reporters.Position
 
 class ConflictingTransitiveDependencyDiagnostic(
     val module: Module,
-    val transitiveVersions: List[String],
+    val foundVersions: List[String],
     val declaredDeps: List[DependencyConfig],
-    val rootDependencies: List[Dependency],
+    val popularVersion: String,
+    val okRoots: List[Dependency],
+    val okDepsConfig: List[DependencyConfig],
+    val unpopularRoots: List[Dependency],
+    val unpopularDepsConfig: List[DependencyConfig],
     pos: Position
 ) extends Diagnostic(ErrorSeverity, "", pos) {
   val declaredVersions: List[String] = declaredDeps.flatMap(_.allVersions)
-  require(transitiveVersions.nonEmpty)
+  require(foundVersions.nonEmpty)
   require(declaredVersions.nonEmpty)
-  private val roots = rootDependencies.filterNot(_.module == module)
   override def message: String = {
-    def tokenize(x: Any): Iterator[fansi.Str] =
-      pprint.PPrinter.BlackWhite.tokenize(x)
     def pretty(xs: Iterable[Any]): String =
       if (xs.isEmpty) ""
-      else if (xs.size == 1) tokenize(xs.head).mkString(" ", "", "")
-      else xs.map(tokenize(_).mkString).mkString(" ", ", ", "")
+      else xs.mkString(" ", ", ", "")
     val toFix =
       if (pos.isNone)
         s"add 'dependencies' to the root dependencies OR create a new root dependency for the module '${module.repr}'."
       else
         "add 'dependencies = ''' to the root dependencies OR add 'targets' to the transitive dependency."
-    val rootDependnecies = pretty(roots.distinct.take(5).map(_.repr))
+    val okRootsStr = pretty(okRoots.distinct.take(20).map(_.repr))
+    val okTargetsStr = pretty(okDepsConfig.distinct.take(20).flatMap(_.targets))
+    val unpopularRootsStr = pretty(unpopularRoots.distinct.map(_.repr))
+    val unpopularTargetsStr = pretty(unpopularDepsConfig.flatMap(_.targets))
     s"""transitive dependency '${module.repr}' has conflicting versions.
-       |    found versions:${pretty(transitiveVersions)}
+       |       found versions:${pretty(foundVersions)}
        |    declared versions:${pretty(declaredVersions)}
-       |    root dependencies:${rootDependnecies}
+       |      popular version: ${popularVersion}
+       |              ok deps:${okRootsStr}
+       |           ok targets:${okTargetsStr}
+       |       unpopular deps:${unpopularRootsStr}
+       |    unpopular targets:${unpopularTargetsStr}
        |  To fix this problem, $toFix
        |""".stripMargin.trim
   }
