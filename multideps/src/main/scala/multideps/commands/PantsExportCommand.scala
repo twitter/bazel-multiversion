@@ -37,10 +37,8 @@ final case class PantsExportCommand(
   def app = save.app
   def workingDirectory: Path = cwd.getOrElse(app.env.workingDirectory)
 
-  // NOTE(olafur): I tried to use the --output-path flag but it didn't work for
-  // some reason. Hardcoding this flag for now.
   def outputPath: Path =
-    workingDirectory.resolve(".pants.d").resolve("bazel-multideps.json")
+    workingDirectory.resolve(".pants.d").resolve("pants-export.json")
   def inputPath: Path =
     workingDirectory.resolve("3rdparty.yaml")
 
@@ -93,10 +91,12 @@ final case class PantsExportCommand(
         )
       )
     } else {
+      val outputOption =
+        s"--bazel-multideps-generate-multideps-output-file=$outputPath"
       val command = List[String](
         binary.toString(),
         "bazel-multideps"
-      ) ++ pantsTargets
+      ) ++ pantsTargets ++ List(outputOption)
       val commandString = command.mkString(" ")
       val pr = new ProcessRenderer(command, command, clock = app.env.clock)
       val p = new InteractiveProgressBar(
