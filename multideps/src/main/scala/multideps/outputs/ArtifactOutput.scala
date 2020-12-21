@@ -17,6 +17,13 @@ final case class ArtifactOutput(
     sourcesArtifact: Option[Artifact] = None,
     sourcesArtifactSha256: Option[String] = None
 ) {
+  override def equals(o: Any): Boolean =
+    o match {
+      case o: ArtifactOutput => this.repr == o.repr
+      case _ => false
+    }
+  override def hashCode(): Int = this.repr.##
+
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
   val label: String =
     dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
