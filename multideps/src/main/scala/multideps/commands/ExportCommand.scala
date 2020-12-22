@@ -28,8 +28,8 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
+import coursier.core.Configuration
 import coursier.core.Dependency
-import coursier.core.Resolution
 import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
@@ -150,10 +150,19 @@ case class ExportCommand(
     val rootArtifacts: List[ResolvedDependency] = index.resolutions
       .flatMap { root =>
         root.res.dependencyArtifacts().collect {
-          case (d, p, a)
-              if Resolution.defaultTypes.contains(p.`type`) &&
-                d.version == index.reconciledVersion(d) =>
-            ResolvedDependency(root.dep, d, p, a)
+          case (d, p, a) =>
+            // if  Resolution.defaultTypes.contains(p.`type`) &&
+            //  d.version == index.reconciledVersion(d) =>
+            root.dep.classifier match {
+              case Some(classifier) =>
+                ResolvedDependency(
+                  root.dep,
+                  d.withConfiguration(Configuration(classifier)),
+                  p,
+                  a
+                )
+              case _ => ResolvedDependency(root.dep, d, p, a)
+            }
         }
       }
       .distinctBy(_.config.toId)
