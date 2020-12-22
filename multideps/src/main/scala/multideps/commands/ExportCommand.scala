@@ -28,8 +28,8 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
+import coursier.core.Configuration
 import coursier.core.Dependency
-import coursier.core.Resolution
 import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
@@ -82,7 +82,7 @@ case class ExportCommand(
           if (lint) lintPostResolution(index)
           else ValueResult(())
         }
-        output <- downloadShas(index, cache)
+        output <- generateBzlFile(index, cache)
         _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
         lint <-
           if (lint)
@@ -142,25 +142,35 @@ case class ExportCommand(
     } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
   }
 
-  def downloadShas(
+  // This also downloads SHA files
+  def generateBzlFile(
       index: ResolutionIndex,
       cache: FileCache[Task]
   ): Result[Path] = {
-    val artifacts = index.resolutions
+    val rootArtifacts: List[ResolvedDependency] = index.resolutions
       .flatMap { root =>
         root.res.dependencyArtifacts().collect {
-          case (d, p, a)
-              if Resolution.defaultTypes.contains(p.`type`) &&
-                d.version == index.reconciledVersion(d) =>
-            ResolvedDependency(root.dep, d, p, a)
+          case (d, p, a) =>
+            // if  Resolution.defaultTypes.contains(p.`type`) &&
+            //  d.version == index.reconciledVersion(d) =>
+            root.dep.classifier match {
+              case Some(classifier) =>
+                ResolvedDependency(
+                  root.dep,
+                  d.withConfiguration(Configuration(classifier)),
+                  p,
+                  a
+                )
+              case _ => ResolvedDependency(root.dep, d, p, a)
+            }
         }
       }
       .distinctBy(_.config.toId)
     val outputs = new ju.HashMap[String, ArtifactOutput]
     val progressBar =
-      new DownloadProgressRenderer(artifacts.length, app.env.clock)
+      new DownloadProgressRenderer(rootArtifacts.length, app.env.clock)
     val files: List[Task[List[Either[Throwable, ArtifactOutput]]]] =
-      artifacts.map { r =>
+      rootArtifacts.map { r =>
         val logger = progressBar.loggers.newCacheLogger(r.dependency)
         val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
         type Fetch[T] = Task[Either[ArtifactError, T]]
@@ -222,7 +232,9 @@ case class ExportCommand(
       case Some(error) =>
         ErrorResult(error)
       case None =>
-        val artifacts = all.collect { case Right(a) => a }
+        val artifacts: Seq[ArtifactOutput] = all
+          .collect({ case Right(a) => a })
+          .distinct
         if (artifacts.isEmpty) {
           ErrorResult(
             Diagnostic.error(
