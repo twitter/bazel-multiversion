@@ -1,9 +1,13 @@
 package multideps.outputs
 
+import java.{util => ju}
+
 import org.typelevel.paiges.Doc
 
 final case class DepsOutput(
-    artifacts: Seq[ArtifactOutput]
+    artifacts: Seq[ArtifactOutput],
+    index: ResolutionIndex,
+    outputIndex: ju.Map[String, ArtifactOutput]
 ) {
   require(artifacts.nonEmpty)
   def validate(): Unit = {
@@ -17,7 +21,10 @@ final case class DepsOutput(
       .nested(4)
       .render(width)
     val builds = Doc
-      .intercalate(Docs.blankLine, artifacts.map(_.build))
+      .intercalate(
+        Docs.blankLine,
+        artifacts.map(ArtifactOutput.buildDoc(_, index, outputIndex))
+      )
       .render(width)
     s"""# DO NOT EDIT: this file is auto-generated
 def _jvm_deps_impl(ctx):

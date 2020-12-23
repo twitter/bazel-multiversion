@@ -50,6 +50,12 @@ final case class DependencyConfig(
       classifier
     )
 
+  def toCoursierDependency: Dependency =
+    Dependency(
+      Module(Organization(organization.value), ModuleName(name), Map.empty),
+      version
+    )
+
   val classifierRepr: String = classifier match {
     case Some(value) => s"_$value"
     case None => ""
