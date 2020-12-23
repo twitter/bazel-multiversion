@@ -27,7 +27,6 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
-import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.core.Version
 import coursier.util.Artifact
@@ -152,16 +151,7 @@ case class ExportCommand(
           case (d, p, a) =>
             // if  Resolution.defaultTypes.contains(p.`type`) &&
             //  d.version == index.reconciledVersion(d) =>
-            root.dep.classifier match {
-              case Some(classifier) =>
-                ResolvedDependency(
-                  root.dep,
-                  d.withConfiguration(Configuration(classifier)),
-                  p,
-                  a
-                )
-              case _ => ResolvedDependency(root.dep, d, p, a)
-            }
+            ResolvedDependency(root.dep, d, p, a)
         }
       }
     val groupBy = resolvedArtifacts0.groupBy(_.dependency)
