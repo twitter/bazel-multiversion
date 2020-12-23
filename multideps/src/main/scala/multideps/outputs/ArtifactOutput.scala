@@ -1,5 +1,7 @@
 package multideps.outputs
 
+import java.{util => ju}
+
 import multideps.configs.DependencyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
@@ -8,8 +10,6 @@ import coursier.util.Artifact
 import org.typelevel.paiges.Doc
 
 final case class ArtifactOutput(
-    index: ResolutionIndex,
-    outputs: collection.Map[String, ArtifactOutput],
     dependency: Dependency,
     config: DependencyConfig,
     artifact: Artifact,
@@ -24,9 +24,23 @@ final case class ArtifactOutput(
     }
   override def hashCode(): Int = this.repr.##
 
+  val classifierRepr: String =
+    if (dependency.publication.classifier.nonEmpty)
+      s"_${dependency.publication.classifier.value}"
+    else ""
+  val configRepr: String =
+    if (dependency.publication.classifier.nonEmpty)
+      s"_${dependency.publication.classifier.value}"
+    else if (dependency.configuration.nonEmpty)
+      dependency.configuration.value match {
+        case "default" => ""
+        case config => s"_$config"
+      }
+    else ""
+
   // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
   val label: String =
-    dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_")
+    dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
   val repr: String =
     s"""|Artifact(
         |  dep = "${label}",
@@ -38,16 +52,8 @@ final case class ArtifactOutput(
   val version = dependency.version
   // pprint.log(dependency.configRepr)
   val mavenLabel: String =
-    s"@maven//:${org}/${moduleName}-${version}${config.classifierRepr}.jar"
-  lazy val dependencies: Seq[String] =
-    index.dependencies
-      .getOrElse(config.toId, Nil)
-      .iterator
-      .flatMap(d => outputs.get(index.reconciledDependency(d).repr))
-      .map(_.label)
-      .filterNot(_ == label)
-      .toSeq
-      .distinct
+    s"@maven//:${org}/${moduleName}-${version}${configRepr}.jar"
+
   def httpFile: TargetOutput =
     TargetOutput(
       kind = "http_file",
@@ -55,28 +61,68 @@ final case class ArtifactOutput(
       "urls" -> Docs.array(artifact.url),
       "sha256" -> Docs.literal(artifactSha256)
     )
-  def genrule: TargetOutput =
-    TargetOutput(
-      kind = "genrule",
-      "name" -> Docs.literal(s"genrules/$label"),
-      "srcs" -> Docs.array(s"@${label}//file"),
-      "outs" -> Docs.array(mavenLabel),
-      "cmd" -> Docs.literal("cp $< $@")
-    )
-  def scalaImport: TargetOutput =
-    TargetOutput(
-      kind = "scala_import",
-      "name" -> Docs.literal(label),
-      "jars" -> Docs.array(mavenLabel),
-      "deps" -> Docs.array(dependencies: _*),
-      "exports" -> Docs.array(dependencies: _*),
-      "tags" -> Docs.array(
-        s"jvm_module=${dependency.module.repr}",
-        s"jvm_version=${dependency.version}"
-      ),
-      "visibility" -> Docs.array("//visibility:public")
-    )
-  def build: Doc =
+}
+
+object ArtifactOutput {
+  def buildDoc(
+      o: ArtifactOutput,
+      index: ResolutionIndex,
+      outputIndex: ju.Map[String, ArtifactOutput]
+  ): Doc = {
+    import o._
+    // only include dependencies for the root-level dependencies
+    // otherwise the transitive artifact would end up pulling too many things
+    val rawDependencies =
+      if (
+        dependency.module.organization.value == config.organization.value
+        && dependency.module.name.value == config.name
+        && dependency.version == config.version
+      )
+        index.dependencies
+          .getOrElse(config.toId, Nil)
+          .filterNot(_ == dependency)
+      else Nil
+    val depsRef: Seq[String] =
+      rawDependencies.iterator
+        .flatMap(d =>
+          // todo: reconciledDependency could be questionable
+          // outputIndex.get(index.reconciledDependency(d).repr))
+          Option(outputIndex.get(d.repr)) match {
+            case Some(x) => Some(x)
+            case _ =>
+              println(
+                s"[warn] ${d.repr} (called by $label) is missing from `outputs`"
+              )
+              // sys.error(s"${d.repr} is missing from `outputs`")
+              None
+          }
+        )
+        .map(_.label)
+        .toSeq
+        .distinct
+    def genrule: TargetOutput =
+      TargetOutput(
+        kind = "genrule",
+        "name" -> Docs.literal(s"genrules/$label"),
+        "srcs" -> Docs.array(s"@${label}//file"),
+        "outs" -> Docs.array(mavenLabel),
+        "cmd" -> Docs.literal("cp $< $@")
+      )
+    def scalaImport: TargetOutput =
+      TargetOutput(
+        kind = "scala_import",
+        "name" -> Docs.literal(label),
+        "jars" -> Docs.array(mavenLabel),
+        "deps" -> Docs.array(depsRef: _*),
+        "exports" -> Docs.array(depsRef: _*),
+        "tags" -> Docs.array(
+          s"jvm_module=${dependency.module.repr}",
+          s"jvm_version=${dependency.version}"
+        ),
+        "visibility" -> Docs.array("//visibility:public")
+      )
+
     genrule.toDoc /
       scalaImport.toDoc
+  }
 }

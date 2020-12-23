@@ -30,8 +30,6 @@ inThisBuild(
   )
 )
 
-disablePlugins(BloopPlugin)
-
 lazy val multideps = project
   .in(file("multideps"))
   .settings(

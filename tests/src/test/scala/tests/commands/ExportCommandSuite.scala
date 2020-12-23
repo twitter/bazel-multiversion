@@ -3,6 +3,18 @@ package tests.commands
 class ExportCommandSuite extends tests.BaseSuite {
 
   checkDeps(
+    "scalatest",
+    """|  - dependency: org.scalatest:scalatest_2.12:3.1.2
+       |""".stripMargin,
+    expectedQuery = """|@maven//:org.scala-lang.modules_scala-xml_2.12_1.2.0
+                       |@maven//:org.scala-lang_scala-library_2.12.11
+                       |@maven//:org.scala-lang_scala-reflect_2.12.11
+                       |@maven//:org.scalactic_scalactic_2.12_3.1.2
+                       |@maven//:org.scalatest_scalatest_2.12_3.1.2
+                       |""".stripMargin
+  )
+
+  checkDeps(
     "basic",
     """|  - dependency: com.google.guava:guava:29.0-jre
        |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0

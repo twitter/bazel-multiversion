@@ -9,7 +9,6 @@ import java.nio.file.Paths
 import java.time.Duration
 import java.{util => ju}
 
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
@@ -28,7 +27,6 @@ import multideps.resolvers.Sha256
 import coursier.cache.ArtifactError
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
-import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.core.Version
 import coursier.util.Artifact
@@ -147,30 +145,32 @@ case class ExportCommand(
       index: ResolutionIndex,
       cache: FileCache[Task]
   ): Result[Path] = {
-    val rootArtifacts: List[ResolvedDependency] = index.resolutions
+    val resolvedArtifacts0: List[ResolvedDependency] = index.resolutions
       .flatMap { root =>
         root.res.dependencyArtifacts().collect {
           case (d, p, a) =>
             // if  Resolution.defaultTypes.contains(p.`type`) &&
             //  d.version == index.reconciledVersion(d) =>
-            root.dep.classifier match {
-              case Some(classifier) =>
-                ResolvedDependency(
-                  root.dep,
-                  d.withConfiguration(Configuration(classifier)),
-                  p,
-                  a
-                )
-              case _ => ResolvedDependency(root.dep, d, p, a)
-            }
+            ResolvedDependency(root.dep, d, p, a)
         }
       }
-      .distinctBy(_.config.toId)
-    val outputs = new ju.HashMap[String, ArtifactOutput]
+    val groupBy = resolvedArtifacts0.groupBy(_.dependency)
+    val resolvedArtifacts = (groupBy.collect {
+      case (_, List(rd)) => rd
+      case (_, rds) =>
+        // when multiple resolutions found for this artifact,
+        // prioritize the direct resolution that would contain the dependencies
+        (rds
+          .find { p =>
+            p.config.toCoursierDependency.module == p.dependency.module
+          })
+          .getOrElse(rds.head)
+    }).toList
+    val outputIndex = new ju.HashMap[String, ArtifactOutput]
     val progressBar =
-      new DownloadProgressRenderer(rootArtifacts.length, app.env.clock)
+      new DownloadProgressRenderer(resolvedArtifacts.length, app.env.clock)
     val files: List[Task[List[Either[Throwable, ArtifactOutput]]]] =
-      rootArtifacts.map { r =>
+      resolvedArtifacts.map { r =>
         val logger = progressBar.loggers.newCacheLogger(r.dependency)
         val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
         type Fetch[T] = Task[Either[ArtifactError, T]]
@@ -204,14 +204,17 @@ case class ExportCommand(
           case Right(file) =>
             List(Try {
               val output = ArtifactOutput(
-                index = index,
-                outputs = outputs.asScala,
                 dependency = r.dependency,
                 config = r.config,
                 artifact = r.artifact,
                 artifactSha256 = Sha256.compute(file)
               )
-              outputs.put(index.reconciledDependency(r.dependency).repr, output)
+              outputIndex.put(
+                // todo: reconciledDependency could be questionable to do here
+                // index.reconciledDependency(r.dependency).repr,
+                r.dependency.repr,
+                output
+              )
               output
             }.toEither)
 
@@ -234,7 +237,8 @@ case class ExportCommand(
       case None =>
         val artifacts: Seq[ArtifactOutput] = all
           .collect({ case Right(a) => a })
-          .distinct
+          .toList
+          .distinctBy(_.label)
         if (artifacts.isEmpty) {
           ErrorResult(
             Diagnostic.error(
@@ -243,7 +247,12 @@ case class ExportCommand(
             )
           )
         } else {
-          val rendered = DepsOutput(artifacts.sortBy(_.dependency.repr)).render
+          val rendered =
+            DepsOutput(
+              artifacts.sortBy(_.dependency.repr),
+              index,
+              outputIndex
+            ).render
           val out =
             if (outputPath.isAbsolute()) outputPath
             else app.env.workingDirectory.resolve(outputPath)
