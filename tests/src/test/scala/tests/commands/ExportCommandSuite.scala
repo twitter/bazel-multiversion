@@ -3,9 +3,17 @@ package tests.commands
 class ExportCommandSuite extends tests.BaseSuite {
 
   checkDeps(
+    "duplicate",
+    s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
+        |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
+        |""".stripMargin
+  )
+
+  checkDeps(
     "scalatest",
     """|  - dependency: org.scalatest:scalatest_2.12:3.1.2
        |""".stripMargin,
+    queryArg = allScalaImports,
     expectedQuery = """|@maven//:org.scala-lang.modules_scala-xml_2.12_1.2.0
                        |@maven//:org.scala-lang_scala-library_2.12.11
                        |@maven//:org.scala-lang_scala-reflect_2.12.11
@@ -46,13 +54,6 @@ class ExportCommandSuite extends tests.BaseSuite {
         |    versionScheme: pvp
         |  - dependency: com.lihaoyi:pprint_2.12:0.5.6
         |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
-        |""".stripMargin
-  )
-
-  checkDeps(
-    "duplicate",
-    s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
-        |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
         |""".stripMargin
   )
 

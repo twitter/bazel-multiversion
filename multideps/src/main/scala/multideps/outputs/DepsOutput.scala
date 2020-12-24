@@ -1,13 +1,11 @@
 package multideps.outputs
 
-import java.{util => ju}
-
 import org.typelevel.paiges.Doc
 
 final case class DepsOutput(
     artifacts: Seq[ArtifactOutput],
     index: ResolutionIndex,
-    outputIndex: ju.Map[String, ArtifactOutput]
+    outputIndex: collection.Map[String, ArtifactOutput]
 ) {
   require(artifacts.nonEmpty)
   def validate(): Unit = {

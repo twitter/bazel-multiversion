@@ -7,8 +7,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
-import java.{util => ju}
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.Try
 
@@ -21,7 +21,6 @@ import multideps.outputs.DepsOutput
 import multideps.outputs.Docs
 import multideps.outputs.ResolutionIndex
 import multideps.resolvers.CoursierThreadPools
-import multideps.resolvers.ResolvedDependency
 import multideps.resolvers.Sha256
 
 import coursier.cache.ArtifactError
@@ -145,28 +144,11 @@ case class ExportCommand(
       index: ResolutionIndex,
       cache: FileCache[Task]
   ): Result[Path] = {
-    val resolvedArtifacts0: List[ResolvedDependency] = index.resolutions
-      .flatMap { root =>
-        root.res.dependencyArtifacts().collect {
-          case (d, p, a) =>
-            // if  Resolution.defaultTypes.contains(p.`type`) &&
-            //  d.version == index.reconciledVersion(d) =>
-            ResolvedDependency(root.dep, d, p, a)
-        }
-      }
-    val groupBy = resolvedArtifacts0.groupBy(_.dependency)
-    val resolvedArtifacts = (groupBy.collect {
-      case (_, List(rd)) => rd
-      case (_, rds) =>
-        // when multiple resolutions found for this artifact,
-        // prioritize the direct resolution that would contain the dependencies
-        (rds
-          .find { p =>
-            p.config.toCoursierDependency.module == p.dependency.module
-          })
-          .getOrElse(rds.head)
-    }).toList
-    val outputIndex = new ju.HashMap[String, ArtifactOutput]
+    // if  Resolution.defaultTypes.contains(p.`type`) &&
+    //  d.version == index.reconciledVersion(d) =>
+    val resolvedArtifacts = index.resolvedArtifacts
+    val outputIndex: mutable.Map[String, ArtifactOutput] =
+      collection.concurrent.TrieMap.empty[String, ArtifactOutput]
     val progressBar =
       new DownloadProgressRenderer(resolvedArtifacts.length, app.env.clock)
     val files: List[Task[List[Either[Throwable, ArtifactOutput]]]] =

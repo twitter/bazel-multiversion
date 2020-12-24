@@ -75,10 +75,14 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     }
   }
 
+  val allScalaImports: String = "kind(scala_import, @maven//:all)"
+  val allGenrules: String = "kind(genrule, @maven//:all)"
+
   def checkDeps(
       name: TestOptions,
       deps: String,
       buildQuery: String = "",
+      queryArg: String = "",
       expectedQuery: String = "",
       expectedExit: Int = 0,
       expectedOutput: String =
@@ -99,10 +103,10 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
                                      |$bazelWorkspace
                                      |""".stripMargin
       )
-      if (expectedQuery.nonEmpty) {
+      if (queryArg.nonEmpty) {
         val obtainedQuery =
           app()
-            .process("bazel", "query", "kind(scala_import, @maven//:all)")
+            .process("bazel", "query", queryArg)
             .call()
             .out
             .text()

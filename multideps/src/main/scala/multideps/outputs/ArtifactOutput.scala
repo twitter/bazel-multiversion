@@ -1,7 +1,5 @@
 package multideps.outputs
 
-import java.{util => ju}
-
 import multideps.configs.DependencyConfig
 import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
 
@@ -38,9 +36,7 @@ final case class ArtifactOutput(
       }
     else ""
 
-  // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
-  val label: String =
-    dependency.repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
+  val label: String = dependency.bazelLabel
   val repr: String =
     s"""|Artifact(
         |  dep = "${label}",
@@ -67,7 +63,7 @@ object ArtifactOutput {
   def buildDoc(
       o: ArtifactOutput,
       index: ResolutionIndex,
-      outputIndex: ju.Map[String, ArtifactOutput]
+      outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
     import o._
     // only include dependencies for the root-level dependencies
@@ -87,7 +83,7 @@ object ArtifactOutput {
         .flatMap(d =>
           // todo: reconciledDependency could be questionable
           // outputIndex.get(index.reconciledDependency(d).repr))
-          Option(outputIndex.get(d.repr)) match {
+          outputIndex.get(d.repr) match {
             case Some(x) => Some(x)
             case _ =>
               println(
