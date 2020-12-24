@@ -53,6 +53,15 @@ object MultidepsEnrichments {
       else s"_${dep.configuration.value}"
     def repr: String = s"${dep.module.repr}:${dep.version}${configRepr}"
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
+
+    def bazelLabel: String = {
+      val classifierRepr =
+        if (dep.publication.classifier.nonEmpty)
+          s"_${dep.publication.classifier.value}"
+        else ""
+      // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
+      repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
+    }
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {
