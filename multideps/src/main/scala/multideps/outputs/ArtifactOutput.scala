@@ -82,12 +82,12 @@ object ArtifactOutput {
       rawDependencies.iterator
         .flatMap(d =>
           // todo: reconciledDependency could be questionable
-          // outputIndex.get(index.reconciledDependency(d).repr))
-          outputIndex.get(d.repr) match {
+          outputIndex.get(index.reconciledDependency(d).repr) match {
             case Some(x) => Some(x)
             case _ =>
+              val recon = index.reconciledDependency(d)
               println(
-                s"[warn] ${d.repr} (called by $label) is missing from `outputs`"
+                s"[warn] ${recon.repr} (originally ${d.repr} called by $label) is missing from `outputs`"
               )
               // sys.error(s"${d.repr} is missing from `outputs`")
               None

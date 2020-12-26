@@ -32,7 +32,6 @@ class ResolutionTest extends tests.BaseSuite {
       ),
       VersionCompatibility.EarlySemVer
     )
-    println(vs map { case (k, v) => (k.version, v)  })
     assertEquals(vs.values.head, "2.10.8")
     assert(vs.values.toList.distinct.size == 1)
   }
