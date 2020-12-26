@@ -3,10 +3,15 @@ package tests.commands
 class ExportCommandSuite extends tests.BaseSuite {
 
   checkDeps(
-    "duplicate",
+    "evicted artifacts do not create genrules",
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
-        |""".stripMargin
+        |""".stripMargin,
+    queryArg = allGenrules,
+    expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
+                       |@maven//:genrules/org.slf4j_slf4j-api_1.6.4
+                       |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.4
+                       |""".stripMargin
   )
 
   checkDeps(

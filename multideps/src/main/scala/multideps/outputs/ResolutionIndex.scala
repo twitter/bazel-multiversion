@@ -75,6 +75,7 @@ final case class ResolutionIndex(
     dep.withVersion(reconciledVersion(dep))
   def reconciledVersion(dep: Dependency): String =
     reconciledVersions.getOrElse(dep.withoutConfig, dep.version)
+  def evictionPairs: Seq[(Dependency, String)] = reconciledVersions.toSeq
 
   // the map between evicted dependencies and their resolved versions
   private lazy val reconciledVersions: Map[Dependency, String] = {

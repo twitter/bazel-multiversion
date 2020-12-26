@@ -144,8 +144,6 @@ case class ExportCommand(
       index: ResolutionIndex,
       cache: FileCache[Task]
   ): Result[Path] = {
-    // if  Resolution.defaultTypes.contains(p.`type`) &&
-    //  d.version == index.reconciledVersion(d) =>
     val resolvedArtifacts = index.unevictedArtifacts
     val outputIndex: mutable.Map[String, ArtifactOutput] =
       collection.concurrent.TrieMap.empty[String, ArtifactOutput]
