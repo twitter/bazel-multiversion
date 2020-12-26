@@ -26,16 +26,6 @@ final case class ArtifactOutput(
     if (dependency.publication.classifier.nonEmpty)
       s"_${dependency.publication.classifier.value}"
     else ""
-  val configRepr: String =
-    if (dependency.publication.classifier.nonEmpty)
-      s"_${dependency.publication.classifier.value}"
-    else if (dependency.configuration.nonEmpty)
-      dependency.configuration.value match {
-        case "default" => ""
-        case config => s"_$config"
-      }
-    else ""
-
   val label: String = dependency.bazelLabel
   val repr: String =
     s"""|Artifact(
@@ -43,12 +33,10 @@ final case class ArtifactOutput(
         |  url = "${artifact.url}",
         |  sha = "${artifactSha256}"
         |)""".stripMargin
-  val org = dependency.module.organization.value
-  val moduleName = dependency.module.name.value
-  val version = dependency.version
-  // pprint.log(dependency.configRepr)
-  val mavenLabel: String =
-    s"@maven//:${org}/${moduleName}-${version}${configRepr}.jar"
+  val org: String = dependency.module.organization.value
+  val moduleName: String = dependency.module.name.value
+  val version: String = dependency.version
+  val mavenLabel: String = dependency.mavenLabel
 
   def httpFile: TargetOutput =
     TargetOutput(
@@ -82,12 +70,12 @@ object ArtifactOutput {
       rawDependencies.iterator
         .flatMap(d =>
           // todo: reconciledDependency could be questionable
-          // outputIndex.get(index.reconciledDependency(d).repr))
-          outputIndex.get(d.repr) match {
+          outputIndex.get(index.reconciledDependency(d).repr) match {
             case Some(x) => Some(x)
             case _ =>
+              val recon = index.reconciledDependency(d)
               println(
-                s"[warn] ${d.repr} (called by $label) is missing from `outputs`"
+                s"[warn] ${recon.repr} (originally ${d.repr} called by $label) is missing from `outputs`"
               )
               // sys.error(s"${d.repr} is missing from `outputs`")
               None
@@ -120,5 +108,31 @@ object ArtifactOutput {
 
     genrule.toDoc /
       scalaImport.toDoc
+  }
+
+  def buildEvictedDoc(
+      dep: Dependency,
+      winner: String,
+      index: ResolutionIndex,
+      outputIndex: collection.Map[String, ArtifactOutput]
+  ): Doc = {
+    val depsRef: Seq[String] = Seq(
+      dep.withoutConfig.withVersion(winner).bazelLabel
+    )
+    def scalaImport: TargetOutput =
+      TargetOutput(
+        kind = "scala_import",
+        "name" -> Docs.literal(dep.bazelLabel),
+        "jars" -> Docs.array(),
+        "deps" -> Docs.array(depsRef: _*),
+        "exports" -> Docs.array(depsRef: _*),
+        "tags" -> Docs.array(
+          s"jvm_module=${dep.module.repr}",
+          s"jvm_version=${dep.version}",
+          s"evicted=True"
+        ),
+        "visibility" -> Docs.array("//visibility:public")
+      )
+    scalaImport.toDoc
   }
 }

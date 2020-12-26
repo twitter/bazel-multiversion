@@ -1,5 +1,8 @@
 package multideps.outputs
 
+import multideps.diagnostics.MultidepsEnrichments.XtensionDependency
+import multideps.diagnostics.MultidepsEnrichments.XtensionList
+
 import org.typelevel.paiges.Doc
 
 final case class DepsOutput(
@@ -24,6 +27,18 @@ final case class DepsOutput(
         artifacts.map(ArtifactOutput.buildDoc(_, index, outputIndex))
       )
       .render(width)
+    val evictedBuilds = Doc
+      .intercalate(
+        Docs.blankLine,
+        index.evictionPairs.toList
+          .sortBy(_._1.bazelLabel)
+          .distinctBy(_._1.bazelLabel)
+          .map {
+            case (d, w) =>
+              ArtifactOutput.buildEvictedDoc(d, w, index, outputIndex)
+          }
+      )
+      .render(width)
     s"""# DO NOT EDIT: this file is auto-generated
 def _jvm_deps_impl(ctx):
     content = '''
@@ -38,6 +53,8 @@ def load_jvm_deps():
 load(\"@io_bazel_rules_scala//scala:scala_import.bzl\", \"scala_import\")
 
 $builds
+
+$evictedBuilds
 '''
     ctx.file("BUILD", build_content, executable = False)
 

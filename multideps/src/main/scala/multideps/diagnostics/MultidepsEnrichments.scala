@@ -62,6 +62,26 @@ object MultidepsEnrichments {
       // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
       repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
     }
+
+    def mavenLabel: String = {
+      val org = dep.module.organization.value
+      val moduleName = dep.module.name.value
+      val version = dep.version
+      val classifierOrConfigRepr: String =
+        if (dep.publication.classifier.nonEmpty)
+          s"_${dep.publication.classifier.value}"
+        else if (dep.configuration.nonEmpty)
+          dep.configuration.value match {
+            case "default" => ""
+            case config => s"_$config"
+          }
+        else ""
+
+      s"@maven//:${org}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
+    }
+
+    def withoutConfig: Dependency =
+      dep.withConfiguration(Configuration.empty)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {
