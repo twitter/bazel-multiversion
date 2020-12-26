@@ -17,6 +17,7 @@ final case class ResolutionIndex(
     resolutions: List[DependencyResolution],
     roots: collection.Map[Dependency, collection.Set[Dependency]]
 ) {
+  import ResolutionIndex._
   // list of all artifacts including transitive JARs
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
@@ -38,6 +39,11 @@ final case class ResolutionIndex(
     })
     .toList
 
+  lazy val unevictedArtifacts: List[ResolvedDependency] =
+    resolvedArtifacts.filter(r =>
+      !reconciledVersions.contains(r.dependency.withoutConfig)
+    )
+
   lazy val dependencies: Map[DependencyId, Seq[Dependency]] = {
     val isVisited = mutable.Set.empty[String]
     val res = for {
@@ -51,7 +57,7 @@ final case class ResolutionIndex(
     }
     res.toMap
   }
-  val artifacts: collection.Map[Module, collection.Set[Dependency]] = {
+  val allDependencies: collection.Map[Module, collection.Set[Dependency]] = {
     val result =
       mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
     rawArtifacts.foreach {
@@ -68,11 +74,12 @@ final case class ResolutionIndex(
   def reconciledDependency(dep: Dependency): Dependency =
     dep.withVersion(reconciledVersion(dep))
   def reconciledVersion(dep: Dependency): String =
-    reconciledVersions.getOrElse(dep, dep.version)
+    reconciledVersions.getOrElse(dep.withoutConfig, dep.version)
 
+  // the map between evicted dependencies and their resolved versions
   private lazy val reconciledVersions: Map[Dependency, String] = {
     for {
-      (module, deps) <- artifacts
+      (module, deps) <- allDependencies
       if deps.size > 1
       compat =
         thirdparty.depsByModule
@@ -95,39 +102,8 @@ final case class ResolutionIndex(
       dep <- deps
       reconciledVersion <- versions.get(dep)
       if dep.version != reconciledVersion
-    } yield dep -> reconciledVersion
+    } yield dep.withoutConfig -> reconciledVersion
   }.toMap
-
-  private def reconcileVersions(
-      deps: collection.Set[Dependency],
-      compat: VersionCompatibility
-  ): Map[Dependency, String] = {
-    // The "winners" are the highest selected versions
-    val winners = mutable.Set.empty[Version]
-    val versions = deps.map(d => Version(d.version))
-    versions.foreach { version =>
-      val isCompatible = winners.exists { winner =>
-        if (compat.isCompatible(version.repr, winner.repr)) {
-          if (winner < version) {
-            winners.remove(winner)
-            winners.add(version)
-          }
-          true
-        } else {
-          false
-        }
-      }
-      if (!isCompatible) {
-        winners.add(version)
-      }
-    }
-    (for {
-      dep <- deps
-      winner <- winners
-      if dep.version != winner.repr &&
-        compat.isCompatible(dep.version, winner.repr)
-    } yield dep -> winner.repr).toMap
-  }
 }
 
 object ResolutionIndex {
@@ -151,5 +127,45 @@ object ResolutionIndex {
       resolutions,
       roots
     )
+  }
+
+  def reconcileVersions(
+      deps: collection.Set[Dependency],
+      compat: VersionCompatibility
+  ): Map[Dependency, String] = {
+    // The "winners" are the highest selected versions
+    val winners = mutable.Set.empty[Version]
+    val versions = deps.map(d => Version(d.version))
+    versions.foreach { version =>
+      val isCompatible = winners.exists { winner =>
+        // we need to check both ways
+        if (
+          compat.isCompatible(version.repr, winner.repr) ||
+          compat.isCompatible(winner.repr, version.repr)
+        ) {
+          def isUnstable: Boolean = {
+            val s = version.repr
+            s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
+          }
+          if (winner < version && !isUnstable) {
+            winners.remove(winner)
+            winners.add(version)
+          }
+          true
+        } else {
+          false
+        }
+      }
+      if (!isCompatible) {
+        winners.add(version)
+      }
+    }
+    val result = (for {
+      dep <- deps
+      winner <- winners
+      if dep.version != winner.repr &&
+        compat.isCompatible(dep.version, winner.repr)
+    } yield dep -> winner.repr).toMap
+    result
   }
 }

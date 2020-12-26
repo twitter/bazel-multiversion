@@ -62,6 +62,9 @@ object MultidepsEnrichments {
       // Bazel workspace names may contain only A-Z, a-z, 0-9, '-', '_' and '.'
       repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
     }
+
+    def withoutConfig: Dependency =
+      dep.withConfiguration(Configuration.empty)
   }
   implicit class XtensionSeq[A](xs: Seq[A]) {
     def sortByCachedFunction[B: Ordering](fn: A => B): Seq[A] = {

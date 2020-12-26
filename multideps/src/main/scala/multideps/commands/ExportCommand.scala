@@ -146,7 +146,7 @@ case class ExportCommand(
   ): Result[Path] = {
     // if  Resolution.defaultTypes.contains(p.`type`) &&
     //  d.version == index.reconciledVersion(d) =>
-    val resolvedArtifacts = index.resolvedArtifacts
+    val resolvedArtifacts = index.unevictedArtifacts
     val outputIndex: mutable.Map[String, ArtifactOutput] =
       collection.concurrent.TrieMap.empty[String, ArtifactOutput]
     val progressBar =
@@ -247,7 +247,7 @@ case class ExportCommand(
 
   def lintPostResolution(index: ResolutionIndex): Result[Unit] = {
     val errors = for {
-      (module, deps) <- index.artifacts.toList
+      (module, deps) <- index.allDependencies.toList
       allVersions = deps.map(d => index.reconciledVersion(d))
       if allVersions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
