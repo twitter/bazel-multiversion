@@ -54,8 +54,6 @@ object ArtifactOutput {
       outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
     import o._
-    // only include dependencies for the root-level dependencies
-    // otherwise the transitive artifact would end up pulling too many things
     val rawDependencies =
       if (
         dependency.module.organization.value == config.organization.value
@@ -65,7 +63,7 @@ object ArtifactOutput {
         index.dependencies
           .getOrElse(config.toId, Nil)
           .filterNot(_ == dependency)
-      else Nil
+      else index.maybeDependencies(dependency)
     val depsRef: Seq[String] =
       rawDependencies.iterator
         .flatMap(d =>
