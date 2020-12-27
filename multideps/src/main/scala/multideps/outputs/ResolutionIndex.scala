@@ -21,7 +21,7 @@ final case class ResolutionIndex(
   // list of all artifacts including transitive JARs
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
-    (d, p, a) <- r.res.dependencyArtifacts()
+    (d, p, a) <- r.res.dependencyArtifacts() if a.url.endsWith(".jar")
   } yield ResolvedDependency(r.dep, d, p, a)
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
