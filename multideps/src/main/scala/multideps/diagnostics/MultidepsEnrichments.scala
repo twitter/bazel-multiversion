@@ -4,6 +4,8 @@ import java.{util => ju}
 
 import scala.collection.mutable
 
+import multideps.resolvers.DependencyId
+
 import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.error.ResolutionError
@@ -79,6 +81,15 @@ object MultidepsEnrichments {
 
       s"@maven//:${org}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
     }
+
+    def toDependencyId: DependencyId =
+      DependencyId(
+        dep.module.organization.value,
+        dep.module.name.value,
+        dep.version,
+        if (isEmptyConfiguration(dep.configuration)) None
+        else Some(dep.configuration.value)
+      )
 
     def withoutConfig: Dependency =
       dep.withConfiguration(Configuration.empty)
