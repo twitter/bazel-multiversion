@@ -5,12 +5,14 @@ import scala.util.matching.Regex
 import multideps.configs.MultidepsJsonDecoders.jsonStringDecoder
 import multideps.resolvers.DependencyId
 
+import coursier.core.Classifier
 import coursier.core.Configuration
 import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import coursier.core.Publication
+import coursier.core.Type
 import coursier.version.VersionCompatibility
 import moped.json.DecodingContext
 import moped.json.ErrorResult
@@ -52,8 +54,18 @@ final case class DependencyConfig(
 
   def toCoursierDependency: Dependency =
     Dependency(
-      Module(Organization(organization.value), ModuleName(name), Map.empty),
-      version
+      module =
+        Module(Organization(organization.value), ModuleName(name), Map.empty),
+      version = version,
+      configuration = Configuration.empty,
+      exclusions = Set.empty,
+      publication = classifier match {
+        case Some(c) =>
+          Publication.empty.withClassifier(Classifier(c)).withType(Type("jar"))
+        case _ => Publication.empty
+      },
+      optional = false,
+      transitive = transitive
     )
 
   val classifierRepr: String = classifier match {
@@ -82,14 +94,17 @@ final case class DependencyConfig(
       Dependency(
         module = coursierModule(scalaVersion),
         version = v,
-        configuration = classifier match {
-          case Some(c) => Configuration(c)
-          case None => Configuration.empty
-        },
+        configuration = Configuration.empty,
         exclusions = exclusions.map(e =>
           e.coursierModule.organization -> e.coursierModule.name
         ),
-        publication = Publication.empty,
+        publication = classifier match {
+          case Some(c) =>
+            Publication.empty
+              .withClassifier(Classifier(c))
+              .withType(Type("jar"))
+          case _ => Publication.empty
+        },
         optional = false,
         transitive = transitive
       )

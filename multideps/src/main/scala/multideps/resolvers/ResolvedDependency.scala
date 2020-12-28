@@ -11,4 +11,12 @@ final case class ResolvedDependency(
     dependency: Dependency,
     publication: Publication,
     artifact: Artifact
-)
+) {
+  override def toString: String =
+    s"""ResolvedDependency(
+       |  config = $config,
+       |  dependncy = $dependency,
+       |  publication = $publication,
+       |  artifact = $artifact
+       |)""".stripMargin
+}

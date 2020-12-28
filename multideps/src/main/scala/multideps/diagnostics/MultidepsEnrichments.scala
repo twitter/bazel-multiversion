@@ -42,7 +42,7 @@ object MultidepsEnrichments {
           1
       }
   }
-  private val isEmptyConfiguration = Set(
+  private val isEmptyLikeConfiguration = Set(
     Configuration.empty,
     Configuration.compile,
     Configuration.defaultCompile,
@@ -51,7 +51,7 @@ object MultidepsEnrichments {
   )
   implicit class XtensionDependency(dep: Dependency) {
     def configRepr: String =
-      if (isEmptyConfiguration(dep.configuration)) ""
+      if (isEmptyLikeConfiguration(dep.configuration)) ""
       else s"_${dep.configuration.value}"
     def repr: String = s"${dep.module.repr}:${dep.version}${configRepr}"
     def withoutMetadata: Dependency = Dependency(dep.module, dep.version)
@@ -87,7 +87,7 @@ object MultidepsEnrichments {
         dep.module.organization.value,
         dep.module.name.value,
         dep.version,
-        if (isEmptyConfiguration(dep.configuration)) None
+        if (isEmptyLikeConfiguration(dep.configuration)) None
         else Some(dep.configuration.value)
       )
 

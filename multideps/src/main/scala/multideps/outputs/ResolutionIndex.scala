@@ -1,5 +1,7 @@
 package multideps.outputs
 
+import java.util.Locale
+
 import scala.collection.mutable
 
 import multideps.configs.ThirdpartyConfig
@@ -26,16 +28,18 @@ final case class ResolutionIndex(
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)
-    .collect {
+    .map {
       case (_, List(rd)) => rd
-      case (_, rds) =>
-        // when multiple resolutions found for this artifact,
+      case (lbl, rds0) =>
+        // when multiple resolutions are found for this artifact,
         // prioritize the direct resolution that would contain the dependencies
-        (rds
-          .find { p =>
-            p.config.toCoursierDependency.module == p.dependency.module
-          })
-          .getOrElse(rds.head)
+        val rds1 = rds0.filter { p =>
+          p.config.toCoursierDependency.module == p.dependency.module &&
+          p.config.classifier ==
+            (if (p.publication.classifier.isEmpty) None
+             else Some(p.publication.classifier.value))
+        }
+        rds1.headOption.getOrElse(rds0.head)
     })
     .toList
 
@@ -106,8 +110,8 @@ final case class ResolutionIndex(
       compat =
         thirdparty.depsByModule
           .getOrElse(module, Nil)
-          .headOption
           .flatMap(_.versionScheme)
+          .headOption
           .getOrElse {
             /*
             val m = module.name.value
@@ -155,6 +159,14 @@ object ResolutionIndex {
       deps: collection.Set[Dependency],
       compat: VersionCompatibility
   ): Map[Dependency, String] = {
+    def isUnstable(v: Version): Boolean = {
+      val s = v.repr
+      s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
+    }
+    def hasOverride(v: Version): Boolean =
+      v.repr.toLowerCase(Locale.ENGLISH).contains("-tw")
+    def lessThan(v1: Version, v2: Version): Boolean =
+      (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
     // The "winners" are the highest selected versions
     val winners = mutable.Set.empty[Version]
     val versions = deps.map(d => Version(d.version))
@@ -165,11 +177,7 @@ object ResolutionIndex {
           compat.isCompatible(version.repr, winner.repr) ||
           compat.isCompatible(winner.repr, version.repr)
         ) {
-          def isUnstable: Boolean = {
-            val s = version.repr
-            s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
-          }
-          if (winner < version && !isUnstable) {
+          if (lessThan(winner, version) && !isUnstable(version)) {
             winners.remove(winner)
             winners.add(version)
           }
