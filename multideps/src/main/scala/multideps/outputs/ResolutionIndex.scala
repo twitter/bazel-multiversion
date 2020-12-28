@@ -39,7 +39,7 @@ final case class ResolutionIndex(
     })
     .toList
 
-  lazy val unevictedArtifacts: List[ResolvedDependency] =
+  def unevictedArtifacts: List[ResolvedDependency] =
     resolvedArtifacts.filter(r =>
       !reconciledVersions.contains(r.dependency.withoutConfig)
     )
@@ -92,7 +92,11 @@ final case class ResolutionIndex(
     dep.withVersion(reconciledVersion(dep))
   def reconciledVersion(dep: Dependency): String =
     reconciledVersions.getOrElse(dep.withoutConfig, dep.version)
-  def evictionPairs: Seq[(Dependency, String)] = reconciledVersions.toSeq
+  def evictionPairs: Seq[(Dependency, String)] =
+    resolvedArtifacts.collect {
+      case r if reconciledVersions.contains(r.dependency.withoutConfig) =>
+        (r.dependency, reconciledVersion(r.dependency.withoutConfig))
+    }
 
   // the map between evicted dependencies and their resolved versions
   private lazy val reconciledVersions: Map[Dependency, String] = {
