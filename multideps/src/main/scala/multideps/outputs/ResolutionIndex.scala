@@ -28,16 +28,18 @@ final case class ResolutionIndex(
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)
-    .collect {
+    .map {
       case (_, List(rd)) => rd
-      case (_, rds) =>
-        // when multiple resolutions found for this artifact,
+      case (lbl, rds0) =>
+        // when multiple resolutions are found for this artifact,
         // prioritize the direct resolution that would contain the dependencies
-        (rds
-          .find { p =>
-            p.config.toCoursierDependency.module == p.dependency.module
-          })
-          .getOrElse(rds.head)
+        val rds1 = rds0.filter { p =>
+          p.config.toCoursierDependency.module == p.dependency.module &&
+          p.config.classifier ==
+            (if (p.publication.classifier.isEmpty) None
+             else Some(p.publication.classifier.value))
+        }
+        rds1.headOption.getOrElse(rds0.head)
     })
     .toList
 
