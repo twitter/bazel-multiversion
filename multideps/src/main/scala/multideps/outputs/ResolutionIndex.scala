@@ -1,5 +1,7 @@
 package multideps.outputs
 
+import java.util.Locale
+
 import scala.collection.mutable
 
 import multideps.configs.ThirdpartyConfig
@@ -155,6 +157,14 @@ object ResolutionIndex {
       deps: collection.Set[Dependency],
       compat: VersionCompatibility
   ): Map[Dependency, String] = {
+    def isUnstable(v: Version): Boolean = {
+      val s = v.repr
+      s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
+    }
+    def hasOverride(v: Version): Boolean =
+      v.repr.toLowerCase(Locale.ENGLISH).contains("-tw")
+    def lessThan(v1: Version, v2: Version): Boolean =
+      (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
     // The "winners" are the highest selected versions
     val winners = mutable.Set.empty[Version]
     val versions = deps.map(d => Version(d.version))
@@ -165,11 +175,7 @@ object ResolutionIndex {
           compat.isCompatible(version.repr, winner.repr) ||
           compat.isCompatible(winner.repr, version.repr)
         ) {
-          def isUnstable: Boolean = {
-            val s = version.repr
-            s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
-          }
-          if (winner < version && !isUnstable) {
+          if (lessThan(winner, version) && !isUnstable(version)) {
             winners.remove(winner)
             winners.add(version)
           }
