@@ -106,8 +106,8 @@ final case class ResolutionIndex(
       compat =
         thirdparty.depsByModule
           .getOrElse(module, Nil)
-          .headOption
           .flatMap(_.versionScheme)
+          .headOption
           .getOrElse {
             /*
             val m = module.name.value
