@@ -71,6 +71,8 @@ lazy val multiversion = project
       "--initialize-at-build-time=scala.collection.immutable.VM",
       "--initialize-at-run-time=multiversion,moped.cli.Environment$",
       "-H:+TraceClassInitialization",
+      "--enable-http",
+      "--enable-https",
       "--report-unsupported-elements-at-runtime"
     )
   )
