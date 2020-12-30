@@ -9,7 +9,7 @@ import multiversion.commands._
 
 object MultiVersion {
   val app: Application = Application.fromName(
-    "bm",
+    "multiversion",
     BuildInfo.version,
     List(
       CommandParser[VersionCommand],
