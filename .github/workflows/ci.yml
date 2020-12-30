@@ -16,7 +16,7 @@ jobs:
         with:
           version: "3.x"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: bazel build tricky/...
+      - run: cd multiversion-example && bazel build tricky/...
       - run: sbt test
   checks:
     name: Scalafmt and Scalafix

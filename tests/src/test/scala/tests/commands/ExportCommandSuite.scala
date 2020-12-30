@@ -57,7 +57,9 @@ class ExportCommandSuite extends tests.BaseSuite {
     "version_scheme",
     s"""|  - dependency: com.lihaoyi:fansi_2.12:0.2.8
         |    versionScheme: pvp
-        |  - dependency: com.lihaoyi:pprint_2.12:0.5.6
+        |  - dependency: com.lihaoyi:sourcecode_2.12:0.2.0
+        |    versionScheme: pvp
+        |  - dependency: com.lihaoyi:pprint_2.12:0.5.9
         |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
         |""".stripMargin
   )

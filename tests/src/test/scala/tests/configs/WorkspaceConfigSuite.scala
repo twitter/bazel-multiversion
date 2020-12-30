@@ -3,13 +3,12 @@ package tests.configs
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
 
-import multideps.configs._
-
 import moped.json.ErrorResult
 import moped.json.JsonString
 import moped.json.ValueResult
 import moped.reporters.ConsoleReporter
 import moped.reporters.Input
+import multiversion.configs._
 import munit.TestOptions
 
 class WorkspaceConfigSuite extends munit.FunSuite {

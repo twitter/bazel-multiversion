@@ -1,12 +1,11 @@
 package tests.commands
 
-import multideps.outputs.ResolutionIndex
-
 import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import coursier.version.VersionCompatibility
+import multiversion.outputs.ResolutionIndex
 
 class ResolutionTest extends tests.BaseSuite {
   test("reconciliation") {
