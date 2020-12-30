@@ -5,18 +5,15 @@ import moped.json.JsonEncoder
 import moped.json.JsonString
 import moped.json.ValueResult
 
-sealed abstract class LanguagesConfig(val value: String)
-    extends Product
-    with Serializable
+sealed abstract class LanguagesConfig(val value: String) extends Product with Serializable
 case object JavaLanguagesConfig extends LanguagesConfig("java")
 case object ScalaLanguagesConfig extends LanguagesConfig("scala")
-case object ScalaCompilerLanguagesConfig
-    extends LanguagesConfig("scala-compiler")
+case object ScalaCompilerLanguagesConfig extends LanguagesConfig("scala-compiler")
 
 object LanguagesConfig {
   implicit val decoder: JsonDecoder[LanguagesConfig] =
     JsonDecoder.fromJson("java | scala | scala-compiler") {
-      case JsonString("java") => ValueResult(JavaLanguagesConfig)
+      case JsonString("java")  => ValueResult(JavaLanguagesConfig)
       case JsonString("scala") => ValueResult(ScalaLanguagesConfig)
       case JsonString("scala-compiler") =>
         ValueResult(ScalaCompilerLanguagesConfig)

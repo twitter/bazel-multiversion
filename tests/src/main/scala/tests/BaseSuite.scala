@@ -84,8 +84,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
       queryArg: String = "",
       expectedQuery: String = "",
       expectedExit: Int = 0,
-      expectedOutput: String =
-        """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
+      expectedOutput: String = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
            |""".stripMargin
   )(implicit
       loc: munit.Location

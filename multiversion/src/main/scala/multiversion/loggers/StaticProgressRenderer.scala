@@ -4,8 +4,7 @@ import moped.progressbars.ProgressRenderer
 import moped.progressbars.ProgressStep
 import org.typelevel.paiges.Doc
 
-class StaticProgressRenderer(underlying: ProgressRenderer)
-    extends ProgressRenderer {
+class StaticProgressRenderer(underlying: ProgressRenderer) extends ProgressRenderer {
   override def renderStart(): Doc =
     underlying.renderStart()
   override def renderStep(): ProgressStep =

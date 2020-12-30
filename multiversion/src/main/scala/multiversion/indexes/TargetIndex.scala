@@ -23,7 +23,7 @@ object TargetIndex {
     def unapply(s: String): Option[String] =
       s match {
         case Version(version) => Some(version)
-        case _ => None
+        case _                => None
       }
   }
   private object JvmModule {

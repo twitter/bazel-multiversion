@@ -17,7 +17,7 @@ final case class ArtifactOutput(
   override def equals(o: Any): Boolean =
     o match {
       case o: ArtifactOutput => this.repr == o.repr
-      case _ => false
+      case _                 => false
     }
   override def hashCode(): Int = this.repr.##
 

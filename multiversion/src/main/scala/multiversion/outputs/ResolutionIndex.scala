@@ -29,7 +29,7 @@ final case class ResolutionIndex(
     .groupBy(_.dependency.bazelLabel)
     .map {
       case (_, List(rd)) => rd
-      case (lbl, rds0) =>
+      case (lbl, rds0)   =>
         // when multiple resolutions are found for this artifact,
         // prioritize the direct resolution that would contain the dependencies
         val rds1 = rds0.filter { p =>
@@ -43,9 +43,7 @@ final case class ResolutionIndex(
     .toList
 
   def unevictedArtifacts: List[ResolvedDependency] =
-    resolvedArtifacts.filter(r =>
-      !reconciledVersions.contains(r.dependency.withoutConfig)
-    )
+    resolvedArtifacts.filter(r => !reconciledVersions.contains(r.dependency.withoutConfig))
 
   lazy val dependencies: Map[DependencyId, Seq[Dependency]] = {
     val isVisited = mutable.Set.empty[String]
@@ -140,8 +138,7 @@ object ResolutionIndex {
       mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
     for {
       resolution <- resolutions
-      (dependency, publication, artifact) <-
-        resolution.res.dependencyArtifacts()
+      (dependency, publication, artifact) <- resolution.res.dependencyArtifacts()
     } {
       val rootsBuffer =
         roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)

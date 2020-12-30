@@ -1,6 +1,6 @@
 package multiversion.diagnostics
 
-import java.{util => ju}
+import java.{ util => ju }
 
 import scala.collection.mutable
 
@@ -74,7 +74,7 @@ object MultidepsEnrichments {
         else if (dep.configuration.nonEmpty)
           dep.configuration.value match {
             case "default" => ""
-            case config => s"_$config"
+            case config    => s"_$config"
           }
         else ""
 

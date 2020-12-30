@@ -13,11 +13,11 @@ import coursier.cache.internal.Terminal.Ansi
 import coursier.cache.internal.ThreadUtil
 
 /**
-  * Displays the progress of some task on a single line.
-  *
-  * With a ticker, an emoji once it's done, a summary of how many sub-tasks are done, and the total
-  * number of sub-tasks if it is known.
-  */
+ * Displays the progress of some task on a single line.
+ *
+ * With a ticker, an emoji once it's done, a summary of how many sub-tasks are done, and the total
+ * number of sub-tasks if it is known.
+ */
 final class ProgressLogger[T](
     processedMessage: String,
     elementName: String,

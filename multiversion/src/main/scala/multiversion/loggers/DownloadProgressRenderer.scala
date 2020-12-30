@@ -12,8 +12,7 @@ import multiversion.diagnostics.MultidepsEnrichments.XtensionSeq
 import multiversion.outputs.Docs
 import org.typelevel.paiges.Doc
 
-class DownloadProgressRenderer(maxArtifacts: Long, clock: Clock)
-    extends ProgressRenderer {
+class DownloadProgressRenderer(maxArtifacts: Long, clock: Clock) extends ProgressRenderer {
   private lazy val timer = new Timer(clock)
   val loggers =
     new CoursierLoggers(isArtifactDownload = true, _.contains(".jar"))

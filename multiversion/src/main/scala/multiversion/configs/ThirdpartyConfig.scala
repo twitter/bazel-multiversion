@@ -1,6 +1,6 @@
 package multiversion.configs
 
-import java.{util => ju}
+import java.{ util => ju }
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -70,8 +70,7 @@ final case class ThirdpartyConfig(
 
   private type ForceVersionResult =
     mutable.Buffer[Result[(Module, String)]]
-  private val forceVersionsByTarget
-      : collection.Map[String, ForceVersionResult] = {
+  private val forceVersionsByTarget: collection.Map[String, ForceVersionResult] = {
     val map = new ju.HashMap[String, ForceVersionResult]().asScala
     for {
       dep <- dependencies.iterator
@@ -163,9 +162,7 @@ object ThirdpartyConfig {
   ): Result[ThirdpartyConfig] = {
     parser
       .parse(input)
-      .flatMap(json =>
-        codec.decode(DecodingContext(json).withFatalUnknownFields(true))
-      )
+      .flatMap(json => codec.decode(DecodingContext(json).withFatalUnknownFields(true)))
   }
   val default: ThirdpartyConfig = ThirdpartyConfig()
   implicit val codec: JsonCodec[ThirdpartyConfig] =

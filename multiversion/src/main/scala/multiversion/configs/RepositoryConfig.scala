@@ -28,7 +28,7 @@ object RepositoryConfig {
       def decode(context: DecodingContext): Result[RepositoryConfig] =
         context.json match {
           case JsonString(value) => ValueResult(RepositoryConfig(url = value))
-          case _ => automaticCodec.decode(context)
+          case _                 => automaticCodec.decode(context)
         }
       def encode(value: RepositoryConfig): JsonElement =
         automaticCodec.encode(value)

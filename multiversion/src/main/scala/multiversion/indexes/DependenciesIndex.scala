@@ -24,7 +24,7 @@ class DependenciesIndex(query: QueryResult) {
   def dependencies(dependency: SimpleDependency): Set[TargetIndex] = {
     byDependency.get(dependency) match {
       case Some(target) => dependencies(target)
-      case None => Set.empty
+      case None         => Set.empty
     }
   }
   def dependencies(target: String): Set[TargetIndex] = {

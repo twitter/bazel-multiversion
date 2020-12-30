@@ -53,8 +53,7 @@ final case class DependencyConfig(
 
   def toCoursierDependency: Dependency =
     Dependency(
-      module =
-        Module(Organization(organization.value), ModuleName(name), Map.empty),
+      module = Module(Organization(organization.value), ModuleName(name), Map.empty),
       version = version,
       configuration = Configuration.empty,
       exclusions = Set.empty,
@@ -69,12 +68,12 @@ final case class DependencyConfig(
 
   val classifierRepr: String = classifier match {
     case Some(value) => s"_$value"
-    case None => ""
+    case None        => ""
   }
   def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
-      case JavaLanguagesConfig => ""
-      case ScalaLanguagesConfig => "_" + scalaVersion.binaryVersion
+      case JavaLanguagesConfig          => ""
+      case ScalaLanguagesConfig         => "_" + scalaVersion.binaryVersion
       case ScalaCompilerLanguagesConfig => "_" + scalaVersion.default.value
     }
     Module(
@@ -94,9 +93,7 @@ final case class DependencyConfig(
         module = coursierModule(scalaVersion),
         version = v,
         configuration = Configuration.empty,
-        exclusions = exclusions.map(e =>
-          e.coursierModule.organization -> e.coursierModule.name
-        ),
+        exclusions = exclusions.map(e => e.coursierModule.organization -> e.coursierModule.name),
         publication = classifier match {
           case Some(c) =>
             Publication.empty

@@ -282,9 +282,8 @@ case class ExportCommand(
                   .flatMap(rootsForVersions)
                   .toList
                   .sortBy(_.toString)
-              val unpopularDepsConfig = unpopularRoots.flatMap(d =>
-                index.thirdparty.depsByModule(d.module)
-              )
+              val unpopularDepsConfig =
+                unpopularRoots.flatMap(d => index.thirdparty.depsByModule(d.module))
               List(
                 new ConflictingTransitiveDependencyDiagnostic(
                   module,
@@ -306,7 +305,7 @@ case class ExportCommand(
     } yield diagnostic
     Diagnostic.fromDiagnostics(errors) match {
       case Some(diagnostic) => ErrorResult(diagnostic)
-      case None => ValueResult(())
+      case None             => ValueResult(())
     }
   }
 
