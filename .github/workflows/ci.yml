@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v10
+      - name: Coursier cache
+        uses: coursier/cache-action@v5
       - run: yarn global add @bazel/bazelisk
       - uses: arduino/setup-protoc@v1
         with:
@@ -18,12 +20,45 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: cd multiversion-example && bazel build tricky/...
       - run: sbt test
+  graalnative:
+    name: GraalVM Native Image
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            java: 11
+          - os: macos-latest
+            java: 11
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup
+      uses: olafurpg/setup-scala@v10
+      with:
+        java-version: "adopt@1.${{ matrix.java }}"
+    - name: Coursier cache
+      uses: coursier/cache-action@v5
+    - uses: arduino/setup-protoc@v1
+      with:
+        version: "3.x"
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build
+      run: sbt -v -Dfile.encoding=UTF8 nativeImage
+      shell: bash
+    - name: Archive native image artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: dist-${{ runner.os }}
+        path: multiversion/target/native-image/multiversion
   checks:
     name: Scalafmt and Scalafix
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: olafurpg/setup-scala@v10
+      - name: Coursier cache
+        uses: coursier/cache-action@v5
       - run: yarn global add @bazel/bazelisk
       - uses: arduino/setup-protoc@v1
         with:

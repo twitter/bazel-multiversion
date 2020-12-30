@@ -66,7 +66,7 @@ lazy val multiversion = project
     buildInfoKeys := Seq[BuildInfoKey](
       version
     ),
-    name.in(NativeImage) := "bm",
+    name.in(NativeImage) := "multiversion",
     nativeImageOptions ++= List(
       "--initialize-at-build-time=scala.collection.immutable.VM",
       "--initialize-at-run-time=multiversion,moped.cli.Environment$",
