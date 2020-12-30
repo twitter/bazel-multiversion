@@ -2,14 +2,21 @@ lazy val V = new {
   def scala212 = "2.12.12"
   def moped = "0.1.8"
 }
+
 inThisBuild(
   List(
     organization := "org.scalameta",
-    homepage := Some(url("https://github.com/scalameta/bazel-multideps")),
+    homepage := Some(url("https://github.com/twitter/bazel-multiversion")),
     licenses := List(
       "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
     ),
     developers := List(
+      Developer(
+        "eed3si9n",
+        "Eugene Yokota",
+        "@eed3si9n",
+        url("https://eed3si9n.com")
+      ),
       Developer(
         "olafurpg",
         "Ólafur Páll Geirsson",
@@ -30,8 +37,9 @@ inThisBuild(
   )
 )
 
-lazy val multideps = project
-  .in(file("multideps"))
+lazy val multiversion = project
+  .in(file("multiversion"))
+  .enablePlugins(ProtobufPlugin, NativeImagePlugin, BuildInfoPlugin)
   .settings(
     moduleName := "bazel-multideps",
     mainClass.in(Compile, packageBin) := Some("multideps.Multideps"),
@@ -41,7 +49,9 @@ lazy val multideps = project
       "-Xmx8g",
       "-XX:+UseG1GC"
     ),
-    baseDirectory.in(run) := baseDirectory.in(ThisBuild).value,
+    baseDirectory.in(run) := {
+      baseDirectory.in(ThisBuild).value / "multiversion-example"
+    },
     libraryDependencies ++= List(
       "io.get-coursier" %% "coursier" % "2.0.0",
       "io.get-coursier" %% "versions" % "0.3.0",
@@ -64,10 +74,10 @@ lazy val multideps = project
       "--report-unsupported-elements-at-runtime"
     )
   )
-  .enablePlugins(ProtobufPlugin, NativeImagePlugin, BuildInfoPlugin)
 
 lazy val tests = project
   .in(file("tests"))
+  .dependsOn(multiversion)
   .settings(
     Test / parallelExecution := false,
     testFrameworks := List(new TestFramework("munit.Framework")),
@@ -76,4 +86,3 @@ lazy val tests = project
       "org.scalameta" %% "moped-testkit" % V.moped
     )
   )
-  .dependsOn(multideps)
