@@ -41,9 +41,9 @@ lazy val multiversion = project
   .in(file("multiversion"))
   .enablePlugins(ProtobufPlugin, NativeImagePlugin, BuildInfoPlugin)
   .settings(
-    moduleName := "bazel-multideps",
-    mainClass.in(Compile, packageBin) := Some("multideps.Multideps"),
-    mainClass.in(Compile) := Some("multideps.Multideps"),
+    name := "bazel-multiversion",
+    mainClass.in(Compile, packageBin) := Some("multiversion.MultiVersion"),
+    mainClass.in(Compile) := Some("multiversion.MultiVersion"),
     fork := true,
     javaOptions ++= List(
       "-Xmx8g",
@@ -62,14 +62,14 @@ lazy val multiversion = project
       "com.lihaoyi" %% "pprint" % "0.6.0",
       "com.lihaoyi" %% "requests" % "0.6.5"
     ),
-    buildInfoPackage := "multideps",
+    buildInfoPackage := "multiversion",
     buildInfoKeys := Seq[BuildInfoKey](
       version
     ),
     name.in(NativeImage) := "bm",
     nativeImageOptions ++= List(
       "--initialize-at-build-time=scala.collection.immutable.VM",
-      "--initialize-at-run-time=multideps,moped.cli.Environment$",
+      "--initialize-at-run-time=multiversion,moped.cli.Environment$",
       "-H:+TraceClassInitialization",
       "--report-unsupported-elements-at-runtime"
     )

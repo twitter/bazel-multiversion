@@ -8,15 +8,14 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
-import multideps.Multideps
-
 import moped.internal.console.Utils
 import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
+import multiversion.MultiVersion
 import munit.TestOptions
 
-abstract class BaseSuite extends MopedSuite(Multideps.app) {
+abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   override def environmentVariables: Map[String, String] =
     // Leak the user's environment variable because Bazel needs access to PATH
     // to compile
@@ -34,7 +33,7 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
     private var path: Path = _
     override def apply(): Path = path
     override def beforeAll(): Unit = {
-      path = tmp.resolve("bazel-multideps")
+      path = tmp.resolve("bazel-multiversion")
     }
     override def afterEach(context: AfterEach): Unit = {
       Files.walkFileTree(
@@ -145,9 +144,9 @@ abstract class BaseSuite extends MopedSuite(Multideps.app) {
   def bazelWorkspace: String = {
     new StringBuilder()
       .append("/WORKSPACE\n")
-      .append(Utils.readFile(Paths.get("WORKSPACE")))
+      .append(Utils.readFile(Paths.get("multiversion-example/WORKSPACE")))
       .append("/.bazeliskrc\n")
-      .append(Utils.readFile(Paths.get(".bazeliskrc")))
+      .append(Utils.readFile(Paths.get("multiversion-example/.bazeliskrc")))
       .append("/BUILD\n")
       .append("# Empty package\n")
       .append("/3rdparty/BUILD\n")
