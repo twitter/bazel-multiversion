@@ -28,7 +28,10 @@ class DependenciesIndex(query: QueryResult) {
     }
   }
   def dependencies(target: String): Set[TargetIndex] = {
-    dependencies(byName(target))
+    byName.get(target) match {
+      case Some(targetIndex) => dependencies(targetIndex)
+      case None              => Set.empty
+    }
   }
   def dependencies(target: TargetIndex): Set[TargetIndex] = {
     // NOTE: not stack safe
