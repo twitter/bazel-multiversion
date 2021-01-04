@@ -31,10 +31,7 @@ class DependenciesIndex(query: QueryResult) {
     dependencies(byName(target))
   }
   def dependencies(target: TargetIndex): Set[TargetIndex] = {
-    deps.get(target.name) match {
-      case Some(value) => value
-      // NOTE(olafur): not stack safe
-      case None => Set(target) ++ target.deps.flatMap(dependencies)
-    }
+    // NOTE: not stack safe
+    deps.getOrElseUpdate(target.name, Set(target) ++ target.deps.flatMap(dependencies))
   }
 }
