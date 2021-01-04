@@ -5,7 +5,6 @@ import java.io.PrintWriter
 import scala.collection.JavaConverters._
 
 import com.twitter.multiversion.Build.QueryResult
-import com.twitter.multiversion.Build.Target
 import moped.annotations.CommandName
 import moped.annotations.PositionalArguments
 import moped.cli.Application
@@ -15,7 +14,6 @@ import moped.json.Result
 import moped.json.ValueResult
 import moped.progressbars.InteractiveProgressBar
 import moped.progressbars.ProcessRenderer
-import moped.reporters.Diagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.indexes.DependenciesIndex
 import multiversion.indexes.TargetIndex
@@ -88,7 +86,8 @@ case class LintCommand(
               if tdep.dependency != Some(dep)
             } yield tdep
         }.toSet
-        val redundant = errors.foreach {
+
+        errors.foreach {
           case (module, versions) =>
             val deps = versions
               .map(v => SimpleDependency(module, v))
@@ -96,26 +95,13 @@ case class LintCommand(
             if (!deps.exists(isTransitive)) {
               app.reporter.error(
                 s"target '$root' depends on conflicting versions of the 3rdparty dependency '${module.repr}:{${versions.commas}}'.\n" +
-                  s"\tTo fix this problem, the dependency list of this target so that it only depends on one version of the 3rdparty module '${module.repr}'"
+                  s"\tTo fix this problem, modify the dependency list of this target so that it only depends on one version of the 3rdparty module '${module.repr}'"
               )
             }
         }
       }
-      ()
     }
   }
-
-  private def lintTarget(
-      t: Target,
-      index: DependenciesIndex
-  ): Option[Diagnostic] = {
-    pprint.log(t.getRule().getName())
-    // pprint.log(deps)
-    // pprint.log(tags)
-    // pprint.log(dependency)
-    None
-  }
-
 }
 
 object LintCommand {
