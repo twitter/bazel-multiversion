@@ -71,4 +71,22 @@ class ExportCommandSuite extends tests.BaseSuite {
         |    classifier: test
         |""".stripMargin
   )
+
+  checkDeps(
+    "classifier with eviction",
+    s"""|  - dependency: org.apache.kafka:kafka-clients:2.4.1
+        |    versionScheme: pvp
+        |  - dependency: org.apache.kafka:kafka-clients:2.4.0
+        |    versionScheme: pvp
+        |    classifier: test
+        |""".stripMargin,
+    queryArg = allGenrules,
+    expectedQuery = """|@maven//:genrules/com.github.luben_zstd-jni_1.4.3-1
+                       |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1
+                       |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1_test
+                       |@maven//:genrules/org.lz4_lz4-java_1.6.0
+                       |@maven//:genrules/org.slf4j_slf4j-api_1.7.28
+                       |@maven//:genrules/org.xerial.snappy_snappy-java_1.1.7.3
+                       |""".stripMargin
+  )
 }
