@@ -66,8 +66,7 @@ object ArtifactOutput {
     val depsRef: Seq[String] =
       rawDependencies.iterator
         .flatMap(d =>
-          // todo: reconciledDependency could be questionable
-          outputIndex.get(index.reconciledDependency(d).repr) match {
+          outputIndex.get(index.reconciledDependency(d).bazelLabel) match {
             case Some(x) => Some(x)
             case _ =>
               val recon = index.reconciledDependency(d)
