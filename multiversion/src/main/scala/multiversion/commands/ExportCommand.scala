@@ -188,12 +188,7 @@ case class ExportCommand(
                 artifact = r.artifact,
                 artifactSha256 = Sha256.compute(file)
               )
-              outputIndex.put(
-                // todo: reconciledDependency could be questionable to do here
-                // index.reconciledDependency(r.dependency).repr,
-                r.dependency.repr,
-                output
-              )
+              outputIndex.put(r.dependency.bazelLabel, output)
               output
             }.toEither)
 
