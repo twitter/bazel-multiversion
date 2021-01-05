@@ -7,7 +7,7 @@ class ExportCommandSuite extends tests.BaseSuite {
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
         |""".stripMargin,
-    queryArg = allGenrules,
+    queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.4
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.4
@@ -18,7 +18,7 @@ class ExportCommandSuite extends tests.BaseSuite {
     "scalatest",
     """|  - dependency: org.scalatest:scalatest_2.12:3.1.2
        |""".stripMargin,
-    queryArg = allScalaImports,
+    queryArgs = allScalaImports,
     expectedQuery = """|@maven//:org.scala-lang.modules_scala-xml_2.12_1.2.0
                        |@maven//:org.scala-lang_scala-library_2.12.11
                        |@maven//:org.scala-lang_scala-reflect_2.12.11
@@ -80,13 +80,62 @@ class ExportCommandSuite extends tests.BaseSuite {
         |    versionScheme: pvp
         |    classifier: test
         |""".stripMargin,
-    queryArg = allGenrules,
+    queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/com.github.luben_zstd-jni_1.4.3-1
                        |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1
                        |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1_test
                        |@maven//:genrules/org.lz4_lz4-java_1.6.0
                        |@maven//:genrules/org.slf4j_slf4j-api_1.7.28
                        |@maven//:genrules/org.xerial.snappy_snappy-java_1.1.7.3
+                       |""".stripMargin
+  )
+
+  checkDeps(
+    "kafka-streams",
+    s"""|  - dependency: org.apache.kafka:kafka-streams:2.4.1
+        |    versionScheme: pvp
+        |""".stripMargin,
+    queryArgs = allScalaImportDeps("@maven//:org.apache.kafka_kafka-streams_2.4.1"),
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core_jackson-annotations_2.10.0
+                       |@maven//:com.fasterxml.jackson.core_jackson-core_2.10.0
+                       |@maven//:com.fasterxml.jackson.core_jackson-databind_2.10.0
+                       |@maven//:com.fasterxml.jackson.datatype_jackson-datatype-jdk8_2.10.0
+                       |@maven//:com.github.luben_zstd-jni_1.4.3-1
+                       |@maven//:org.apache.kafka_connect-api_2.4.1
+                       |@maven//:org.apache.kafka_connect-json_2.4.1
+                       |@maven//:org.apache.kafka_kafka-clients_2.4.1
+                       |@maven//:org.apache.kafka_kafka-streams_2.4.1
+                       |@maven//:org.lz4_lz4-java_1.6.0
+                       |@maven//:org.rocksdb_rocksdbjni_5.18.3
+                       |@maven//:org.slf4j_slf4j-api_1.7.28
+                       |@maven//:org.xerial.snappy_snappy-java_1.1.7.3
+                       |""".stripMargin
+  )
+
+  checkDeps(
+    "classifier with eviction dependencies",
+    s"""|  - dependency: org.apache.kafka:kafka-clients:2.4.1
+        |    versionScheme: pvp
+        |  - dependency: org.apache.kafka:kafka-clients:2.4.0
+        |    versionScheme: pvp
+        |    classifier: test
+        |  - dependency: org.apache.kafka:kafka-streams:2.4.0
+        |    versionScheme: pvp
+        |""".stripMargin,
+    queryArgs = allScalaImportDeps("@maven//:org.apache.kafka_kafka-streams_2.4.0"),
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core_jackson-annotations_2.10.0
+                       |@maven//:com.fasterxml.jackson.core_jackson-core_2.10.0
+                       |@maven//:com.fasterxml.jackson.core_jackson-databind_2.10.0
+                       |@maven//:com.fasterxml.jackson.datatype_jackson-datatype-jdk8_2.10.0
+                       |@maven//:com.github.luben_zstd-jni_1.4.3-1
+                       |@maven//:org.apache.kafka_connect-api_2.4.0
+                       |@maven//:org.apache.kafka_connect-json_2.4.0
+                       |@maven//:org.apache.kafka_kafka-clients_2.4.1
+                       |@maven//:org.apache.kafka_kafka-streams_2.4.0
+                       |@maven//:org.lz4_lz4-java_1.6.0
+                       |@maven//:org.rocksdb_rocksdbjni_5.18.3
+                       |@maven//:org.slf4j_slf4j-api_1.7.28
+                       |@maven//:org.xerial.snappy_snappy-java_1.1.7.3
                        |""".stripMargin
   )
 }
