@@ -31,12 +31,34 @@ final case class ThirdpartyConfig(
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
 ) {
+  val dependencies2: List[DependencyConfig] = {
+    // populate classifiers to all versions to make them eviction proof
+    def fillIn(p: (Module, Vector[DependencyConfig])): Vector[DependencyConfig] = {
+      val xs = p._2
+      val versions = xs.map(_.version).distinct
+      val classifiers = xs.map(_.classifier).distinct
+      for {
+        version <- versions
+        classifier <- classifiers
+      } yield {
+        xs.find(c => c.version == version && c.classifier == classifier)
+          .getOrElse {
+            xs.find(c => c.version == version).get.copy(classifier = classifier)
+          }
+      }
+    }
+    dependencies.toVector
+      .groupBy(_.coursierModule(scala))
+      .flatMap(fillIn)
+      .toList
+  }
+
   val depsByModule: Map[Module, List[DependencyConfig]] =
-    dependencies.groupBy(_.coursierModule(scala))
+    dependencies2.groupBy(_.coursierModule(scala))
   val depsByTargets: Map[String, List[DependencyConfig]] = {
     val map = mutable.Map.empty[String, mutable.ListBuffer[DependencyConfig]]
     for {
-      dep <- dependencies
+      dep <- dependencies2
       target <- dep.targets
     } {
       val buf = map.getOrElseUpdate(target, mutable.ListBuffer.empty)
@@ -45,7 +67,7 @@ final case class ThirdpartyConfig(
     map.mapValues(_.toList).toMap
   }
   def coursierDeps: List[(DependencyConfig, Dependency)] =
-    dependencies
+    dependencies2
       .flatMap(d => d.coursierDependencies(scala).map(cd => d -> cd))
       .distinctBy(_._2)
   def toResolve(
@@ -73,7 +95,7 @@ final case class ThirdpartyConfig(
   private val forceVersionsByTarget: collection.Map[String, ForceVersionResult] = {
     val map = new ju.HashMap[String, ForceVersionResult]().asScala
     for {
-      dep <- dependencies.iterator
+      dep <- dependencies2.iterator
       fv = fromForceVersions(dep)
       target <- dep.targets
     } {
@@ -132,7 +154,7 @@ final case class ThirdpartyConfig(
         }
         buf ++= fromForceVersions(dep)
         for {
-          dep <- dependencies
+          dep <- dependencies2
           target <- dep.targets
         } {
           buf ++= forceVersionsByTarget(target)

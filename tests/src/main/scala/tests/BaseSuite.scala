@@ -14,6 +14,7 @@ import moped.testkit.FileLayout
 import moped.testkit.MopedSuite
 import multiversion.MultiVersion
 import munit.TestOptions
+import os.Shellable
 
 abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   override def environmentVariables: Map[String, String] =
@@ -74,14 +75,17 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     }
   }
 
-  val allScalaImports: String = "kind(scala_import, @maven//:all)"
-  val allGenrules: String = "kind(genrule, @maven//:all)"
-
+  val allScalaImports: List[String] = List("kind(scala_import, @maven//:all)")
+  val allScalaImportsGraph: List[String] =
+    List("kind(scala_import, @maven//:all)", "--output", "graph")
+  val allGenrules: List[String] = List("kind(genrule, @maven//:all)")
+  def allScalaImportDeps(target: String): List[String] =
+    List(s"kind(scala_import, allpaths($target, @maven//:all))")
   def checkDeps(
       name: TestOptions,
       deps: String,
       buildQuery: String = "",
-      queryArg: String = "",
+      queryArgs: List[String] = Nil,
       expectedQuery: String = "",
       expectedExit: Int = 0,
       expectedOutput: String = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
@@ -101,10 +105,10 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
                                      |$bazelWorkspace
                                      |""".stripMargin
       )
-      if (queryArg.nonEmpty) {
+      if (queryArgs.nonEmpty) {
         val obtainedQuery =
           app()
-            .process("bazel", "query", queryArg)
+            .process(("bazel" :: "query" :: queryArgs).map(x => (x: Shellable)): _*)
             .call()
             .out
             .text()
