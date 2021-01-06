@@ -9,7 +9,9 @@ import coursier.Resolve
 import coursier.cache.FileCache
 import coursier.core.Dependency
 import coursier.core.Module
+import coursier.core.Reconciliation
 import coursier.params.ResolutionParams
+import coursier.util.ModuleMatchers
 import coursier.util.Task
 import moped.json.DecodingContext
 import moped.json.ErrorResult
@@ -70,6 +72,8 @@ final case class ThirdpartyConfig(
     dependencies2
       .flatMap(d => d.coursierDependencies(scala).map(cd => d -> cd))
       .distinctBy(_._2)
+  def relaxedForAllModules: Seq[(ModuleMatchers, Reconciliation)] =
+    Vector((ModuleMatchers.all, Reconciliation.Relaxed))
   def toResolve(
       dep: DependencyConfig,
       cache: FileCache[Task],
@@ -82,7 +86,9 @@ final case class ThirdpartyConfig(
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
           .addDependencies(cdep)
           .withResolutionParams(
-            ResolutionParams().addForceVersion(forceVersions: _*)
+            ResolutionParams()
+              .addForceVersion(forceVersions: _*)
+              .withReconciliation(relaxedForAllModules)
           )
           .withRepositories(
             if (repos.isEmpty) Resolve.defaultRepositories else repos
