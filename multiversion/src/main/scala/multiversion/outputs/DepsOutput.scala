@@ -47,7 +47,7 @@ def load_jvm_deps():
     $httpFiles
 
 \"\"\"
-    ctx.file("jvm_deps.bzl", content, executable = False)
+    ctx.file("jvm_deps.bzl", content, executable=False)
     build_content = \"\"\"
 load(\"@io_bazel_rules_scala//scala:scala_import.bzl\", \"scala_import\")
 
@@ -55,11 +55,11 @@ $builds
 
 $evictedBuilds
 \"\"\"
-    ctx.file("BUILD", build_content, executable = False)
+    ctx.file("BUILD", build_content, executable=False)
 
 
 jvm_deps_rule = repository_rule(
-    implementation = _jvm_deps_impl,
+    implementation=_jvm_deps_impl,
 )
 
 
