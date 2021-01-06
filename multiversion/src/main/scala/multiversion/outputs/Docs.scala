@@ -18,6 +18,8 @@ object Docs {
   val close: Doc = Doc.char(')')
   val openBracket: Doc = Doc.char('[')
   val closeBracket: Doc = Doc.char(']')
+  val dash: Doc = Doc.char('-')
+  val colon: Doc = Doc.char(':')
   object emoji {
     val success: Doc = colors.green + Doc.text("✔ ") + colors.reset
     val error: Doc = Doc.text("❗")
