@@ -15,9 +15,10 @@ final case class LintOutput(
       .sortBy(_._1)
     val conflictDocs = sortedConflicts.map {
       case (module, versions) =>
-        Doc.spaces(2) + Docs.dash + Doc.space + Docs.literal(module) + Docs.colon + Doc.space + Docs
-          .array(versions: _*)
+        Docs.literal(module) + Docs.colon + Doc.space + Docs.array(versions: _*)
     }
-    Docs.literal(root) + Docs.colon + Doc.line + Doc.intercalate(Doc.line, conflictDocs)
+    Docs.literal(root) + Docs.colon + Doc.space + Doc
+      .intercalate(Doc.comma + Doc.space, conflictDocs)
+      .tightBracketBy(Docs.openBrace, Docs.closeBrace)
   }
 }

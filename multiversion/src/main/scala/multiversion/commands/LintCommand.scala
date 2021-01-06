@@ -119,7 +119,7 @@ case class LintCommand(
         .map(p => if (p.isAbsolute()) p else app.env.workingDirectory.resolve(p))
         .foreach { out =>
           val docs = lintResults.filter(_.conflicts.nonEmpty).map(_.toDoc)
-          val rendered = Doc.intercalate(Doc.line, docs).render(120)
+          val rendered = Doc.intercalate(Doc.line, docs).render(Int.MaxValue)
           Files.createDirectories(out.getParent())
           Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
         }
