@@ -21,6 +21,15 @@ object Docs {
   val openBracket: Doc = Doc.char('[')
   val closeBracket: Doc = Doc.char(']')
   val colon: Doc = Doc.char(':')
+  def obj(entries: Iterable[(String, Doc)]): Doc = {
+    val mappings = entries.map {
+      case (key, value) =>
+        literal(key) + colon + Doc.space + value
+    }
+    Doc
+      .intercalate(Doc.comma + Doc.space, mappings)
+      .tightBracketBy(openBrace, closeBrace)
+  }
   object emoji {
     val success: Doc = colors.green + Doc.text("✔ ") + colors.reset
     val error: Doc = Doc.text("❗")
