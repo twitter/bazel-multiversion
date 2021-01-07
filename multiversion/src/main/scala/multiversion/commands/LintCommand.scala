@@ -112,10 +112,11 @@ case class LintCommand(
     BazelUtil
       .packageRoot(app, label)
       .map { path =>
+        val pendingBazelFile = path.resolve("PENDING.bazel")
         val pendingFile = path.resolve("PENDING")
-        if (Files.isRegularFile(pendingFile)) true
+        if (Files.isRegularFile(pendingBazelFile) || Files.isRegularFile(pendingFile)) true
         else if (lintMarkPending) {
-          Files.createFile(pendingFile)
+          Files.createFile(pendingBazelFile)
           true
         } else false
       }
