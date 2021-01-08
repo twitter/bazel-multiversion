@@ -5,20 +5,25 @@ import org.typelevel.paiges.Doc
 
 final case class LintOutput(
     root: String,
-    conflicts: Map[SimpleModule, Set[String]]
+    conflicts: Map[SimpleModule, Set[String]],
+    isFailure: Boolean
 ) {
   def toDoc: Doc = {
     // Sort the conflicts to ensure the output is stable.
     val sortedConflicts = conflicts
-      .map { case (module, versions) => module.repr -> versions.toList.sorted }
+      .map {
+        case (module, versions) =>
+          val versionsDoc = Docs.array(versions.toList.sorted: _*)
+          module.repr -> versionsDoc
+      }
       .toList
       .sortBy(_._1)
-    val conflictDocs = sortedConflicts.map {
-      case (module, versions) =>
-        Docs.literal(module) + Docs.colon + Doc.space + Docs.array(versions: _*)
-    }
-    Docs.literal(root) + Docs.colon + Doc.space + Doc
-      .intercalate(Doc.comma + Doc.space, conflictDocs)
-      .tightBracketBy(Docs.openBrace, Docs.closeBrace)
+
+    Docs.literal(root) + Docs.colon + Doc.space + Docs.obj(
+      List(
+        "failure" -> Doc.str(isFailure),
+        "conflicts" -> Docs.obj(sortedConflicts)
+      )
+    )
   }
 }
