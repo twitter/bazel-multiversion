@@ -9,7 +9,6 @@ import scala.collection.JavaConverters._
 import com.twitter.multiversion.Build.QueryResult
 import moped.annotations.CommandName
 import moped.annotations.Description
-import moped.annotations.Flag
 import moped.annotations.PositionalArguments
 import moped.cli.Application
 import moped.cli.Command
@@ -26,8 +25,6 @@ import org.typelevel.paiges.Doc
 @CommandName("lint")
 case class LintCommand(
     @Description("File to write lint report") lintReportPath: Option[Path] = None,
-    @Description("Automatically mark failing target as pending") @Flag lintMarkPending: Boolean =
-      false,
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
@@ -109,16 +106,14 @@ case class LintCommand(
   }
 
   private def isPending(app: Application, label: String): Boolean = {
+    val command = List(
+      "query",
+      s"""attr("tags", "dupped_3rdparty", $label)"""
+    )
     BazelUtil
-      .packageRoot(app, label)
-      .map { path =>
-        val pendingBazelFile = path.resolve("PENDING.bazel")
-        val pendingFile = path.resolve("PENDING")
-        if (Files.isRegularFile(pendingBazelFile) || Files.isRegularFile(pendingFile)) true
-        else if (lintMarkPending) {
-          Files.createFile(pendingBazelFile)
-          true
-        } else false
+      .bazel(app, command)
+      .map { out =>
+        out.trim.linesIterator.contains(label)
       }
       .getOrElse(false)
   }
