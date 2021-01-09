@@ -56,23 +56,23 @@ case class LintCommand(
         val errors = deps.groupBy(_.dependency.map(_.module)).collect {
           case (Some(dep), ts) if ts.size > 1 =>
             dep -> ts.collect {
-              case TargetIndex(_, _, _, Some(dep)) => dep.version
+              case TargetIndex(_, _, _, Some(dep)) => dep
             }
         }
         val isTransitive = errors.toList.flatMap {
           case (m, vs) =>
             for {
               v <- vs
-              dep = SimpleDependency(m, v)
+              dep = SimpleDependency(m, v.version, v.classifier)
               tdep <- index.dependencies(dep)
               if tdep.dependency != Some(dep)
             } yield tdep
         }.toSet
 
         val reportedErrors = errors.filter {
-          case (module, versions) =>
-            val deps = versions
-              .map(v => SimpleDependency(module, v))
+          case (module, deps0) =>
+            val deps = deps0
+              .map(v => SimpleDependency(module, v.version, v.classifier))
               .flatMap(index.byDependency.get(_))
             !deps.exists(isTransitive)
         }
@@ -89,7 +89,7 @@ case class LintCommand(
         (module, versions) <- errors
       } {
         log(
-          s"target '$root' depends on conflicting versions of the 3rdparty dependency '${module.repr}:{${versions.commas}}'.\n" +
+          s"target '$root' depends on conflicting versions of the 3rdparty dependency '${module.repr}:{${versions.map(_.version).commas}}'.\n" +
             s"\tTo fix this problem, modify the dependency list of this target so that it only depends on one version of the 3rdparty module '${module.repr}'"
         )
       }
