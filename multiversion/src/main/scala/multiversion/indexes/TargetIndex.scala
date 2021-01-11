@@ -35,6 +35,14 @@ object TargetIndex {
         case _ => None
       }
   }
+  private object JvmClassifier {
+    private val Classifier: Regex = "jvm_classifier=(.+)".r
+    def unapply(s: String): Option[String] =
+      s match {
+        case Classifier(x) => Some(x)
+        case _             => None
+      }
+  }
   def fromQuery(t: Target): TargetIndex = {
     def getStringListAttribute(key: String): List[String] =
       (for {
@@ -44,16 +52,21 @@ object TargetIndex {
       } yield dep).toList
     val deps = getStringListAttribute("deps")
     val tags = getStringListAttribute("tags")
-    val dependency = tags match {
-      case collection.Seq(JvmModule(module), JvmVersion(version)) =>
+    val module = tags.collectFirst {
+      case JvmModule(module) => module
+    }
+    val version = tags.collectFirst {
+      case JvmVersion(version) => version
+    }
+    val classifier = tags.collectFirst {
+      case JvmClassifier(classifier) => classifier
+    }
+    val dependency = (module, version) match {
+      case (Some(m), Some(v)) =>
         Some(
-          SimpleDependency(
-            SimpleModule(module.organization.value, module.name.value),
-            version
-          )
+          SimpleDependency(SimpleModule(m.organization.value, m.name.value), v, classifier)
         )
-      case _ =>
-        None
+      case _ => None
     }
     TargetIndex(
       name = t.getRule().getName(),

@@ -28,6 +28,16 @@ class ExportCommandSuite extends tests.BaseSuite {
   )
 
   checkDeps(
+    "netty",
+    """|  - dependency: io.netty:netty:3.10.1.Final
+       |  - dependency: io.netty:netty:3.7.0.Final
+       |""".stripMargin,
+    queryArgs = allGenrules,
+    expectedQuery = """|@maven//:genrules/io.netty_netty_3.10.1.Final
+                       |""".stripMargin
+  )
+
+  checkDeps(
     "basic",
     """|  - dependency: com.google.guava:guava:29.0-jre
        |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
@@ -61,7 +71,7 @@ class ExportCommandSuite extends tests.BaseSuite {
         |    versionScheme: pvp
         |  - dependency: com.lihaoyi:pprint_2.12:0.5.9
         |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
-        |""".stripMargin
+        |""".stripMargin,
   )
 
   checkDeps(

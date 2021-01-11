@@ -8,6 +8,8 @@ import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.Version
 import coursier.version.VersionCompatibility
+import coursier.version.VersionInterval
+import coursier.version.VersionParse
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
 import multiversion.resolvers.DependencyId
@@ -168,11 +170,7 @@ object ResolutionIndex {
     val versions = deps.map(d => Version(d.version))
     versions.foreach { version =>
       val isCompatible = winners.exists { winner =>
-        // we need to check both ways
-        if (
-          compat.isCompatible(version.repr, winner.repr) ||
-          compat.isCompatible(winner.repr, version.repr)
-        ) {
+        if (isCompat(version.repr, winner.repr, compat)) {
           if (lessThan(winner, version) && !isUnstable(version)) {
             winners.remove(winner)
             winners.add(version)
@@ -189,9 +187,21 @@ object ResolutionIndex {
     val result = (for {
       dep <- deps
       winner <- winners
-      if dep.version != winner.repr &&
-        compat.isCompatible(dep.version, winner.repr)
+      if (dep.version != winner.repr) && isCompat(dep.version, winner.repr, compat)
     } yield dep -> winner.repr).toMap
     result
+  }
+
+  def isCompat(version1: String, version2: String, compat: VersionCompatibility): Boolean = {
+    val min1 = minimumVersion(version1, compat)
+    val min2 = minimumVersion(version2, compat)
+    (min1 == min2) || (min1 + ".0" == min2) || (min1 == min2 + ".0")
+  }
+
+  def minimumVersion(version: String, compat: VersionCompatibility): String = {
+    val c = VersionParse.versionConstraint(version)
+    if (c.interval != VersionInterval.zero && c.interval.from.isDefined)
+      compat.minimumCompatibleVersion(c.interval.from.get.repr)
+    else compat.minimumCompatibleVersion(version)
   }
 }

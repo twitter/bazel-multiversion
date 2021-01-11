@@ -95,16 +95,20 @@ object ArtifactOutput {
         "jars" -> Docs.array(mavenLabel),
         "deps" -> Docs.array(depsRef: _*),
         "exports" -> Docs.array(depsRef: _*),
-        "tags" -> Docs.array(
-          s"jvm_module=${dependency.module.repr}",
-          s"jvm_version=${dependency.version}"
-        ),
+        "tags" -> Docs.array(tags(dependency): _*),
         "visibility" -> Docs.array("//visibility:public")
       )
 
     genrule.toDoc /
       scalaImport.toDoc
   }
+
+  def tags(dep: Dependency): List[String] =
+    List(s"jvm_module=${dep.module.repr}", s"jvm_version=${dep.version}") ::: {
+      if (dep.publication.classifier.nonEmpty)
+        List(s"jvm_classifier=${dep.publication.classifier.value}")
+      else Nil
+    }
 
   def buildEvictedDoc(
       dep: Dependency,
@@ -122,11 +126,7 @@ object ArtifactOutput {
         "jars" -> Docs.array(),
         "deps" -> Docs.array(depsRef: _*),
         "exports" -> Docs.array(depsRef: _*),
-        "tags" -> Docs.array(
-          s"jvm_module=${dep.module.repr}",
-          s"jvm_version=${dep.version}",
-          s"evicted=True"
-        ),
+        "tags" -> Docs.array(tags(dep) ::: List("evicted=True"): _*),
         "visibility" -> Docs.array("//visibility:public")
       )
     scalaImport.toDoc

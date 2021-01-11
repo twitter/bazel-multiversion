@@ -1,19 +1,20 @@
 package multiversion.outputs
 
+import multiversion.resolvers.SimpleDependency
 import multiversion.resolvers.SimpleModule
 import org.typelevel.paiges.Doc
 
 final case class LintOutput(
     root: String,
-    conflicts: Map[SimpleModule, Set[String]],
+    conflicts: Map[SimpleModule, Set[SimpleDependency]],
     isFailure: Boolean
 ) {
   def toDoc: Doc = {
     // Sort the conflicts to ensure the output is stable.
     val sortedConflicts = conflicts
       .map {
-        case (module, versions) =>
-          val versionsDoc = Docs.array(versions.toList.sorted: _*)
+        case (module, deps) =>
+          val versionsDoc = Docs.array(deps.toList.map(_.version).sorted: _*)
           module.repr -> versionsDoc
       }
       .toList
