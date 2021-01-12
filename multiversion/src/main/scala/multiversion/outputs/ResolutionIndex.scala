@@ -153,6 +153,7 @@ object ResolutionIndex {
     )
   }
 
+  private val overrideTags = Set("-tw")
   def resolveVersions(
       vers: Set[String],
       compat: VersionCompatibility
@@ -161,9 +162,10 @@ object ResolutionIndex {
       val s = v.repr
       s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
     }
-    def hasOverride(v: Version): Boolean =
-      v.repr.toLowerCase(Locale.ENGLISH).contains("-tw") &&
-        !v.repr.toLowerCase(Locale.ENGLISH).contains("shaded")
+    def hasOverride(v: Version): Boolean = {
+      val lower = v.repr.toLowerCase(Locale.ENGLISH)
+      overrideTags.exists(t => lower.contains(t)) && !lower.contains("shaded")
+    }
     def lessThan(v1: Version, v2: Version): Boolean =
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
     // The "winners" are the highest selected versions
@@ -208,10 +210,17 @@ object ResolutionIndex {
     (min1 == min2) || (min1 + ".0" == min2) || (min1 == min2 + ".0")
   }
 
-  def minimumVersion(version: String, compat: VersionCompatibility): String = {
-    val c = VersionParse.versionConstraint(version)
+  def minimumVersion(v0: String, compat: VersionCompatibility): String = {
+    var v = v0
+    overrideTags.foreach { t =>
+      val idx = v.indexOf(t)
+      if (idx >= 1) {
+        v = v.slice(0, idx)
+      }
+    }
+    val c = VersionParse.versionConstraint(v)
     if (c.interval != VersionInterval.zero && c.interval.from.isDefined)
       compat.minimumCompatibleVersion(c.interval.from.get.repr)
-    else compat.minimumCompatibleVersion(version)
+    else compat.minimumCompatibleVersion(v)
   }
 }
