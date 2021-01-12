@@ -153,21 +153,22 @@ object ResolutionIndex {
     )
   }
 
-  def reconcileVersions(
-      deps: collection.Set[Dependency],
+  def resolveVersions(
+      vers: Set[String],
       compat: VersionCompatibility
-  ): Map[Dependency, String] = {
+  ): Set[String] = {
     def isUnstable(v: Version): Boolean = {
       val s = v.repr
       s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
     }
     def hasOverride(v: Version): Boolean =
-      v.repr.toLowerCase(Locale.ENGLISH).contains("-tw")
+      v.repr.toLowerCase(Locale.ENGLISH).contains("-tw") &&
+        !v.repr.toLowerCase(Locale.ENGLISH).contains("shaded")
     def lessThan(v1: Version, v2: Version): Boolean =
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
     // The "winners" are the highest selected versions
     val winners = mutable.Set.empty[Version]
-    val versions = deps.map(d => Version(d.version))
+    val versions = vers.map(Version(_))
     versions.foreach { version =>
       val isCompatible = winners.exists { winner =>
         if (isCompat(version.repr, winner.repr, compat)) {
@@ -184,11 +185,20 @@ object ResolutionIndex {
         winners.add(version)
       }
     }
+    winners.map(_.repr).toSet
+  }
+
+  def reconcileVersions(
+      deps: collection.Set[Dependency],
+      compat: VersionCompatibility
+  ): Map[Dependency, String] = {
     val result = (for {
       dep <- deps
-      winner <- winners
-      if (dep.version != winner.repr) && isCompat(dep.version, winner.repr, compat)
-    } yield dep -> winner.repr).toMap
+      // I'm not sure why this .toSet is necessary, but without it
+      // wrong version would win here
+      winner <- resolveVersions(deps.map(_.version).toSet, compat)
+      if (dep.version != winner) && isCompat(dep.version, winner, compat)
+    } yield dep -> winner).toMap
     result
   }
 
