@@ -15,7 +15,7 @@ import multiversion.loggers.StaticProgressRenderer
 object BazelUtil {
 
   /** The path to the root of the package owning the given label. */
-  def packageRoot(app: Application, label: String): Result[Path] = {
+  def packageRoot(app: Application, bazelBin: Path, label: String): Result[Path] = {
     val command = List(
       "query",
       label,
@@ -23,17 +23,17 @@ object BazelUtil {
       "package"
     )
 
-    bazel(app, command).map { out =>
+    bazel(app, bazelBin, command).map { out =>
       app.env.workingDirectory.resolve(out.trim())
     }
   }
 
-  def bazel(app: Application, command: List[String]): Result[ByteData.Chunks] = {
+  def bazel(app: Application, bazelBin: Path, command: List[String]): Result[ByteData.Chunks] = {
     val pr0 = new ProcessRenderer(command, command, clock = app.env.clock)
     val pr = StaticProgressRenderer.ifAnsiDisabled(pr0, app.env.isColorEnabled)
     val pb = new InteractiveProgressBar(out = new PrintWriter(app.env.standardError), renderer = pr)
     val process = ProgressBars.run(pb) {
-      os.proc("bazel" :: command)
+      os.proc(bazelBin.toString :: command)
         .call(cwd = os.Path(app.env.workingDirectory), stderr = pr0.output, check = false)
     }
     if (process.exitCode == 0) {
