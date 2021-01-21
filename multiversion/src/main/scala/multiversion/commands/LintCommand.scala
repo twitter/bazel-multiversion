@@ -3,6 +3,7 @@ package multiversion.commands
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
 
 import scala.collection.JavaConverters._
 
@@ -25,6 +26,7 @@ import org.typelevel.paiges.Doc
 @CommandName("lint")
 case class LintCommand(
     @Description("File to write lint report") lintReportPath: Option[Path] = None,
+    @Description("Path to bazel executable") bazel: Path = Paths.get("bazel"),
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
@@ -36,7 +38,7 @@ case class LintCommand(
       "--notool_deps",
       "--output=proto"
     )
-    BazelUtil.bazel(app, command).map { out =>
+    BazelUtil.bazel(app, bazel, command).map { out =>
       QueryResult.parseFrom(out.bytes)
     }
   }
@@ -111,7 +113,7 @@ case class LintCommand(
       s"""attr("tags", "dupped_3rdparty", $label)"""
     )
     BazelUtil
-      .bazel(app, command)
+      .bazel(app, bazel, command)
       .map { out =>
         out.trim.linesIterator.contains(label)
       }
