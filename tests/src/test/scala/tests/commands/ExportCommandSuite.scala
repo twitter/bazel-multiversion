@@ -42,8 +42,7 @@ class ExportCommandSuite extends tests.BaseSuite {
     """|  - dependency: com.google.guava:guava:29.0-jre
        |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
        |""".stripMargin,
-    expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:3:16 error: transitive dependency 'com.google.guava:guava' has conflicting versions.
+    expectedOutput = """|/workingDirectory/3rdparty.yaml:3:16 error: transitive dependency 'com.google.guava:guava' has conflicting versions.
          |       found versions: 27.1-jre
          |    declared versions: 29.0-jre
          |      popular version: 29.0-jre
@@ -51,7 +50,7 @@ class ExportCommandSuite extends tests.BaseSuite {
          |           ok targets:
          |       unpopular deps: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
          |    unpopular targets:
-         |  To fix this problem, add 'dependencies = ''' to the root dependencies OR add 'targets' to the transitive dependency.
+         |  To fix this problem, add 'dependency = com.google.guava:guava:27.1-jre' to the root dependencies OR add 'targets' to the transitive dependency.
          |  - dependency: com.google.guava:guava:29.0-jre
          |                ^""".stripMargin,
     expectedExit = 1
