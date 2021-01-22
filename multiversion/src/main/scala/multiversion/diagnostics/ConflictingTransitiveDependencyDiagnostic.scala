@@ -26,11 +26,17 @@ class ConflictingTransitiveDependencyDiagnostic(
     def pretty(xs: Iterable[Any]): String =
       if (xs.isEmpty) ""
       else xs.mkString(" ", ", ", "")
+    val depsStr =
+      (foundVersions
+        .map { v =>
+          s"'dependency = ${Dependency(module, v).repr}'"
+        })
+        .mkString(", ")
     val toFix =
       if (pos.isNone)
-        s"add 'dependencies' to the root dependencies OR create a new root dependency for the module '${module.repr}'."
+        s"add $depsStr to the root dependencies OR create a new root dependency for the module '${module.repr}'."
       else
-        "add 'dependencies = ''' to the root dependencies OR add 'targets' to the transitive dependency."
+        s"add $depsStr to the root dependencies OR add 'targets' to the transitive dependency."
     val okRootsStr = pretty(okRoots.distinct.take(20).map(_.repr))
     val okTargetsStr = pretty(okDepsConfig.distinct.take(20).flatMap(_.targets))
     val unpopularRootsStr = pretty(unpopularRoots.distinct.map(_.repr))

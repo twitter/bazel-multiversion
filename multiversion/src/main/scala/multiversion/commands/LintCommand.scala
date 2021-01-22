@@ -56,7 +56,7 @@ case class LintCommand(
       val lintResults = roots.map { root =>
         val deps = index.dependencies(root)
         val errors = deps.groupBy(_.dependency.map(_.module)).collect {
-          case (Some(dep), ts) if ts.size > 1 =>
+          case (Some(dep), ts) if ts.flatMap(_.dependency.map(_.version).toSet).toSet.size > 1 =>
             dep -> ts.collect {
               case TargetIndex(_, _, _, Some(dep)) => dep
             }
