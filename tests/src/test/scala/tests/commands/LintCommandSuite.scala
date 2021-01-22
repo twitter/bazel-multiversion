@@ -22,4 +22,34 @@ class LintCommandSuite extends BaseSuite {
                                    |""".stripMargin
     )
   }
+
+  test("classifier") {
+    checkCommand(
+      arguments = List("export"),
+      expectedOutput = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
+                          |""".stripMargin,
+      workingDirectoryLayout = s"""|/3rdparty.yaml
+                                   |scala: 2.12.12
+                                   |dependencies:
+                                   |  - dependency: org.apache.kafka:kafka_2.12:2.4.1
+                                   |    versionScheme: pvp
+                                   |  - dependency: org.apache.kafka:kafka_2.12:2.4.1
+                                   |    versionScheme: pvp
+                                   |    classifier: test
+                                   |/foo/BUILD
+                                   |load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library", "scala_binary")
+                                   |
+                                   |scala_library(
+                                   |  name = "foo",
+                                   |  srcs = [],
+                                   |  deps = [
+                                   |    "@maven//:org.apache.kafka_kafka_2.12_2.4.1",
+                                   |    "@maven//:org.apache.kafka_kafka_2.12_2.4.1_test",
+                                   |  ],
+                                   |)
+                                   |$bazelWorkspace
+                                   |""".stripMargin,
+      lintArgs = List("lint", "//foo:foo"),
+    )
+  }
 }

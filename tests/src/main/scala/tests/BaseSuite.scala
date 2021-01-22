@@ -161,7 +161,8 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
       arguments: => List[String],
       expectedOutput: String,
       expectedExit: Int = 0,
-      workingDirectoryLayout: String = ""
+      workingDirectoryLayout: String = "",
+      lintArgs: List[String] = Nil,
   )(implicit loc: munit.Location): Unit = {
     if (workingDirectoryLayout.nonEmpty) {
       FileLayout.fromString(workingDirectoryLayout, workingDirectory)
@@ -170,5 +171,9 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     val exit = app().run(arguments)
     assertEquals(exit, expectedExit, clues(app.capturedOutput))
     assertNoDiff(app.capturedOutput, expectedOutput)
+    if (lintArgs.nonEmpty) {
+      val exit = app().run(lintArgs)
+      assertEquals(exit, 0, clues(app.capturedOutput))
+    }
   }
 }
