@@ -81,10 +81,15 @@ final case class ThirdpartyConfig(
       cdep: Dependency
   ): Result[Task[Result[DependencyResolution]]] =
     Result.fromResults(decodeForceVersions(dep)).map { forceVersions =>
+      // The dependencies on other 3rdparty targets should be resolved together.
+      val targetDeps = for {
+        dependency <- dep.dependencies
+        dep <- depsByTargets.getOrElse(dependency, Nil)
+      } yield dep.toCoursierDependency(scala)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
-          .addDependencies(cdep)
+          .addDependencies(cdep :: targetDeps: _*)
           .withResolutionParams(
             ResolutionParams()
               .addForceVersion(forceVersions: _*)

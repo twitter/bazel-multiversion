@@ -51,12 +51,12 @@ final case class DependencyConfig(
       classifier
     )
 
-  def toCoursierDependency: Dependency =
+  def toCoursierDependency(scalaVersion: VersionsConfig): Dependency =
     Dependency(
-      module = Module(Organization(organization.value), ModuleName(name), Map.empty),
+      module = coursierModule(scalaVersion),
       version = version,
       configuration = Configuration.empty,
-      exclusions = Set.empty,
+      exclusions = exclusions.map(e => e.coursierModule.organization -> e.coursierModule.name),
       publication = classifier match {
         case Some(c) =>
           Publication.empty.withClassifier(Classifier(c)).withType(Type("jar"))
@@ -87,25 +87,10 @@ final case class DependencyConfig(
   def getVersion(key: String): Option[String] =
     if (key == "default") Some(version)
     else crossVersions.find(_.name.value == key).map(_.version.value)
-  def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] =
-    allVersions.map(v =>
-      Dependency(
-        module = coursierModule(scalaVersion),
-        version = v,
-        configuration = Configuration.empty,
-        exclusions = exclusions.map(e => e.coursierModule.organization -> e.coursierModule.name),
-        publication = classifier match {
-          case Some(c) =>
-            Publication.empty
-              .withClassifier(Classifier(c))
-              .withType(Type("jar"))
-          case _ => Publication.empty
-        },
-        optional = false,
-        transitive = transitive
-      )
-    )
-
+  def coursierDependencies(scalaVersion: VersionsConfig): List[Dependency] = {
+    val coursierDep = toCoursierDependency(scalaVersion)
+    allVersions.map(v => coursierDep.withVersion(v))
+  }
 }
 
 object DependencyConfig {
