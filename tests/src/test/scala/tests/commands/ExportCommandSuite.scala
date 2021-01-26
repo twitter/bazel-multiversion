@@ -173,4 +173,24 @@ class ExportCommandSuite extends tests.BaseSuite {
                     |@maven//:org.slf4j_slf4j-api_1.7.12
                     |""".stripMargin
   )
+
+  checkDeps(
+    "target dependency has its own dependencies",
+    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
+        |    dependencies:
+        |      - mytargets:guava
+        |  - dependency: com.google.guava:guava:25.1-jre
+        |    targets:
+        |      - mytargets:guava
+        |""".stripMargin,
+    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
+    expectedQuery = """
+                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
+                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
+                    |@maven//:com.google.guava_guava_25.1-jre
+                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
+                    |@maven//:org.checkerframework_checker-qual_2.0.0
+                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
+                    |""".stripMargin
+  )
 }

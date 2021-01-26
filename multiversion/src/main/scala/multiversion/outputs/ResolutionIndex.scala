@@ -52,7 +52,7 @@ final case class ResolutionIndex(
     val res = for {
       r <- resolutions
       transitive = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
-      dep <- r.res.rootDependencies
+      dep = r.dep.toCoursierDependency(thirdparty.scala)
       if !isVisited(dep.repr)
     } yield {
       isVisited += dep.repr
