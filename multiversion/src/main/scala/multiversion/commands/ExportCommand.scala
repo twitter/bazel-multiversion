@@ -1,7 +1,6 @@
 package multiversion.commands
 
 import java.io.File
-import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,7 +27,6 @@ import moped.cli.CommandParser
 import moped.json.ErrorResult
 import moped.json.Result
 import moped.json.ValueResult
-import moped.progressbars.InteractiveProgressBar
 import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
@@ -336,26 +334,17 @@ case class ExportCommand(
     try fn(threads)
     finally threads.close()
   }
-  private def withProgressBar[T](renderer: ProgressRenderer)(thunk: => T): T = {
-    val out = new PrintWriter(app.err)
-    val p = new InteractiveProgressBar(
-      out = out,
-      renderer = renderer,
-      intervalDuration = Duration.ofMillis(100),
-      terminal = app.terminal,
-      isDynamicPartEnabled = app.env.isColorEnabled
-    )
-    ProgressBars.run(p)(thunk)
-  }
 
   private def runParallelTasks[T](
       tasks: List[Task[T]],
       r: ProgressRenderer,
       ec: ExecutionContext
-  ): Seq[T] =
-    withProgressBar(r) {
+  ): Seq[T] = {
+    val p = ProgressBars.create(app, r, intervalDuration = Duration.ofMillis(100))
+    ProgressBars.run(p) {
       Task.gather.gather(tasks).unsafeRun()(ec)
     }
+  }
 
 }
 
