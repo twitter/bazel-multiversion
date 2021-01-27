@@ -15,9 +15,19 @@ object ProgressBars {
       intervalDuration: Duration = Duration.ofMillis(16)
   ): ProgressBar = {
     val out = new PrintWriter(app.env.standardError)
+
+    val ttyRenderer =
+      // Attempt to detect if we are writing to a TTY.
+      // See caveats at https://stackoverflow.com/q/1403772
+      if (System.console() != null) {
+        renderer
+      } else {
+        new StaticProgressRenderer(renderer)
+      }
+
     new InteractiveProgressBar(
       out = out,
-      renderer = renderer,
+      renderer = ttyRenderer,
       terminal = app.terminal,
       intervalDuration = intervalDuration,
       isDynamicPartEnabled = app.env.isColorEnabled
