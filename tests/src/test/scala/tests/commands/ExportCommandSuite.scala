@@ -193,4 +193,38 @@ class ExportCommandSuite extends tests.BaseSuite {
                     |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
                     |""".stripMargin
   )
+
+  // org.apiguardian:apiguardian-api has no dependencies
+  // we check it's included in the dependencies of libthrift.
+  checkDeps(
+    "target dependency are transitively included",
+    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
+        |    dependencies:
+        |      - mytargets:guava
+        |  - dependency: com.google.guava:guava:25.1-jre
+        |    dependencies:
+        |      - mytargets:apiguardian
+        |    targets:
+        |      - mytargets:guava
+        |  - dependency: org.apiguardian:apiguardian-api:1.1.1
+        |    targets:
+        |      - mytargets:apiguardian
+        |""".stripMargin,
+    queryArgs = allScalaImportDeps("@maven//:org.apache.thrift_libthrift_0.10.0"),
+    expectedQuery = """
+                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
+                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
+                    |@maven//:com.google.guava_guava_25.1-jre
+                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
+                    |@maven//:commons-codec_commons-codec_1.9
+                    |@maven//:commons-logging_commons-logging_1.2
+                    |@maven//:org.apache.httpcomponents_httpclient_4.4.1
+                    |@maven//:org.apache.httpcomponents_httpcore_4.4.1
+                    |@maven//:org.apache.thrift_libthrift_0.10.0
+                    |@maven//:org.apiguardian_apiguardian-api_1.1.1
+                    |@maven//:org.checkerframework_checker-qual_2.0.0
+                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
+                    |@maven//:org.slf4j_slf4j-api_1.7.12
+                    |""".stripMargin
+  )
 }
