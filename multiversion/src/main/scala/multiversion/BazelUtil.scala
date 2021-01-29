@@ -1,13 +1,11 @@
 package multiversion
 
-import java.io.PrintWriter
 import java.nio.file.Path
 
 import geny.ByteData
 import moped.cli.Application
 import moped.json.Result
 import moped.json.ValueResult
-import moped.progressbars.InteractiveProgressBar
 import moped.progressbars.ProcessRenderer
 import multiversion.loggers.ProgressBars
 import multiversion.loggers.StaticProgressRenderer
@@ -31,7 +29,7 @@ object BazelUtil {
   def bazel(app: Application, bazelBin: Path, command: List[String]): Result[ByteData.Chunks] = {
     val pr0 = new ProcessRenderer(command, command, clock = app.env.clock)
     val pr = StaticProgressRenderer.ifAnsiDisabled(pr0, app.env.isColorEnabled)
-    val pb = new InteractiveProgressBar(out = new PrintWriter(app.env.standardError), renderer = pr)
+    val pb = ProgressBars.create(app, pr)
     val process = ProgressBars.run(pb) {
       os.proc(bazelBin.toString :: command)
         .call(cwd = os.Path(app.env.workingDirectory), stderr = pr0.output, check = false)

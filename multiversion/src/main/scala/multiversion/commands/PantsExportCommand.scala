@@ -1,6 +1,5 @@
 package multiversion.commands
 
-import java.io.PrintWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -14,7 +13,6 @@ import moped.json.ErrorResult
 import moped.json.Result
 import moped.json.ValueResult
 import moped.parsers.JsonParser
-import moped.progressbars.InteractiveProgressBar
 import moped.progressbars.ProcessRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
@@ -98,10 +96,7 @@ final case class PantsExportCommand(
       ) ++ pantsTargets ++ List(outputOption)
       val commandString = command.mkString(" ")
       val pr = new ProcessRenderer(command, command, clock = app.env.clock)
-      val p = new InteractiveProgressBar(
-        out = new PrintWriter(app.env.standardError),
-        renderer = pr
-      )
+      val p = ProgressBars.create(app, pr)
       val proc = ProgressBars.run(p) {
         app
           .process(command.map(Shellable.StringShellable(_)): _*)
