@@ -8,7 +8,7 @@ class StaticProgressRenderer(underlying: ProgressRenderer) extends ProgressRende
   override def renderStart(): Doc =
     underlying.renderStart()
   override def renderStep(): ProgressStep =
-    underlying.renderStep().copy(dynamic = Doc.empty)
+    underlying.renderStep().withDynamic(Doc.empty)
   override def renderStop(): Doc =
     underlying.renderStop()
 }
