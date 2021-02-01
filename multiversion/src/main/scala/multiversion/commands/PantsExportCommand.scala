@@ -50,7 +50,7 @@ final case class PantsExportCommand(
             lint = lint,
             lintCommand = save.lintCommand.copy(
               app = app
-                .copy(env = app.env.copy(workingDirectory = workingDirectory))
+                .withEnv(app.env.withWorkingDirectory(workingDirectory))
             )
           )
           .runResult(thirdparty)

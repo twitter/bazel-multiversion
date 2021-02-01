@@ -53,7 +53,7 @@ class ResolveProgressRenderer(
         }
       )
       val table = header + Doc.line + rows + Doc.line
-      ProgressStep(dynamic = table)
+      ProgressStep().withDynamic(table)
     }
   }
 
