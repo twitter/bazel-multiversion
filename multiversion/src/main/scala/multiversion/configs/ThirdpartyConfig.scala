@@ -74,6 +74,25 @@ final case class ThirdpartyConfig(
       .distinctBy(_._2)
   def relaxedForAllModules: Seq[(ModuleMatchers, Reconciliation)] =
     Vector((ModuleMatchers.all, Reconciliation.Relaxed))
+
+  /** Collect all the root dependencies to resolve together. */
+  def rootDependencies(root: DependencyConfig): Seq[Dependency] = {
+    val seen = mutable.Set.empty[String]
+    val roots = mutable.Buffer.empty[Dependency]
+    val queue = mutable.Queue(root)
+    while (queue.nonEmpty) {
+      val current = queue.dequeue()
+      roots += current.toCoursierDependency(scala)
+      current.dependencies.foreach { dep =>
+        if (seen.add(dep)) {
+          depsByTargets
+            .getOrElse(dep, Nil)
+            .foreach(d => queue.enqueue(d))
+        }
+      }
+    }
+    roots
+  }
   def toResolve(
       dep: DependencyConfig,
       cache: FileCache[Task],
@@ -81,10 +100,11 @@ final case class ThirdpartyConfig(
       cdep: Dependency
   ): Result[Task[Result[DependencyResolution]]] =
     Result.fromResults(decodeForceVersions(dep)).map { forceVersions =>
+      val allDependencies = rootDependencies(dep)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
-          .addDependencies(cdep)
+          .addDependencies(allDependencies: _*)
           .withResolutionParams(
             ResolutionParams()
               .addForceVersion(forceVersions: _*)

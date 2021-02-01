@@ -35,7 +35,7 @@ final case class ResolutionIndex(
         // when multiple resolutions are found for this artifact,
         // prioritize the direct resolution that would contain the dependencies
         val rds1 = rds0.filter { p =>
-          p.config.toCoursierDependency.module == p.dependency.module &&
+          p.config.toCoursierDependency(thirdparty.scala).module == p.dependency.module &&
           p.config.classifier ==
             (if (p.publication.classifier.isEmpty) None
              else Some(p.publication.classifier.value))
@@ -52,7 +52,7 @@ final case class ResolutionIndex(
     val res = for {
       r <- resolutions
       transitive = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
-      dep <- r.res.rootDependencies
+      dep = r.dep.toCoursierDependency(thirdparty.scala)
       if !isVisited(dep.repr)
     } yield {
       isVisited += dep.repr
