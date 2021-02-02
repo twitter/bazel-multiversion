@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.Try
 
 import coursier.cache.ArtifactError
+import coursier.cache.CacheDefaults
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
@@ -46,6 +47,7 @@ import multiversion.resolvers.Sha256
 case class ExportCommand(
     lint: Boolean = true,
     outputPath: Path = Paths.get("3rdparty", "jvm_deps.bzl"),
+    cache: Option[Path] = None,
     @Inline
     lintCommand: LintCommand = LintCommand()
 ) extends Command {
@@ -58,7 +60,7 @@ case class ExportCommand(
   }
   def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
     withThreadPool[Result[Unit]] { threads =>
-      val cache: FileCache[Task] = FileCache().noCredentials
+      val coursierCache: FileCache[Task] = FileCache().noCredentials
         .withCachePolicies(
           List(
             // first, use what's available locally
@@ -67,16 +69,20 @@ case class ExportCommand(
             CachePolicy.Update
           )
         )
+        .withLocation(cache match {
+          case Some(c) => c.toFile
+          case _       => CacheDefaults.location
+        })
         .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
       for {
-        index <- resolveDependencies(thirdparty, cache)
+        index <- resolveDependencies(thirdparty, coursierCache)
         _ <- {
           if (lint) lintPostResolution(index)
           else ValueResult(())
         }
-        output <- generateBzlFile(index, cache)
+        output <- generateBzlFile(index, coursierCache)
         _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
         lint <-
           if (lint)

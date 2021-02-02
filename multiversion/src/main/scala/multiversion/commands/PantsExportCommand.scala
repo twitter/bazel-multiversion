@@ -28,6 +28,7 @@ final case class PantsExportCommand(
     pantsTargets: List[String] = List("3rdparty/jvm::"),
     cwd: Option[Path] = None,
     lint: Boolean = false,
+    cache: Option[Path] = None,
     @Inline
     save: ExportCommand = ExportCommand.default
 ) extends Command {
@@ -48,6 +49,7 @@ final case class PantsExportCommand(
         save
           .copy(
             lint = lint,
+            cache = cache,
             lintCommand = save.lintCommand.copy(
               app = app
                 .withEnv(app.env.withWorkingDirectory(workingDirectory))
