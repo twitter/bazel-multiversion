@@ -40,6 +40,7 @@ import multiversion.outputs.ArtifactOutput
 import multiversion.outputs.DepsOutput
 import multiversion.outputs.Docs
 import multiversion.outputs.ResolutionIndex
+import multiversion.resolvers.ContextualDependency
 import multiversion.resolvers.CoursierThreadPools
 import multiversion.resolvers.Sha256
 
@@ -244,7 +245,7 @@ case class ExportCommand(
   def lintPostResolution(index: ResolutionIndex): Result[Unit] = {
     val errors = for {
       (module, deps) <- index.allDependencies.toList
-      allVersions = deps.map(d => index.reconciledVersion(d))
+      allVersions = deps.map(d => index.reconciledVersion(d.dependency))
       if allVersions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>
@@ -264,7 +265,13 @@ case class ExportCommand(
                 Map(
                   allVersions.toList.map(v =>
                     v ->
-                      deps.filter(_.version == v).flatMap(index.roots).toSet
+                      deps
+                        .collect {
+                          case ContextualDependency(dep, _, _) if dep.version == v =>
+                            index.roots(dep)
+                        }
+                        .flatten
+                        .toSet
                   ): _*
                 )
               val sortedVersions = allVersions.toVector

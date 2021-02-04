@@ -5,7 +5,9 @@ import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
 import coursier.version.VersionCompatibility
+import multiversion.configs.ModuleConfig
 import multiversion.outputs.ResolutionIndex
+import multiversion.resolvers.ContextualDependency
 
 class ResolutionTest extends tests.BaseSuite {
   test("reconciliation") {
@@ -43,9 +45,43 @@ class ResolutionTest extends tests.BaseSuite {
     assertEquals(vs.head, "2.11.2")
   }
 
-  def jodaTime(v: String): Dependency =
-    Dependency(
-      Module(Organization("joda-time"), ModuleName("joda-time"), Map.empty),
-      v
+  test("reconciliation with different exclusions") {
+    val joda2104 = jodaTime("2.10.4", exclusions = Set("dependency0"))
+    val joda281 = jodaTime("2.8.1", exclusions = Set("dependency0"))
+    val joda299 = jodaTime("2.9.9", exclusions = Set.empty)
+
+    val vs = ResolutionIndex.reconcileVersions(
+      Set(joda2104, joda281, joda299),
+      VersionCompatibility.EarlySemVer
+    )
+    assertEquals(vs.size, 1)
+    assertEquals(vs, Map(joda281 -> "2.10.4"))
+  }
+
+  test("reconciliation with different dependencies") {
+    val joda2104 = jodaTime("2.10.4", dependencies = List("dependency0"))
+    val joda281 = jodaTime("2.8.1", dependencies = List("dependency0"))
+    val joda299 = jodaTime("2.9.9", dependencies = Nil)
+
+    val vs = ResolutionIndex.reconcileVersions(
+      Set(joda2104, joda281, joda299),
+      VersionCompatibility.EarlySemVer
+    )
+    assertEquals(vs.size, 1)
+    assertEquals(vs, Map(joda281 -> "2.10.4"))
+  }
+
+  def jodaTime(
+      v: String,
+      exclusions: Set[String] = Set.empty,
+      dependencies: List[String] = Nil
+  ): ContextualDependency =
+    ContextualDependency(
+      Dependency(
+        Module(Organization("joda-time"), ModuleName("joda-time"), Map.empty),
+        v
+      ),
+      exclusions.map(x => ModuleConfig(x, x)),
+      dependencies
     )
 }

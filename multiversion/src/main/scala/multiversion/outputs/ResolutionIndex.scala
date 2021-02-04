@@ -12,6 +12,7 @@ import coursier.version.VersionInterval
 import coursier.version.VersionParse
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
+import multiversion.resolvers.ContextualDependency
 import multiversion.resolvers.DependencyId
 import multiversion.resolvers.ResolvedDependency
 
@@ -68,7 +69,7 @@ final case class ResolutionIndex(
     val allVersions = allDependencies
       .get(dep.module)
       .getOrElse(Nil)
-      .map(_.toDependencyId)
+      .map(_.dependency.toDependencyId)
     allVersions.find(v => dependencies.getOrElse(v, Nil).nonEmpty) match {
       case Some(v) =>
         // remove self-edge
@@ -77,16 +78,16 @@ final case class ResolutionIndex(
     }
   }
 
-  val allDependencies: collection.Map[Module, collection.Set[Dependency]] = {
+  val allDependencies: collection.Map[Module, collection.Set[ContextualDependency]] = {
     val result =
-      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
+      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[ContextualDependency]]
     rawArtifacts.foreach {
-      case ResolvedDependency(_, d, _, _) =>
+      case resolved @ ResolvedDependency(c, d, _, _) =>
         val buf = result.getOrElseUpdate(
           d.module,
           mutable.LinkedHashSet.empty
         )
-        buf += d
+        buf += ContextualDependency(d, c.exclusions, c.dependencies)
     }
     result
   }
@@ -104,8 +105,8 @@ final case class ResolutionIndex(
   // the map between evicted dependencies and their resolved versions
   private lazy val reconciledVersions: Map[Dependency, String] = {
     for {
-      (module, deps) <- allDependencies
-      if deps.size > 1
+      (module, contextualDeps) <- allDependencies
+      if contextualDeps.size > 1
       compat =
         thirdparty.depsByModule
           .getOrElse(module, Nil)
@@ -123,9 +124,10 @@ final case class ResolutionIndex(
              */
             VersionCompatibility.EarlySemVer
           }
-      versions = reconcileVersions(deps, compat)
-      dep <- deps
-      reconciledVersion <- versions.get(dep)
+      versions = reconcileVersions(contextualDeps, compat)
+      contextualDep <- contextualDeps
+      dep = contextualDep.dependency
+      reconciledVersion <- versions.get(contextualDep)
       if dep.version != reconciledVersion
     } yield dep.withoutConfig -> reconciledVersion
   }.toMap
@@ -191,16 +193,20 @@ object ResolutionIndex {
   }
 
   def reconcileVersions(
-      deps: collection.Set[Dependency],
+      contextualDeps: collection.Set[ContextualDependency],
       compat: VersionCompatibility
-  ): Map[Dependency, String] = {
+  ): Map[ContextualDependency, String] = {
+    val grouped =
+      contextualDeps.groupBy(cd => (cd.exclusions, cd.dependencies.sorted)).values
     val result = (for {
-      dep <- deps
+      contextualDeps <- grouped
+      contextualDep <- contextualDeps
+      dep = contextualDep.dependency
       // I'm not sure why this .toSet is necessary, but without it
       // wrong version would win here
-      winner <- resolveVersions(deps.map(_.version).toSet, compat)
+      winner <- resolveVersions(contextualDeps.map(_.dependency.version).toSet, compat)
       if (dep.version != winner) && isCompat(dep.version, winner, compat)
-    } yield dep -> winner).toMap
+    } yield contextualDep -> winner).toMap
     result
   }
 
