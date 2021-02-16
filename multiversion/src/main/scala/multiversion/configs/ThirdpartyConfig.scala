@@ -195,6 +195,7 @@ final case class ThirdpartyConfig(
       }
     )
   }
+  lazy val transformations: Result[List[Transformation]] = Transformation.inferTransformations(this)
 }
 
 object ThirdpartyConfig {
