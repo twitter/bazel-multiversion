@@ -68,7 +68,7 @@ final case class ResolutionIndex(
     val allVersions = allDependencies
       .get(dep.module)
       .getOrElse(Nil)
-      .map(_.toDependencyId)
+      .map(_._1.toDependencyId)
     allVersions.find(v => dependencies.getOrElse(v, Nil).nonEmpty) match {
       case Some(v) =>
         // remove self-edge
@@ -77,16 +77,16 @@ final case class ResolutionIndex(
     }
   }
 
-  val allDependencies: collection.Map[Module, collection.Set[Dependency]] = {
+  val allDependencies: collection.Map[Module, collection.Set[(Dependency, Boolean)]] = {
     val result =
-      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[Dependency]]
+      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, Boolean)]]
     rawArtifacts.foreach {
-      case ResolvedDependency(_, d, _, _) =>
+      case ResolvedDependency(config, d, _, _) =>
         val buf = result.getOrElseUpdate(
           d.module,
           mutable.LinkedHashSet.empty
         )
-        buf += d
+        buf += ((d, config.force))
     }
     result
   }
@@ -124,7 +124,7 @@ final case class ResolutionIndex(
             VersionCompatibility.EarlySemVer
           }
       versions = reconcileVersions(deps, compat)
-      dep <- deps
+      (dep, force) <- deps
       reconciledVersion <- versions.get(dep)
       if dep.version != reconciledVersion
     } yield dep.withoutConfig -> reconciledVersion
@@ -155,7 +155,7 @@ object ResolutionIndex {
 
   private val overrideTags = Set("-tw")
   def resolveVersions(
-      vers: Set[String],
+      verForces: Set[(String, Boolean)],
       compat: VersionCompatibility
   ): Set[String] = {
     def isUnstable(v: Version): Boolean = {
@@ -169,36 +169,49 @@ object ResolutionIndex {
     def lessThan(v1: Version, v2: Version): Boolean =
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
     // The "winners" are the highest selected versions
-    val winners = mutable.Set.empty[Version]
-    val versions = vers.map(Version(_))
-    versions.foreach { version =>
-      val isCompatible = winners.exists { winner =>
-        if (isCompat(version.repr, winner.repr, compat)) {
-          if (lessThan(winner, version) && !isUnstable(version)) {
-            winners.remove(winner)
-            winners.add(version)
-          }
-          true
-        } else {
-          false
+    val winners = mutable.Set.empty[(Version, Boolean)]
+    verForces.foreach {
+      case (v, force) =>
+        val version = Version(v)
+        val isCompatible = winners.exists {
+          case (winner, wforce) =>
+            if (isCompat(version.repr, winner.repr, compat)) {
+              if (
+                (
+                  (lessThan(winner, version) && force == wforce)
+                  || (force && !wforce)
+                )
+                && !isUnstable(version)
+              ) {
+                winners.remove((winner, wforce))
+                winners.add(version -> force)
+              }
+              true
+            } else {
+              false
+            }
         }
-      }
-      if (!isCompatible) {
-        winners.add(version)
-      }
+        if (!isCompatible) {
+          winners.add(version -> force)
+        }
     }
-    winners.map(_.repr).toSet
+    winners.map(_._1.repr).toSet
   }
 
   def reconcileVersions(
-      deps: collection.Set[Dependency],
+      deps: collection.Set[(Dependency, Boolean)],
       compat: VersionCompatibility
   ): Map[Dependency, String] = {
+    val winners = resolveVersions(
+      deps.map {
+        case (d, fc) =>
+          (d.version, fc)
+      }.toSet,
+      compat
+    )
     val result = (for {
-      dep <- deps
-      // I'm not sure why this .toSet is necessary, but without it
-      // wrong version would win here
-      winner <- resolveVersions(deps.map(_.version).toSet, compat)
+      (dep, force) <- deps
+      winner <- winners
       if (dep.version != winner) && isCompat(dep.version, winner, compat)
     } yield dep -> winner).toMap
     result

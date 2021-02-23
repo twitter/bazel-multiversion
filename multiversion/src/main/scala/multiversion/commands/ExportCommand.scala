@@ -245,8 +245,9 @@ case class ExportCommand(
 
   def lintPostResolution(index: ResolutionIndex): Result[Unit] = {
     val errors = for {
-      (module, deps) <- index.allDependencies.toList
-      allVersions = deps.map(d => index.reconciledVersion(d))
+      (module, deps0) <- index.allDependencies.toList
+      deps = deps0.map(_._1)
+      allVersions = deps.map { d => index.reconciledVersion(d) }
       if allVersions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>

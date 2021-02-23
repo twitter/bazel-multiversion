@@ -37,15 +37,38 @@ class ResolutionTest extends tests.BaseSuite {
 
   test("resolveVersions") {
     val vs = ResolutionIndex.resolveVersions(
-      Set("2.11.2", "2.6.7.1", "2.9.9", "2.10.0", "2.10.2", "2.8.4"),
+      Set(
+        "2.11.2" -> true,
+        "2.6.7.1" -> true,
+        "2.9.9" -> true,
+        "2.10.0" -> true,
+        "2.10.2" -> true,
+        "2.8.4" -> true
+      ),
       VersionCompatibility.EarlySemVer
     )
     assertEquals(vs.head, "2.11.2")
   }
 
-  def jodaTime(v: String): Dependency =
+  test("resolveVersions with and force = True and False") {
+    val vs = ResolutionIndex.resolveVersions(
+      Set("2.11.2" -> false, "2.6.7.1" -> true, "2.11.2" -> false),
+      VersionCompatibility.EarlySemVer
+    )
+    assertEquals(vs.head, "2.6.7.1")
+  }
+
+  test("resolveVersions with force = False") {
+    val vs = ResolutionIndex.resolveVersions(
+      Set("2.11.2" -> false, "2.6.7.1" -> false),
+      VersionCompatibility.EarlySemVer
+    )
+    assertEquals(vs.head, "2.11.2")
+  }
+
+  def jodaTime(v: String): (Dependency, Boolean) =
     Dependency(
       Module(Organization("joda-time"), ModuleName("joda-time"), Map.empty),
       v
-    )
+    ) -> true
 }
