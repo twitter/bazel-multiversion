@@ -3,10 +3,7 @@ package tests
 trait ConfigSyntax {
 
   def deps(dependencies: ConfigNode.Dependency*): String = {
-    val clausesStr = dependencies.map(_.toYaml).mkString(System.lineSeparator())
-    s"""|  dependencies:
-        |$clausesStr
-        |""".stripMargin
+    dependencies.map(_.toYaml).mkString(System.lineSeparator())
   }
 
   def dep(str: String): ConfigNode.Dependency =

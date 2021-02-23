@@ -1,6 +1,6 @@
 package tests.commands
 
-class ExportCommandSuite extends tests.BaseSuite {
+class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
 
   checkDeps(
     "evicted artifacts do not create genrules",
@@ -259,6 +259,64 @@ class ExportCommandSuite extends tests.BaseSuite {
                     |@maven//:org.apiguardian_apiguardian-api_1.1.1
                     |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
                     |@maven//:org.slf4j_slf4j-api_1.7.12
+                    |""".stripMargin
+  )
+
+  checkDeps(
+    "global exclusions are respected",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0").canonical
+        .exclude("org.checkerframework:checker-qual"),
+      dep("com.google.guava:guava:25.1-jre")
+    ),
+    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
+    expectedQuery = """
+                  |@maven//:com.google.code.findbugs_jsr305_3.0.2
+                  |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
+                  |@maven//:com.google.guava_guava_25.1-jre
+                  |@maven//:com.google.j2objc_j2objc-annotations_1.1
+                  |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
+                  |""".stripMargin
+  )
+
+  checkDeps(
+    "global replacements are respected",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0").canonical
+        .exclude("org.checkerframework:checker-qual")
+        .dependency("checker-qual-201"),
+      dep("org.checkerframework:checker-qual:2.0.1")
+        .target("checker-qual-201"),
+      dep("com.google.guava:guava:25.1-jre")
+    ),
+    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
+    expectedQuery = """
+                  |@maven//:com.google.code.findbugs_jsr305_3.0.2
+                  |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
+                  |@maven//:com.google.guava_guava_25.1-jre
+                  |@maven//:com.google.j2objc_j2objc-annotations_1.1
+                  |@maven//:org.checkerframework_checker-qual_2.0.1
+                  |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
+                  |""".stripMargin
+  )
+
+  checkDeps(
+    "global additions are respected",
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1").target("apiguardian"),
+      dep("org.checkerframework:checker-qual:2.0.0").canonical.dependency("apiguardian"),
+      dep("com.google.guava:guava:25.1-jre")
+    ),
+    expectedOutput = outputMessages((1, 2)),
+    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
+    expectedQuery = """
+                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
+                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
+                    |@maven//:com.google.guava_guava_25.1-jre
+                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
+                    |@maven//:org.apiguardian_apiguardian-api_1.1.1
+                    |@maven//:org.checkerframework_checker-qual_2.0.0
+                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
                     |""".stripMargin
   )
 }
