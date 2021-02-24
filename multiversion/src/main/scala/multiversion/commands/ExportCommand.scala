@@ -47,7 +47,7 @@ import multiversion.resolvers.Sha256
 @CommandName("export")
 case class ExportCommand(
     lint: Boolean = true,
-    outputPath: Path = Paths.get("3rdparty", "jvm_deps.bzl"),
+    outputPath: Path = Paths.get("/tmp", "jvm_deps.bzl"),
     cache: Option[Path] = None,
     @Inline
     lintCommand: LintCommand = LintCommand()
@@ -236,7 +236,9 @@ case class ExportCommand(
           val out =
             if (outputPath.isAbsolute()) outputPath
             else app.env.workingDirectory.resolve(outputPath)
-          Files.createDirectories(out.getParent())
+          if (!Files.exists(out.getParent())) {
+            Files.createDirectories(out.getParent())
+          }
           Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
           ValueResult(out)
         }
@@ -245,8 +247,9 @@ case class ExportCommand(
 
   def lintPostResolution(index: ResolutionIndex): Result[Unit] = {
     val errors = for {
-      (module, deps) <- index.allDependencies.toList
-      allVersions = deps.map(d => index.reconciledVersion(d))
+      (module, deps0) <- index.allDependencies.toList
+      deps = deps0.map(_._1)
+      allVersions = deps.map { d => index.reconciledVersion(d) }
       if allVersions.size > 1
       diagnostic <- index.thirdparty.depsByModule.get(module) match {
         case Some(declaredDeps) =>

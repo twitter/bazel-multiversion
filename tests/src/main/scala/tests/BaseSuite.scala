@@ -81,6 +81,10 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   val allGenrules: List[String] = List("kind(genrule, @maven//:all)")
   def allScalaImportDeps(target: String): List[String] =
     List(s"kind(scala_import, allpaths($target, @maven//:all))")
+
+  def exportCommand: List[String] =
+    List("export", "--output-path", "3rdparty/jvm_deps.bzl")
+
   def checkDeps(
       name: TestOptions,
       deps: String,
@@ -95,7 +99,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   ): Unit = {
     test(name) {
       checkCommand(
-        arguments = List("export"),
+        arguments = exportCommand,
         expectedExit = expectedExit,
         expectedOutput = expectedOutput,
         workingDirectoryLayout = s"""|/3rdparty.yaml

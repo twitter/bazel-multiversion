@@ -5,7 +5,7 @@ import tests.BaseSuite
 class LintCommandSuite extends BaseSuite {
   test("basic") {
     checkCommand(
-      arguments = List("export"),
+      arguments = exportCommand,
       expectedOutput = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
                           |""".stripMargin,
       workingDirectoryLayout = s"""|/3rdparty.yaml
@@ -25,7 +25,7 @@ class LintCommandSuite extends BaseSuite {
 
   test("classifier") {
     checkCommand(
-      arguments = List("export"),
+      arguments = exportCommand,
       expectedOutput = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
                           |""".stripMargin,
       workingDirectoryLayout = s"""|/3rdparty.yaml
