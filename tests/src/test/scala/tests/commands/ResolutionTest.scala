@@ -52,7 +52,7 @@ class ResolutionTest extends tests.BaseSuite {
 
   test("resolveVersions with and force = True and False") {
     val vs = ResolutionIndex.resolveVersions(
-      Set("2.11.2" -> false, "2.6.7.1" -> true, "2.11.2" -> false),
+      Set("2.11.2" -> false, "2.6.7.1" -> true, "2.11.3" -> false),
       VersionCompatibility.EarlySemVer
     )
     assertEquals(vs.head, "2.6.7.1")
