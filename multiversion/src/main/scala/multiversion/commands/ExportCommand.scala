@@ -33,6 +33,7 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
 import multiversion.configs.ThirdpartyConfig
+import multiversion.configs.Transformation
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers._
@@ -77,6 +78,7 @@ case class ExportCommand(
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
       for {
+        // transformations <- thirdparty.transformations.map(reportTransformations)
         index <- resolveDependencies(thirdparty, coursierCache)
         _ <- {
           if (lint) lintPostResolution(index)
@@ -350,6 +352,22 @@ case class ExportCommand(
     ProgressBars.run(p) {
       Task.gather.gather(tasks).unsafeRun()(ec)
     }
+  }
+
+  private def reportTransformations(transformations: List[Transformation]): List[Transformation] = {
+    def count(transformations: List[Transformation]): (Int, Int, Int) =
+      transformations.foldLeft((0, 0, 0)) {
+        case ((add, exc, frc), _: Transformation.Addition)  => (add + 1, exc, frc)
+        case ((add, exc, frc), _: Transformation.Exclusion) => (add, exc + 1, frc)
+        case ((add, exc, frc), _: Transformation.Force)     => (add, exc, frc + 1)
+      }
+    val (canon, local) = transformations.partition(_.canonical)
+    val (canonAdd, canonExc, canonFrc) = count(canon)
+    val (localAdd, localExc, localFrc) = count(local)
+    val msg =
+      s"Inferred ${canon.length} canonical transformations ($canonAdd additions, $canonExc exclusions, $canonFrc forces) and ${local.length} local transformations ($localAdd, $localExc, $localFrc)."
+    app.err.println(Docs.successMessage(msg))
+    transformations
   }
 
 }

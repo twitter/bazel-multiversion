@@ -1,72 +1,9 @@
 package tests.configs
 
-import java.io.ByteArrayOutputStream
-import java.io.PrintStream
-
-import moped.json.ErrorResult
 import moped.json.JsonString
-import moped.json.ValueResult
-import moped.reporters.ConsoleReporter
-import moped.reporters.Input
 import multiversion.configs._
-import munit.TestOptions
 
-class WorkspaceConfigSuite extends munit.FunSuite {
-  val out = new ByteArrayOutputStream()
-  val reporter: ConsoleReporter = ConsoleReporter(new PrintStream(out))
-  private def parseConfig(
-      name: TestOptions,
-      text: String,
-      onSuccess: ThirdpartyConfig => Unit,
-      onError: String => Unit
-  ): Unit = {
-    out.reset()
-    reporter.reset()
-    ThirdpartyConfig.parseYaml(
-      Input.filename(name.name + ".yaml", text)
-    ) match {
-      case ValueResult(value) => onSuccess(value)
-      case ErrorResult(error) =>
-        reporter.log(error)
-        onError(out.toString())
-    }
-  }
-  def check(
-      name: TestOptions,
-      original: String,
-      expected: ThirdpartyConfig
-  )(implicit loc: munit.Location): Unit = {
-    test(name) {
-      parseConfig(
-        name,
-        original,
-        onSuccess = { obtained => assertEquals(obtained, expected) },
-        onError = { error =>
-          fail(error)
-        }
-      )
-    }
-  }
-
-  def checkError(
-      name: TestOptions,
-      original: String,
-      expected: String
-  )(implicit loc: munit.Location): Unit = {
-    test(name) {
-      parseConfig(
-        name,
-        original,
-        onSuccess = { obtained =>
-          fail(s"expected an error but parsed successfully:\n$obtained")
-        },
-        onError = { obtained =>
-          assertNoDiff(obtained, expected)
-        }
-      )
-    }
-  }
-
+class WorkspaceConfigSuite extends BaseConfigSuite {
   check(
     "basic",
     """|scala: 2.12.12
