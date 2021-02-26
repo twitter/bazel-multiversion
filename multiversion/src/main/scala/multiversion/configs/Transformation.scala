@@ -2,8 +2,8 @@ package multiversion.configs
 
 import scala.collection.mutable.Buffer
 
+import coursier.core.Module
 import moped.json.ErrorResult
-import moped.json.JsonString
 import moped.json.Result
 import moped.json.ValueResult
 import multiversion.configs.Transformation._
@@ -90,10 +90,10 @@ object Transformation {
    * Local exclusion transformations will prevent the given module from being resolved when
    * resolving the module on which the transformation is defined.
    *
-   * @param definedOn The dependency on which the transformation is defined.  @param excluded The
-   * module to exclude from resolution.
+   * @param definedOn The dependency on which the transformation is defined.
+   * @param excluded The module to exclude from resolution.
    */
-  case class Exclusion(definedOn: DependencyConfig, excluded: ModuleConfig) extends Transformation {
+  case class Exclusion(definedOn: DependencyConfig, excluded: Module) extends Transformation {
     override def show: String =
       if (canonical)
         s"always exclude ${excluded.repr}"
@@ -136,7 +136,7 @@ object Transformation {
    * @param module The module whose version to force.
    * @param version The forced version.
    */
-  case class Force(definedOn: DependencyConfig, module: ModuleConfig, version: String)
+  case class Force(definedOn: DependencyConfig, module: Module, version: String)
       extends Transformation {
     override def show: String =
       if (canonical) s"always force version of ${module.repr} to $version"
@@ -149,11 +149,26 @@ object Transformation {
       .foldLeft(TransformationsBuffer.empty)(_ ++ infer(config, _))
       .toList
 
+  def globalAdditions(transformations: List[Transformation]): List[Addition] =
+    transformations.collect {
+      case a: Addition if a.canonical => a
+    }
+
+  def globalForces(transformations: List[Transformation]): List[Force] =
+    transformations.collect {
+      case f: Force if f.canonical => f
+    }
+
+  def globalExclusions(transformations: List[Transformation]): List[Exclusion] =
+    transformations.collect {
+      case e: Exclusion if e.canonical => e
+    }
+
   private def infer(config: ThirdpartyConfig, dep: DependencyConfig): List[Transformation] = {
     val dependencies = dep.dependencies.flatMap { depSpec =>
       config.depsByTargets
         .getOrElse(depSpec, Nil)
-        .map(d => (ModuleConfig(d.organization, JsonString(d.name)), depSpec, d.version))
+        .map(d => (d.coursierModule(config.scala), depSpec, d.version))
     }
     val additionTransformations = dependencies
       .flatMap {
@@ -165,15 +180,15 @@ object Transformation {
           }
       }
     val exclusionTransformations = dep.exclusions
-      .filter { ex => !dependencies.exists { case (m, _, _) => m == ex } }
-      .map { ex => Exclusion(dep, ex) }
+      .filter { ex => !dependencies.exists { case (m, _, _) => m == ex.coursierModule } }
+      .map { ex => Exclusion(dep, ex.coursierModule) }
       .toList
     val forceTransformations = dependencies
       .filter {
         case (m, _, _) =>
           dep.exclusions.exists {
             case ex if ex.name.value == "*" => m.organization.value == ex.organization.value
-            case ex                         => m == ex
+            case ex                         => m == ex.coursierModule
           }
       }
       .map { case (m, _, v) => Force(dep, m, v) }

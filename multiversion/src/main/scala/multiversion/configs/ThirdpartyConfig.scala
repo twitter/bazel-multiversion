@@ -95,19 +95,25 @@ final case class ThirdpartyConfig(
   }
   def toResolve(
       dep: DependencyConfig,
+      additions: List[Dependency],
+      exclusions: List[Module],
+      forceVersions: List[(Module, String)],
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
       cdep: Dependency
   ): Result[Task[Result[DependencyResolution]]] =
-    Result.fromResults(decodeForceVersions(dep)).map { forceVersions =>
-      val allDependencies = rootDependencies(dep)
+    Result.fromResults(decodeForceVersions(dep)).map { decodedForceVersions =>
+      val excludedModules = exclusions.map(ex => (ex.organization, ex.name)).toSet
+      val allDependencies = for {
+        d <- rootDependencies(dep) ++ additions
+      } yield d.withExclusions(d.exclusions ++ excludedModules)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
           .addDependencies(allDependencies: _*)
           .withResolutionParams(
             ResolutionParams()
-              .addForceVersion(forceVersions: _*)
+              .addForceVersion((forceVersions ++ decodedForceVersions): _*)
               .withReconciliation(relaxedForAllModules)
           )
           .withRepositories(

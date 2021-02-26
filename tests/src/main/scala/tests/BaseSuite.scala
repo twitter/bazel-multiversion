@@ -75,6 +75,16 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     }
   }
 
+  def outputMessages(infoSteps: (Int, Int)*): String = {
+    val msgs = infoSteps.map {
+      case (affected, unchanged) =>
+        s"ℹ $affected resolutions are affected by additions ($unchanged unchanged); re-resolving."
+    }
+    s"""|${msgs.mkString(System.lineSeparator())}
+        |✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
+        |""".stripMargin
+  }
+
   val allScalaImports: List[String] = List("kind(scala_import, @maven//:all)")
   val allScalaImportsGraph: List[String] =
     List("kind(scala_import, @maven//:all)", "--output", "graph")
@@ -92,8 +102,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
       queryArgs: List[String] = Nil,
       expectedQuery: String = "",
       expectedExit: Int = 0,
-      expectedOutput: String = """|✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
-           |""".stripMargin
+      expectedOutput: String = outputMessages()
   )(implicit
       loc: munit.Location
   ): Unit = {

@@ -33,12 +33,16 @@ object Docs {
   object emoji {
     val success: Doc = colors.green + Doc.text("✔ ") + colors.reset
     val error: Doc = Doc.text("❗")
+    val info: Doc = colors.yellow + Doc.text("ℹ ") + colors.reset
   }
   def successMessage(message: String): String =
     (emoji.success + Doc.text(message)).render(1000)
+  def infoMessage(message: String): String =
+    (emoji.info + Doc.text(message)).render(1000)
   object colors {
     val bold: Doc = Doc.zeroWidth(Console.BOLD)
     val green: Doc = Doc.zeroWidth(Console.GREEN)
+    val yellow: Doc = Doc.zeroWidth(Console.YELLOW)
     val reset: Doc = Doc.zeroWidth(Console.RESET)
   }
 }
