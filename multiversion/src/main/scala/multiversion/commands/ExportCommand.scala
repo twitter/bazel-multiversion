@@ -16,7 +16,6 @@ import coursier.cache.CacheDefaults
 import coursier.cache.CachePolicy
 import coursier.cache.FileCache
 import coursier.core.Dependency
-import coursier.core.Module
 import coursier.core.Version
 import coursier.util.Artifact
 import coursier.util.Task
@@ -33,15 +32,12 @@ import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
-import multiversion.configs.DependencyConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.configs.Transformation
-import multiversion.configs.VersionsConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers._
 import multiversion.outputs.ArtifactOutput
-import multiversion.outputs.DependencyResolution
 import multiversion.outputs.DepsOutput
 import multiversion.outputs.Docs
 import multiversion.outputs.ResolutionIndex
@@ -82,9 +78,8 @@ case class ExportCommand(
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
       for {
-        transformations <- thirdparty.transformations
-        resolutions <- initialResolutions(thirdparty, transformations, coursierCache)
-        index <- resolutionsWithAdditions(thirdparty, resolutions, transformations, coursierCache)
+        // transformations <- thirdparty.transformations.map(reportTransformations)
+        index <- resolveDependencies(thirdparty, coursierCache)
         _ <- {
           if (lint) lintPostResolution(index)
           else ValueResult(())
@@ -127,86 +122,26 @@ case class ExportCommand(
     VersionCompatibility.Strict -> "strict"
   )
 
-  /**
-   * The first resolution step, done by resolving all the dependencies that were defined and taking
-   * into account only the global exclusion and force transformations.
-   *
-   * This first resolution step is necessary in order to determine what are the artifacts that are
-   * resolved in every case. Once we have the list of artifacts pulled in by every resolution, we
-   * can use this information to apply the global addition transformations and run the second
-   * resolution step.
-   *
-   * @param thirdparty The 3rdparty dependency configurations.
-   * @param transformations The transformations to apply to the dependency graph.
-   * @param cache The coursier cache.
-   * @return The dependency resolution for every third party dependency.
-   */
-  private def initialResolutions(
+  private def resolveDependencies(
       thirdparty: ThirdpartyConfig,
-      transformations: List[Transformation],
-      cache: FileCache[Task]
-  ): Result[List[DependencyResolution]] = {
-    val exclusions = Transformation.globalExclusions(transformations).map(_.excluded)
-    val forceVersions = toForceVersions(Transformation.globalForces(transformations))
-    val deps = thirdparty.coursierDeps.map { case (dep, cdep) => (dep, cdep, Nil) }
-    runResolutions(thirdparty, deps, exclusions, forceVersions, cache)
-  }
-
-  /**
-   * The second resolution step, which takes into account all the global transformations.
-   *
-   * The global addition transformations are applied on the resolutions until a fixed point is
-   * reached.
-   *
-   * @param thirdparty The 3rdparty dependency configurations.
-   * @param previousResolutions The resolutions done in the previous step.
-   * @param transformations The transformation to apply to the dependency graph.
-   * @param cache The coursier cache.
-   * @return The resolution index after all the addition transformations have been applied.
-   */
-  private def resolutionsWithAdditions(
-      thirdparty: ThirdpartyConfig,
-      previousResolutions: List[DependencyResolution],
-      transformations: List[Transformation],
       cache: FileCache[Task]
   ): Result[ResolutionIndex] = {
-    val exclusions = Transformation.globalExclusions(transformations).map(_.excluded)
-    val forceVersions = toForceVersions(Transformation.globalForces(transformations))
-    val additionTransformations =
-      Transformation
-        .globalAdditions(transformations)
-        .groupBy(_.definedOn.coursierModule(thirdparty.scala))
-    val depToResolutions = previousResolutions.groupBy(_.dep)
-    val depToAdditions = thirdparty.coursierDeps.map {
+    val deps = thirdparty.coursierDeps
+    val progressBar = new ResolveProgressRenderer(
+      deps.length,
+      app.env.clock,
+      isTesting = app.isTesting
+    )
+    val resolveResults = deps.map {
       case (dep, cdep) =>
-        val resolutions = depToResolutions.getOrElse(dep, Nil)
-        val additions =
-          unappliedAdditions(dep, resolutions, additionTransformations, thirdparty.scala)
-        (dep, cdep, additions)
+        thirdparty.toResolve(dep, cache, progressBar, cdep)
     }
-    val (withAdditions, withoutAdditions) = depToAdditions.partition(_._3.nonEmpty)
-
-    if (withAdditions.isEmpty) {
-      val index = ResolutionIndex.fromResolutions(thirdparty, previousResolutions)
-      Result.value(index)
-    } else {
-      app.err.println(
-        Docs.infoMessage(
-          s"${withAdditions.length} resolutions are affected by additions (${withoutAdditions.length} unchanged); re-resolving."
-        )
+    for {
+      resolves <- Result.fromResults(resolveResults)
+      resolutions <- Result.fromResults(
+        runParallelTasks(resolves, progressBar, cache.ec)
       )
-
-      val unchangedResolutions = withoutAdditions.flatMap {
-        case (dep, _, _) => depToResolutions.getOrElse(dep, Nil)
-      }
-
-      for {
-        newResolutions <-
-          runResolutions(thirdparty, withAdditions, exclusions, forceVersions, cache)
-        allResolutions = newResolutions ++ unchangedResolutions
-        index <- resolutionsWithAdditions(thirdparty, allResolutions, transformations, cache)
-      } yield index
-    }
+    } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
   }
 
   // This also downloads SHA files
@@ -429,108 +364,14 @@ case class ExportCommand(
         case ((add, exc, frc), _: Transformation.Exclusion) => (add, exc + 1, frc)
         case ((add, exc, frc), _: Transformation.Force)     => (add, exc, frc + 1)
       }
-
     val (canon, local) = transformations.partition(_.canonical)
     val (canonAdd, canonExc, canonFrc) = count(canon)
     val (localAdd, localExc, localFrc) = count(local)
-
     val msg =
       s"Inferred ${canon.length} canonical transformations ($canonAdd additions, $canonExc exclusions, $canonFrc forces) and ${local.length} local transformations ($localAdd, $localExc, $localFrc)."
     app.err.println(Docs.successMessage(msg))
     transformations
   }
-
-  /**
-   * The dependencies that should be added to the resolution of `dep`, given the `transformations`.
-   *
-   * @param dep The dependency whose additions to gather.
-   * @param resolutions The previous resolutions of `dep`.
-   * @param transformations The addition transformations to consider.
-   * @return The list of dependencies that should be added to the resolution of `dep`.
-   */
-  private def applicableAdditions(
-      dep: DependencyConfig,
-      resolutions: List[DependencyResolution],
-      transformations: Map[Module, List[Transformation.Addition]]
-  ): List[DependencyConfig] = {
-    for {
-      DependencyResolution(_, res) <- resolutions
-      dependency <- res.dependencies
-      module = dependency.module
-      addition <- transformations.getOrElse(module, Nil)
-    } yield addition.dependency
-  }
-
-  /**
-   * The dependencies that have not yet been added to the resolution of `dep`, but should be.
-   *
-   * @param dep The dependency whose additions to gather.
-   * @param resolutions The previous resolutions of `dep`.
-   * @param transformations The addition transformations to consider.
-   * @param scala The Scala configuration
-   * @return The dependencies that haven't been added to `dep` previously and should be added.
-   */
-  private def unappliedAdditions(
-      dep: DependencyConfig,
-      resolutions: List[DependencyResolution],
-      transformations: Map[Module, List[Transformation.Addition]],
-      scala: VersionsConfig
-  ): List[DependencyConfig] = {
-    val toAdd = applicableAdditions(dep, resolutions, transformations)
-    val toAddReprs = for {
-      depConfig <- toAdd
-      dep <- depConfig.coursierDependencies(scala)
-    } yield dep.repr
-
-    val resolvedRootModulesReprs = for {
-      resolution <- resolutions
-      rootDependency <- resolution.res.rootDependencies
-    } yield rootDependency.repr
-
-    val isAffectedByAdditions = toAddReprs.diff(resolvedRootModulesReprs).nonEmpty
-
-    if (isAffectedByAdditions) toAdd
-    else Nil
-  }
-
-  private def runResolutions(
-      thirdparty: ThirdpartyConfig,
-      dependencies: List[(DependencyConfig, Dependency, List[DependencyConfig])],
-      exclusions: List[Module],
-      forceVersions: List[(Module, String)],
-      cache: FileCache[Task]
-  ): Result[List[DependencyResolution]] = {
-    val progressBar = new ResolveProgressRenderer(
-      dependencies.length,
-      app.env.clock,
-      isTesting = app.isTesting
-    )
-
-    val toResolve = for {
-      (dep, cdep, additions) <- dependencies
-      rootAdditions = additions.flatMap(thirdparty.rootDependencies)
-    } yield thirdparty.toResolve(
-      dep,
-      rootAdditions,
-      exclusions,
-      forceVersions,
-      cache,
-      progressBar,
-      cdep
-    )
-
-    for {
-      resolves <- Result.fromResults(toResolve)
-      resolutions <- Result.fromResults(
-        runParallelTasks(resolves, progressBar, cache.ec)
-      )
-    } yield resolutions
-  }
-
-  private def toForceVersions(transformations: List[Transformation.Force]): List[(Module, String)] =
-    transformations.map {
-      case Transformation.Force(_, module, version) => module -> version
-    }
 
 }
 

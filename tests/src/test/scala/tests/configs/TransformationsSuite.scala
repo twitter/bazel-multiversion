@@ -21,9 +21,7 @@ class TransformationsSuite extends BaseConfigSuite with ConfigSyntax {
       loc: munit.Location
   ): Unit = {
     test(name) {
-      val fullConfig = s"""dependencies:
-                          |$original""".stripMargin
-      parseConfig(name, fullConfig, cfg => check(cfg.transformations), fail(_))
+      parseConfig(name, original, cfg => check(cfg.transformations), fail(_))
     }
   }
 
