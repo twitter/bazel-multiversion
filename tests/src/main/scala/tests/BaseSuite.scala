@@ -78,7 +78,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def outputMessages(infoSteps: (Int, Int)*): String = {
     val msgs = infoSteps.map {
       case (affected, unchanged) =>
-        s"ℹ $affected resolutions are affected by additions ($unchanged unchanged); re-resolving."
+        s"ℹ $affected resolutions are affected by global additions or exclusions ($unchanged unchanged); re-resolving."
     }
     s"""|${msgs.mkString(System.lineSeparator())}
         |✔ Generated '/workingDirectory/3rdparty/jvm_deps.bzl'
@@ -95,12 +95,11 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def exportCommand: List[String] =
     List("export", "--output-path", "3rdparty/jvm_deps.bzl")
 
-  def checkDeps(
+  def checkMultipleDeps(
       name: TestOptions,
       deps: String,
       buildQuery: String = "",
-      queryArgs: List[String] = Nil,
-      expectedQuery: String = "",
+      queries: List[(List[String], String)] = Nil,
       expectedExit: Int = 0,
       expectedOutput: String = outputMessages()
   )(implicit
@@ -118,18 +117,19 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
                                      |$bazelWorkspace
                                      |""".stripMargin
       )
-      if (queryArgs.nonEmpty) {
-        val obtainedQuery =
-          app()
-            .process(("bazel" :: "query" :: queryArgs).map(x => (x: Shellable)): _*)
-            .call()
-            .out
-            .text()
-            .linesIterator
-            .toList
-            .sorted
-            .mkString("\n")
-        assertNoDiff(obtainedQuery, expectedQuery)
+      queries.foreach {
+        case (queryArgs, expectedQuery) =>
+          val obtainedQuery =
+            app()
+              .process(("bazel" :: "query" :: queryArgs).map(x => (x: Shellable)): _*)
+              .call()
+              .out
+              .text()
+              .linesIterator
+              .toList
+              .sorted
+              .mkString("\n")
+          assertNoDiff(obtainedQuery, expectedQuery)
       }
       if (buildQuery.nonEmpty) {
         app()
@@ -144,6 +144,23 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
           )
       }
     }
+  }
+
+  def checkDeps(
+      name: TestOptions,
+      deps: String,
+      buildQuery: String = "",
+      queryArgs: List[String] = Nil,
+      expectedQuery: String = "",
+      expectedExit: Int = 0,
+      expectedOutput: String = outputMessages()
+  )(implicit
+      loc: munit.Location
+  ): Unit = {
+    val queries =
+      if (queryArgs.nonEmpty) List((queryArgs, expectedQuery))
+      else Nil
+    checkMultipleDeps(name, deps, buildQuery, queries, expectedExit, expectedOutput)
   }
 
   def scalaLibrary(name: String, code: String): String =

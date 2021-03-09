@@ -136,13 +136,14 @@ class TransformationsSuite extends BaseConfigSuite with ConfigSyntax {
     deps(
       dep("org.scalameta:munit:0.7.13").canonical
         .exclude("org.checkerframework:checker-qual"),
-      dep("org.apache.thrift:libthrift:0.10.0").canonical
+      dep("org.scalameta:munit:0.7.12")
+        .target("3rdparty/jvm/org/scalameta:older-munit")
         .exclude("org.checkerframework:checker-qual")
     ),
     List(
       Exclusion(
         true,
-        List("3rdparty/jvm/org/apache/thrift:libthrift"),
+        List("3rdparty/jvm/org/scalameta:munit"),
         "org.checkerframework:checker-qual"
       )
     )
@@ -196,8 +197,8 @@ class TransformationsSuite extends BaseConfigSuite with ConfigSyntax {
   expectTransformations(
     "local exclusion subsumed by canonical exclusion are de-duplicated",
     deps(
-      dep("org.apache.thrift:libthrift:0.10.0")
-        .target("libthrift")
+      dep("org.scalameta:munit:0.7.12")
+        .target("older-munit")
         .exclude("org.checkerframework:checker-qual"),
       dep("org.scalameta:munit:0.7.13").canonical
         .exclude("org.checkerframework:checker-qual")

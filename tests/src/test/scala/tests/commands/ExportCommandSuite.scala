@@ -276,21 +276,52 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
                     |""".stripMargin
   )
 
-  checkDeps(
+  checkMultipleDeps(
     "global exclusions are respected",
     deps(
-      dep("org.apache.thrift:libthrift:0.10.0").canonical
+      dep("com.google.guava:guava:27.1-jre").canonical
         .exclude("org.checkerframework:checker-qual"),
-      dep("com.google.guava:guava:25.1-jre")
+      dep("org.apache.pulsar:pulsar-client:2.4.2").canonical,
+      dep("com.google.inject:guice:4.2.3").canonical
     ),
-    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
-    expectedQuery = """
-                  |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                  |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                  |@maven//:com.google.guava_guava_25.1-jre
-                  |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                  |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                  |""".stripMargin
+    expectedOutput = outputMessages((1, 2)),
+    queries = List(
+      allScalaImportDeps("@maven//:com.google.guava_guava_27.1-jre") ->
+        """|@maven//:com.google.code.findbugs_jsr305_3.0.2
+           |@maven//:com.google.errorprone_error_prone_annotations_2.2.0
+           |@maven//:com.google.guava_failureaccess_1.0.1
+           |@maven//:com.google.guava_guava_27.1-jre
+           |@maven//:com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava
+           |@maven//:com.google.j2objc_j2objc-annotations_1.1
+           |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.17""".stripMargin,
+      allScalaImportDeps("@maven//:org.apache.pulsar_pulsar-client_2.4.2") ->
+        """|@maven//:com.github.luben_zstd-jni_1.3.7-3
+           |@maven//:com.google.code.findbugs_jsr305_3.0.2
+           |@maven//:com.google.errorprone_error_prone_annotations_2.2.0
+           |@maven//:com.google.j2objc_j2objc-annotations_1.1
+           |@maven//:com.sun.activation_javax.activation_1.2.0
+           |@maven//:javax.validation_validation-api_1.1.0.Final
+           |@maven//:org.apache.pulsar_protobuf-shaded_2.1.0-incubating
+           |@maven//:org.apache.pulsar_pulsar-client-api_2.4.2
+           |@maven//:org.apache.pulsar_pulsar-client_2.4.2
+           |@maven//:org.bouncycastle_bcpkix-jdk15on_1.60
+           |@maven//:org.bouncycastle_bcprov-jdk15on_1.60
+           |@maven//:org.checkerframework_checker-qual_2.0.0
+           |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.17
+           |@maven//:org.lz4_lz4-java_1.5.0
+           |@maven//:org.slf4j_slf4j-api_1.7.25""".stripMargin,
+      allScalaImportDeps("@maven//:com.google.inject_guice_4.2.3") ->
+        """|@maven//:aopalliance_aopalliance_1.0
+           |@maven//:com.google.code.findbugs_jsr305_3.0.2
+           |@maven//:com.google.errorprone_error_prone_annotations_2.2.0
+           |@maven//:com.google.guava_failureaccess_1.0.1
+           |@maven//:com.google.guava_guava_27.1-jre
+           |@maven//:com.google.guava_listenablefuture_9999.0-empty-to-avoid-conflict-with-guava
+           |@maven//:com.google.inject_guice_4.2.3
+           |@maven//:com.google.j2objc_j2objc-annotations_1.1
+           |@maven//:javax.inject_javax.inject_1
+           |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.17""".stripMargin
+    )
   )
 
   checkDeps(

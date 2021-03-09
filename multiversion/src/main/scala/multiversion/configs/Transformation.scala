@@ -38,7 +38,10 @@ sealed trait Transformation {
   def subsumes(t1: Transformation): Boolean =
     (this, t1) match {
       case (ex0 @ Exclusion(d0, m0), ex1 @ Exclusion(d1, m1)) =>
-        ex0.canonical && m0 == m1
+        ex0.canonical &&
+          m0 == m1 &&
+          d0.organization.value == d1.organization.value &&
+          d0.name == d1.name
 
       case (f0 @ Force(d0, m0, v0), f1 @ Force(d1, m1, v1)) =>
         f0.canonical && m0 == m1 && v0 == v1
@@ -84,11 +87,11 @@ object Transformation {
   /**
    * A transformation configuring the exclusion of the given module.
    *
-   * Canonical exclusion transformations  will prevent the given module from being resolved in any
-   * resolution, and will apply to the entirety of the main dependency graph.
+   * Canonical exclusion transformations will prevent the given module from being resolved in any
+   * resolution that (possibly transitively) include the module the transformation is defined on.
    *
    * Local exclusion transformations will prevent the given module from being resolved when
-   * resolving the module on which the transformation is defined.
+   * resolving the target on which the transformation is defined.
    *
    * @param definedOn The dependency on which the transformation is defined.
    * @param excluded The module to exclude from resolution.
@@ -96,7 +99,7 @@ object Transformation {
   case class Exclusion(definedOn: DependencyConfig, excluded: Module) extends Transformation {
     override def show: String =
       if (canonical)
-        s"always exclude ${excluded.repr}"
+        s"exclude ${excluded.repr} when resolving ${definedOn.organization.value}:${definedOn.name}"
       else s"exclude ${excluded.repr} when resolving ${definedOn.targets.commas}"
   }
 
