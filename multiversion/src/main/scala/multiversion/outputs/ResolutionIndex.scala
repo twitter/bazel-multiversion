@@ -167,7 +167,7 @@ object ResolutionIndex {
       overrideTags.exists(t => lower.contains(t)) && !lower.contains("shaded")
     }
     def lessThan(v1: Version, v2: Version): Boolean =
-      (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2)
+      (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2 && hasOverride(v1) == hasOverride(v2))
     // The "winners" are the highest selected versions
     val winners = mutable.Set.empty[(Version, Boolean)]
     verForces.foreach {
