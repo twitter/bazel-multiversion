@@ -21,6 +21,10 @@ final case class ArtifactOutput(
     }
   override def hashCode(): Int = this.repr.##
 
+  val suffix: String =
+    "_" + ("_dependencies_" + config.dependencies.sorted.mkString(
+      "_"
+    ) + "_exclusions_" + config.exclusions.map(_.repr).toSeq.sorted.mkString("_")).hashCode()
   val classifierRepr: String =
     if (dependency.publication.classifier.nonEmpty)
       s"_${dependency.publication.classifier.value}"
@@ -47,60 +51,91 @@ final case class ArtifactOutput(
 }
 
 object ArtifactOutput {
+
   def buildDoc(
+      o: ArtifactOutput,
+      index: ResolutionIndex,
+      outputIndex: collection.Map[String, ArtifactOutput],
+  ): Doc = {
+    val depId = o.config.toId
+    val isDeclaredDependency = index.thirdparty.declaredDependencies.contains(depId)
+    if (isDeclaredDependency) buildDeclaredDependencyDoc(o, index, outputIndex)
+    else buildGenruleAndImportDoc(o)
+  }
+
+  def buildThirdPartyDoc(
+      target: String,
+      outputs: Seq[ArtifactOutput]
+  ): Doc = {
+    val name = target.replace(':', '_').stripPrefix("//")
+    val jars = outputs.map(_.dependency.mavenLabel)
+    val depLabels = outputs.map(o => o.dependency.bazelLabel + o.suffix)
+    TargetOutput(
+      kind = "scala_import",
+      "name" -> Docs.literal(name),
+      "jars" -> Docs.array(jars: _*),
+      "deps" -> Docs.array(depLabels: _*),
+      "exports" -> Docs.array(depLabels: _*),
+      "visibility" -> Docs.array("//visibility:public")
+    ).toDoc
+  }
+
+  private def buildGenruleAndImportDoc(
+      o: ArtifactOutput,
+  ): Doc = {
+    val genrule =
+      TargetOutput(
+        kind = "genrule",
+        "name" -> Docs.literal(s"genrules/${o.label}"),
+        "srcs" -> Docs.array(s"@${o.label}//file"),
+        "outs" -> Docs.array(o.mavenLabel),
+        "cmd" -> Docs.literal("cp $< $@"),
+        "tags" -> Docs.array(tags(o.dependency): _*)
+      ).toDoc
+
+    val scalaImport =
+      TargetOutput(
+        kind = "scala_import",
+        "name" -> Docs.literal("_" + o.label),
+        "jars" -> Docs.array(o.mavenLabel),
+        "deps" -> Docs.array(),
+        "exports" -> Docs.array(),
+        "tags" -> Docs.array(tags(o.dependency): _*),
+        "visibility" -> Docs.array("//visibility:public")
+      ).toDoc
+
+    genrule / scalaImport
+  }
+
+  private def buildDeclaredDependencyDoc(
       o: ArtifactOutput,
       index: ResolutionIndex,
       outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
-    import o._
-    val rawDependencies =
-      if (
-        dependency.module.organization.value == config.organization.value
-        && dependency.module.name.value == config.name
-        && dependency.version == config.version
-      )
-        index.dependencies
-          .getOrElse(config.toId, Nil)
-          .filterNot(_ == dependency)
-      else index.maybeDependencies(dependency)
-    val depsRef: Seq[String] =
-      rawDependencies.iterator
-        .flatMap(d =>
-          outputIndex.get(index.reconciledDependency(d).bazelLabel) match {
-            case Some(x) => Some(x)
-            case _ =>
-              val recon = index.reconciledDependency(d)
-              println(
-                s"[warn] ${recon.repr} (originally ${d.repr} called by $label) is missing from `outputs`"
-              )
-              // sys.error(s"${d.repr} is missing from `outputs`")
-              None
-          }
-        )
-        .map(_.label)
-        .toSeq
-        .distinct
-    def genrule: TargetOutput =
-      TargetOutput(
-        kind = "genrule",
-        "name" -> Docs.literal(s"genrules/$label"),
-        "srcs" -> Docs.array(s"@${label}//file"),
-        "outs" -> Docs.array(mavenLabel),
-        "cmd" -> Docs.literal("cp $< $@")
-      )
-    def scalaImport: TargetOutput =
+    val depsRef = index.dependencies
+      .getOrElse(o.config.toId, Nil)
+      .filterNot(_ == o.dependency)
+      .iterator
+      .map(index.reconciledDependency(_).bazelLabel)
+      .flatMap(outputIndex.get)
+      .map("_" + _.label)
+      .toSeq
+      .distinct
+
+    val scalaImport =
       TargetOutput(
         kind = "scala_import",
-        "name" -> Docs.literal(label),
-        "jars" -> Docs.array(mavenLabel),
+        "name" -> Docs.literal(o.label + o.suffix),
+        "jars" -> Docs.array(o.mavenLabel),
         "deps" -> Docs.array(depsRef: _*),
         "exports" -> Docs.array(depsRef: _*),
-        "tags" -> Docs.array(tags(dependency): _*),
+        "tags" -> Docs.array(tags(o.dependency): _*),
         "visibility" -> Docs.array("//visibility:public")
-      )
+      ).toDoc
 
-    genrule.toDoc /
-      scalaImport.toDoc
+    val genRuleAndImport = buildGenruleAndImportDoc(o)
+
+    scalaImport / genRuleAndImport
   }
 
   def tags(dep: Dependency): List[String] =

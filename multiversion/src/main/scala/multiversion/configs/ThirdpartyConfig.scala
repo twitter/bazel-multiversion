@@ -26,6 +26,7 @@ import moped.reporters.Input
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers.ResolveProgressRenderer
 import multiversion.outputs.DependencyResolution
+import multiversion.resolvers.DependencyId
 
 final case class ThirdpartyConfig(
     repositories: List[RepositoryConfig] = List(),
@@ -55,6 +56,8 @@ final case class ThirdpartyConfig(
       .toList
   }
 
+  val declaredDependencies: Set[DependencyId] =
+    dependencies.map(_.toId).toSet
   val depsByModule: Map[Module, List[DependencyConfig]] =
     dependencies2.groupBy(_.coursierModule(scala))
   val depsByTargets: Map[String, List[DependencyConfig]] = {
@@ -95,25 +98,21 @@ final case class ThirdpartyConfig(
   }
   def toResolve(
       dep: DependencyConfig,
-      additions: List[Dependency],
-      exclusions: List[Module],
-      forceVersions: List[(Module, String)],
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
       cdep: Dependency
   ): Result[Task[Result[DependencyResolution]]] =
     Result.fromResults(decodeForceVersions(dep)).map { decodedForceVersions =>
-      val excludedModules = exclusions.map(ex => (ex.organization, ex.name)).toSet
       val allDependencies = for {
-        d <- rootDependencies(dep) ++ additions
-      } yield d.withExclusions(d.exclusions ++ excludedModules)
+        d <- rootDependencies(dep)
+      } yield d.withExclusions(d.exclusions)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
         Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
           .addDependencies(allDependencies: _*)
           .withResolutionParams(
             ResolutionParams()
-              .addForceVersion((forceVersions ++ decodedForceVersions): _*)
+              .addForceVersion(decodedForceVersions: _*)
               .withReconciliation(relaxedForAllModules)
           )
           .withRepositories(
@@ -201,7 +200,6 @@ final case class ThirdpartyConfig(
       }
     )
   }
-  lazy val transformations: Result[List[Transformation]] = Transformation.inferTransformations(this)
 }
 
 object ThirdpartyConfig {

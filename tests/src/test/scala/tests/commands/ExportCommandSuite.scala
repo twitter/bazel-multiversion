@@ -31,13 +31,15 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   checkDeps(
     "scalatest",
     """|  - dependency: org.scalatest:scalatest_2.12:3.1.2
+       |    targets: [scalatest]
        |""".stripMargin,
-    queryArgs = allScalaImports,
-    expectedQuery = """|@maven//:org.scala-lang.modules_scala-xml_2.12_1.2.0
-                       |@maven//:org.scala-lang_scala-library_2.12.11
-                       |@maven//:org.scala-lang_scala-reflect_2.12.11
-                       |@maven//:org.scalactic_scalactic_2.12_3.1.2
-                       |@maven//:org.scalatest_scalatest_2.12_3.1.2
+    // queryArgs = allScalaImports,
+    queryArgs = allJars("@maven//:scalatest"),
+    expectedQuery = """|@maven//:org.scala-lang.modules/scala-xml_2.12/1.2.0.jar
+                       |@maven//:org.scala-lang/scala-library/2.12.11.jar
+                       |@maven//:org.scala-lang/scala-reflect/2.12.11.jar
+                       |@maven//:org.scalactic/scalactic_2.12/3.1.2.jar
+                       |@maven//:org.scalatest/scalatest_2.12/3.1.2.jar
                        |""".stripMargin
   )
 
@@ -99,9 +101,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     "classifier with eviction",
     s"""|  - dependency: org.apache.kafka:kafka-clients:2.4.1
         |    versionScheme: pvp
+        |    targets: [client-2.4.1]
         |  - dependency: org.apache.kafka:kafka-clients:2.4.0
         |    versionScheme: pvp
         |    classifier: test
+        |    targets: [client-2.4.0]
         |""".stripMargin,
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/com.github.luben_zstd-jni_1.4.3-1
@@ -117,22 +121,22 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     "kafka-streams",
     s"""|  - dependency: org.apache.kafka:kafka-streams:2.4.1
         |    versionScheme: pvp
+        |    targets: [kafka-streams]
         |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:org.apache.kafka_kafka-streams_2.4.1"),
-    expectedQuery = """|@maven//:com.fasterxml.jackson.core_jackson-annotations_2.10.0
-                       |@maven//:com.fasterxml.jackson.core_jackson-core_2.10.0
-                       |@maven//:com.fasterxml.jackson.core_jackson-databind_2.10.0
-                       |@maven//:com.fasterxml.jackson.datatype_jackson-datatype-jdk8_2.10.0
-                       |@maven//:com.github.luben_zstd-jni_1.4.3-1
-                       |@maven//:org.apache.kafka_connect-api_2.4.1
-                       |@maven//:org.apache.kafka_connect-json_2.4.1
-                       |@maven//:org.apache.kafka_kafka-clients_2.4.1
-                       |@maven//:org.apache.kafka_kafka-streams_2.4.1
-                       |@maven//:org.lz4_lz4-java_1.6.0
-                       |@maven//:org.rocksdb_rocksdbjni_5.18.3
-                       |@maven//:org.slf4j_slf4j-api_1.7.28
-                       |@maven//:org.xerial.snappy_snappy-java_1.1.7.3
-                       |""".stripMargin
+    queryArgs = allJars("@maven//:kafka-streams"),
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.10.0.jar
+                       |@maven//:com.github.luben/zstd-jni/1.4.3-1.jar
+                       |@maven//:org.apache.kafka/connect-api/2.4.1.jar
+                       |@maven//:org.apache.kafka/connect-json/2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-clients/2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-streams/2.4.1.jar
+                       |@maven//:org.lz4/lz4-java/1.6.0.jar
+                       |@maven//:org.rocksdb/rocksdbjni/5.18.3.jar
+                       |@maven//:org.slf4j/slf4j-api/1.7.28.jar
+                       |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar""".stripMargin
   )
 
   checkDeps(
@@ -144,193 +148,149 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    classifier: test
         |  - dependency: org.apache.kafka:kafka-streams:2.4.0
         |    versionScheme: pvp
+        |    targets: [kafka-streams-2.4.0]
         |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:org.apache.kafka_kafka-streams_2.4.0"),
-    expectedQuery = """|@maven//:com.fasterxml.jackson.core_jackson-annotations_2.10.0
-                       |@maven//:com.fasterxml.jackson.core_jackson-core_2.10.0
-                       |@maven//:com.fasterxml.jackson.core_jackson-databind_2.10.0
-                       |@maven//:com.fasterxml.jackson.datatype_jackson-datatype-jdk8_2.10.0
-                       |@maven//:com.github.luben_zstd-jni_1.4.3-1
-                       |@maven//:org.apache.kafka_connect-api_2.4.0
-                       |@maven//:org.apache.kafka_connect-json_2.4.0
-                       |@maven//:org.apache.kafka_kafka-clients_2.4.1
-                       |@maven//:org.apache.kafka_kafka-streams_2.4.0
-                       |@maven//:org.lz4_lz4-java_1.6.0
-                       |@maven//:org.rocksdb_rocksdbjni_5.18.3
-                       |@maven//:org.slf4j_slf4j-api_1.7.28
-                       |@maven//:org.xerial.snappy_snappy-java_1.1.7.3
+    queryArgs = allJars("@maven//:kafka-streams-2.4.0"),
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.10.0.jar
+                       |@maven//:com.github.luben/zstd-jni/1.4.3-1.jar
+                       |@maven//:org.apache.kafka/connect-api/2.4.0.jar
+                       |@maven//:org.apache.kafka/connect-json/2.4.0.jar
+                       |@maven//:org.apache.kafka/kafka-clients/2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-streams/2.4.0.jar
+                       |@maven//:org.lz4/lz4-java/1.6.0.jar
+                       |@maven//:org.rocksdb/rocksdbjni/5.18.3.jar
+                       |@maven//:org.slf4j/slf4j-api/1.7.28.jar
+                       |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
                        |""".stripMargin
   )
 
-  checkDeps(
-    "inter-target dependency",
-    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
-        |    dependencies:
-        |      - mytargets:guava
-        |  - dependency: com.google.guava:guava:25.1-jre
-        |    targets:
-        |      - mytargets:guava
-        |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:org.apache.thrift_libthrift_0.10.0"),
-    expectedQuery = """
-                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                    |@maven//:com.google.guava_guava_25.1-jre
-                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                    |@maven//:commons-codec_commons-codec_1.9
-                    |@maven//:commons-logging_commons-logging_1.2
-                    |@maven//:org.apache.httpcomponents_httpclient_4.4.1
-                    |@maven//:org.apache.httpcomponents_httpcore_4.4.1
-                    |@maven//:org.apache.thrift_libthrift_0.10.0
-                    |@maven//:org.checkerframework_checker-qual_2.0.0
-                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                    |@maven//:org.slf4j_slf4j-api_1.7.12
-                    |""".stripMargin
-  )
-
-  checkDeps(
-    "target dependency has its own dependencies",
-    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
-        |    dependencies:
-        |      - mytargets:guava
-        |  - dependency: com.google.guava:guava:25.1-jre
-        |    targets:
-        |      - mytargets:guava
-        |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
-    expectedQuery = """
-                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                    |@maven//:com.google.guava_guava_25.1-jre
-                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                    |@maven//:org.checkerframework_checker-qual_2.0.0
-                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                    |""".stripMargin
-  )
-
-  // org.apiguardian:apiguardian-api has no dependencies
-  // we check it's included in the dependencies of libthrift.
-  checkDeps(
+  checkMultipleDeps(
     "target dependency are transitively included",
-    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
-        |    dependencies:
-        |      - mytargets:guava
-        |  - dependency: com.google.guava:guava:25.1-jre
-        |    dependencies:
-        |      - mytargets:apiguardian
-        |    targets:
-        |      - mytargets:guava
-        |  - dependency: org.apiguardian:apiguardian-api:1.1.1
-        |    targets:
-        |      - mytargets:apiguardian
-        |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:org.apache.thrift_libthrift_0.10.0"),
-    expectedQuery = """
-                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                    |@maven//:com.google.guava_guava_25.1-jre
-                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                    |@maven//:commons-codec_commons-codec_1.9
-                    |@maven//:commons-logging_commons-logging_1.2
-                    |@maven//:org.apache.httpcomponents_httpclient_4.4.1
-                    |@maven//:org.apache.httpcomponents_httpcore_4.4.1
-                    |@maven//:org.apache.thrift_libthrift_0.10.0
-                    |@maven//:org.apiguardian_apiguardian-api_1.1.1
-                    |@maven//:org.checkerframework_checker-qual_2.0.0
-                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                    |@maven//:org.slf4j_slf4j-api_1.7.12
-                    |""".stripMargin
+    deps(
+      dep("commons-logging:commons-logging:1.2")
+        .target("commons-logging")
+        .dependency("commons-codec"),
+      dep("commons-codec:commons-codec:1.9")
+        .target("commons-codec")
+        .dependency("apiguardian"),
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian")
+    ),
+    queries = List(
+      allJars("@maven//:commons-logging") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:commons-codec") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:apiguardian") ->
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+    )
   )
 
-  checkDeps(
+  checkMultipleDeps(
     "exclusions of target dependencies are respected",
-    s"""|  - dependency: org.apache.thrift:libthrift:0.10.0
-        |    dependencies:
-        |      - mytargets:guava
-        |  - dependency: com.google.guava:guava:25.1-jre
-        |    exclusions:
-        |      - organization: org.checkerframework
-        |        name: checker-qual
-        |    dependencies:
-        |      - mytargets:apiguardian
-        |    targets:
-        |      - mytargets:guava
-        |  - dependency: org.apiguardian:apiguardian-api:1.1.1
-        |    targets:
-        |      - mytargets:apiguardian
-        |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:org.apache.thrift_libthrift_0.10.0"),
-    expectedQuery = """
-                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                    |@maven//:com.google.guava_guava_25.1-jre
-                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                    |@maven//:commons-codec_commons-codec_1.9
-                    |@maven//:commons-logging_commons-logging_1.2
-                    |@maven//:org.apache.httpcomponents_httpclient_4.4.1
-                    |@maven//:org.apache.httpcomponents_httpcore_4.4.1
-                    |@maven//:org.apache.thrift_libthrift_0.10.0
-                    |@maven//:org.apiguardian_apiguardian-api_1.1.1
-                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                    |@maven//:org.slf4j_slf4j-api_1.7.12
-                    |""".stripMargin
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian")
+        .dependency("httpclient"),
+      dep("org.apache.httpcomponents:httpclient:4.4.1")
+        .target("httpclient")
+        .exclude("commons-codec:commons-codec")
+    ),
+    queries = List(
+      allJars("@maven//:httpclient") ->
+        """|@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar""".stripMargin,
+      allJars("@maven//:apiguardian") ->
+        """|@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+    )
   )
 
-  checkDeps(
-    "global exclusions are respected",
+  checkMultipleDeps(
+    "exclusions are respected and don't leak to other resolutions",
     deps(
-      dep("org.apache.thrift:libthrift:0.10.0").canonical
-        .exclude("org.checkerframework:checker-qual"),
-      dep("com.google.guava:guava:25.1-jre")
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift")
+        .exclude("commons-codec:commons-codec"),
+      dep("org.apache.httpcomponents:httpclient:4.4.1")
+        .target("httpclient")
     ),
-    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
-    expectedQuery = """
-                  |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                  |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                  |@maven//:com.google.guava_guava_25.1-jre
-                  |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                  |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                  |""".stripMargin
+    queries = List(
+      allJars("@maven//:libthrift") ->
+        """|@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+      allJars("@maven//:httpclient") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar""".stripMargin
+    )
   )
 
-  checkDeps(
-    "global replacements are respected",
+  checkMultipleDeps(
+    "replacements are respected",
     deps(
-      dep("org.apache.thrift:libthrift:0.10.0").canonical
-        .exclude("org.checkerframework:checker-qual")
-        .dependency("checker-qual-201"),
-      dep("org.checkerframework:checker-qual:2.0.1")
-        .target("checker-qual-201"),
-      dep("com.google.guava:guava:25.1-jre")
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift")
+        .exclude("commons-codec:commons-codec")
+        .dependency("commons-codec-1-10"),
+      dep("commons-codec:commons-codec:1.10")
+        .target("commons-codec-1-10"),
+      dep("org.apache.httpcomponents:httpclient:4.4.1")
+        .target("httpclient")
     ),
-    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
-    expectedQuery = """
-                  |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                  |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                  |@maven//:com.google.guava_guava_25.1-jre
-                  |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                  |@maven//:org.checkerframework_checker-qual_2.0.1
-                  |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                  |""".stripMargin
+    queries = List(
+      allJars("@maven//:libthrift") ->
+        """|@maven//:commons-codec/commons-codec/1.10.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+      allJars("@maven//:httpclient") ->
+        """|@maven//:commons-codec/commons-codec/1.10.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar""".stripMargin
+    )
   )
 
-  checkDeps(
-    "global additions are respected",
+  checkMultipleDeps(
+    "additions are respected and don't leak to other resolutions",
     deps(
-      dep("org.apiguardian:apiguardian-api:1.1.1").target("apiguardian"),
-      dep("org.checkerframework:checker-qual:2.0.0").canonical.dependency("apiguardian"),
-      dep("com.google.guava:guava:25.1-jre")
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian"),
+      dep("commons-codec:commons-codec:1.9")
+        .target("commons-codec")
+        .dependency("apiguardian"),
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift")
     ),
-    expectedOutput = outputMessages((1, 2)),
-    queryArgs = allScalaImportDeps("@maven//:com.google.guava_guava_25.1-jre"),
-    expectedQuery = """
-                    |@maven//:com.google.code.findbugs_jsr305_3.0.2
-                    |@maven//:com.google.errorprone_error_prone_annotations_2.1.3
-                    |@maven//:com.google.guava_guava_25.1-jre
-                    |@maven//:com.google.j2objc_j2objc-annotations_1.1
-                    |@maven//:org.apiguardian_apiguardian-api_1.1.1
-                    |@maven//:org.checkerframework_checker-qual_2.0.0
-                    |@maven//:org.codehaus.mojo_animal-sniffer-annotations_1.14
-                    |""".stripMargin
+    queries = List(
+      allJars("@maven//:apiguardian") ->
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:libthrift") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+      allJars("@maven//:commons-codec") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
+    )
   )
 }

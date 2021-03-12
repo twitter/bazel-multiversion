@@ -70,15 +70,15 @@ object MultidepsEnrichments {
       val version = dep.version
       val classifierOrConfigRepr: String =
         if (dep.publication.classifier.nonEmpty)
-          s"_${dep.publication.classifier.value}"
+          s"/${dep.publication.classifier.value}"
         else if (dep.configuration.nonEmpty)
           dep.configuration.value match {
             case "default" => ""
-            case config    => s"_$config"
+            case config    => s"/$config"
           }
         else ""
 
-      s"@maven//:${org}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
+      s"@maven//:${org}/${moduleName}/${version}${classifierOrConfigRepr}.jar"
     }
 
     def toDependencyId: DependencyId =

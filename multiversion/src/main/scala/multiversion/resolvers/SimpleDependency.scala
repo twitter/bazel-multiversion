@@ -2,6 +2,8 @@ package multiversion.resolvers
 
 import scala.util.hashing.MurmurHash3
 
+import com.twitter.multiversion.Build.Target
+
 case class SimpleDependency(
     module: SimpleModule,
     version: String,
@@ -17,4 +19,18 @@ case class SimpleDependency(
   def repr: String = s"${module.repr}:$version${classifierStr}"
 
   override lazy val hashCode: Int = MurmurHash3.productHash(this)
+}
+
+object SimpleDependency {
+  def fromTarget(target: Target): Option[SimpleDependency] = {
+    val targetName = target.getGeneratedFile.getName.stripPrefix("@maven//:").stripSuffix(".jar")
+    targetName.split("/") match {
+      case Array(org, name, version, classifier) =>
+        Some(SimpleDependency(SimpleModule(org, name), version, Some(classifier)))
+      case Array(org, name, version) =>
+        Some(SimpleDependency(SimpleModule(org, name), version, None))
+      case _ =>
+        None
+    }
+  }
 }
