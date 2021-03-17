@@ -3,6 +3,19 @@ package tests.commands
 class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
 
   checkDeps(
+    "transitive version ranges do not show up",
+    s"""|  - dependency: com.nimbusds:nimbus-jose-jwt:4.41.1
+        |""".stripMargin,
+    queryArgs = allGenrules,
+    expectedQuery = """|@maven//:genrules/com.github.stephenc.jcip_jcip-annotations_1.0-1
+                       |@maven//:genrules/com.nimbusds_nimbus-jose-jwt_4.41.1
+                       |@maven//:genrules/net.minidev_accessors-smart_1.2
+                       |@maven//:genrules/net.minidev_json-smart_2.3
+                       |@maven//:genrules/org.ow2.asm_asm_5.0.4
+                       |""".stripMargin
+  )
+
+  checkDeps(
     "evicted artifacts do not create genrules",
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
         |    force: true
