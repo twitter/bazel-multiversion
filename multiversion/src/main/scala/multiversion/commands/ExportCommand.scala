@@ -68,45 +68,48 @@ case class ExportCommand(
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
   def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
-    withThreadPool[Result[Unit]] (parallel, { threads =>
-      val coursierCache: FileCache[Task] = FileCache().noCredentials
-        .withCachePolicies(
-          List(
-            // first, use what's available locally
-            CachePolicy.LocalOnly,
-            // then, try to download what's missing
-            CachePolicy.Update
+    withThreadPool[Result[Unit]](
+      parallel,
+      { threads =>
+        val coursierCache: FileCache[Task] = FileCache().noCredentials
+          .withCachePolicies(
+            List(
+              // first, use what's available locally
+              CachePolicy.LocalOnly,
+              // then, try to download what's missing
+              CachePolicy.Update
+            )
           )
-        )
-        .withLocation(cache match {
-          case Some(c) => c.toFile
-          case _       => CacheDefaults.location
-        })
-        .withTtl(scala.concurrent.duration.Duration.Inf)
-        .withPool(threads.downloadPool)
-        .withChecksums(Nil)
-        .withRetry(retryCount)
-      for {
-        transformations <- thirdparty.transformations
-        resolutions <- initialResolutions(thirdparty, transformations, coursierCache)
-        index <- resolutionsWithAdditions(thirdparty, resolutions, transformations, coursierCache)
-        _ <- {
-          if (lint) lintPostResolution(index)
-          else ValueResult(())
-        }
-        output <- generateBzlFile(index, coursierCache)
-        _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
-        lint <-
-          if (lint)
-            lintCommand
-              .copy(
-                queryExpressions = List("@maven//:all"),
-                app = app
-              )
-              .runResult()
-          else ValueResult(())
-      } yield lint
-    })
+          .withLocation(cache match {
+            case Some(c) => c.toFile
+            case _       => CacheDefaults.location
+          })
+          .withTtl(scala.concurrent.duration.Duration.Inf)
+          .withPool(threads.downloadPool)
+          .withChecksums(Nil)
+          .withRetry(retryCount)
+        for {
+          transformations <- thirdparty.transformations
+          resolutions <- initialResolutions(thirdparty, transformations, coursierCache)
+          index <- resolutionsWithAdditions(thirdparty, resolutions, transformations, coursierCache)
+          _ <- {
+            if (lint) lintPostResolution(index)
+            else ValueResult(())
+          }
+          output <- generateBzlFile(index, coursierCache)
+          _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
+          lint <-
+            if (lint)
+              lintCommand
+                .copy(
+                  queryExpressions = List("@maven//:all"),
+                  app = app
+                )
+                .runResult()
+            else ValueResult(())
+        } yield lint
+      }
+    )
   }
 
   private def parseThirdpartyConfig(): Result[ThirdpartyConfig] = {
@@ -410,7 +413,7 @@ case class ExportCommand(
   }
    */
 
-  private def withThreadPool[T](threadCount:Int, fn: CoursierThreadPools => T): T = {
+  private def withThreadPool[T](threadCount: Int, fn: CoursierThreadPools => T): T = {
     val threads = new CoursierThreadPools(threadCount)
     try fn(threads)
     finally threads.close()
