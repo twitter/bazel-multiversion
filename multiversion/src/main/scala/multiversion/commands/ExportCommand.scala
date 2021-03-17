@@ -54,7 +54,11 @@ case class ExportCommand(
     outputPath: Path = Paths.get("/tmp", "jvm_deps.bzl"),
     cache: Option[Path] = None,
     @Inline
-    lintCommand: LintCommand = LintCommand()
+    lintCommand: LintCommand = LintCommand(),
+    @Description("Retry limit when fetching a file.")
+    retryCount: Int = 2,
+    @Description("Number of parallel resolves and downloads.")
+    parallel: Int = 4,
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -64,7 +68,7 @@ case class ExportCommand(
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
   def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
-    withThreadPool[Result[Unit]] { threads =>
+    withThreadPool[Result[Unit]] (parallel, { threads =>
       val coursierCache: FileCache[Task] = FileCache().noCredentials
         .withCachePolicies(
           List(
@@ -81,6 +85,7 @@ case class ExportCommand(
         .withTtl(scala.concurrent.duration.Duration.Inf)
         .withPool(threads.downloadPool)
         .withChecksums(Nil)
+        .withRetry(retryCount)
       for {
         transformations <- thirdparty.transformations
         resolutions <- initialResolutions(thirdparty, transformations, coursierCache)
@@ -101,7 +106,7 @@ case class ExportCommand(
               .runResult()
           else ValueResult(())
       } yield lint
-    }
+    })
   }
 
   private def parseThirdpartyConfig(): Result[ThirdpartyConfig] = {
@@ -405,8 +410,8 @@ case class ExportCommand(
   }
    */
 
-  private def withThreadPool[T](fn: CoursierThreadPools => T): T = {
-    val threads = new CoursierThreadPools()
+  private def withThreadPool[T](threadCount:Int, fn: CoursierThreadPools => T): T = {
+    val threads = new CoursierThreadPools(threadCount)
     try fn(threads)
     finally threads.close()
   }
