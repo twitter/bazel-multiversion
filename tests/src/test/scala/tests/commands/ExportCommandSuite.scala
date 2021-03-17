@@ -328,4 +328,30 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     )
   )
+
+  checkMultipleDeps(
+    "multi-jar and multi-target",
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian-and-commons-logging")
+        .target("apiguardian-and-commons-codec"),
+      dep("commons-logging:commons-logging:1.2")
+        .target("apiguardian-and-commons-logging")
+        .target("commons-logging-and-commons-codec"),
+      dep("commons-codec:commons-codec:1.9")
+        .target("apiguardian-and-commons-codec")
+        .target("commons-logging-and-commons-codec")
+    ),
+    queries = List(
+      allJars("@maven//:apiguardian-and-commons-logging") ->
+        """|@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:apiguardian-and-commons-codec") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:commons-logging-and-commons-codec") ->
+        """|@maven//:commons-codec/commons-codec/1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2.jar""".stripMargin
+    )
+  )
 }
