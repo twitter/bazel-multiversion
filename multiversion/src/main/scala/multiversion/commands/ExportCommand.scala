@@ -43,6 +43,7 @@ import multiversion.outputs.DepsOutput
 import multiversion.outputs.Docs
 import multiversion.outputs.ResolutionIndex
 import multiversion.resolvers.CoursierThreadPools
+import multiversion.resolvers.DependencyId
 import multiversion.resolvers.Sha256
 
 @CommandName("export")
@@ -135,11 +136,24 @@ case class ExportCommand(
       thirdparty: ThirdpartyConfig,
       index: ResolutionIndex
   ): ThirdpartyConfig = {
-    val updatedDependencies = thirdparty.dependencies.map { originalDependency =>
-      val dep = originalDependency.toCoursierDependency(thirdparty.scala)
-      val reconciledVersion = index.reconciledVersion(dep)
-      originalDependency.copy(version = reconciledVersion)
-    }
+    val updatedDependencies = thirdparty.dependencies
+      .foldLeft(Map.empty[DependencyId, DependencyConfig]) {
+        case (deps, originalDependency) =>
+          val dep = originalDependency.toCoursierDependency(thirdparty.scala)
+          val reconciledVersion = index.reconciledVersion(dep)
+          val reconciledDependency = originalDependency.copy(version = reconciledVersion)
+          val reconciledId = reconciledDependency.toId
+          // Different dependencies may reconcile to the same version. In this case, make sure
+          // we don't lose the targets they originate from.
+          deps.get(reconciledId) match {
+            case None => deps + (reconciledId -> reconciledDependency)
+            case Some(existing) =>
+              val allTargets = (existing.targets ++ reconciledDependency.targets).distinct
+              deps + (reconciledId -> existing.copy(targets = allTargets))
+          }
+      }
+      .values
+      .toList
     thirdparty.copy(dependencies = updatedDependencies)
   }
 

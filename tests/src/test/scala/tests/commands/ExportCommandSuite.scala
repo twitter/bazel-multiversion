@@ -293,4 +293,39 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     )
   )
+
+  checkMultipleDeps(
+    "eviction keeps target information",
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian"),
+      dep("org.apiguardian:apiguardian-api:1.1.0")
+        .target("apiguardian-old")
+    ),
+    queries = List(
+      allJars("@maven//:apiguardian") ->
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:apiguardian-old") ->
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
+    )
+  )
+
+  checkMultipleDeps(
+    "multi-jar dependency and eviction",
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("multi-jar"),
+      dep("commons-logging:commons-logging:1.2")
+        .target("multi-jar"),
+      dep("org.apiguardian:apiguardian-api:1.1.0")
+        .target("apiguardian-old")
+    ),
+    queries = List(
+      allJars("@maven//:multi-jar") ->
+        """|@maven//:commons-logging/commons-logging/1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
+      allJars("@maven//:apiguardian-old") ->
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
+    )
+  )
 }
