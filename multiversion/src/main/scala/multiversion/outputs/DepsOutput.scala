@@ -16,9 +16,23 @@ final case class DepsOutput(
   }
   def render: String = {
     val width = 120000
+    val thirdParties = artifacts
+      .filter(o => index.thirdparty.declaredDependencies.contains(o.config.toId))
+      .flatMap { output => output.config.targets.map(t => t -> output) }
+      .groupBy(_._1)
+      .toList
+      .map { case (target, outputs) => target -> outputs.map(_._2) }
     val httpFiles = Doc
       .intercalate(Doc.line, artifacts.map(_.httpFile.toDoc))
       .nested(4)
+      .render(width)
+    val thirdPartyImports = Doc
+      .intercalate(
+        Docs.blankLine,
+        thirdParties.map {
+          case (target, outputs) => ArtifactOutput.buildThirdPartyDoc(target, outputs)
+        }
+      )
       .render(width)
     val builds = Doc
       .intercalate(
@@ -50,6 +64,8 @@ def load_jvm_deps():
     ctx.file("jvm_deps.bzl", content, executable=False)
     build_content = \"\"\"
 load(\"@io_bazel_rules_scala//scala:scala_import.bzl\", \"scala_import\")
+
+$thirdPartyImports
 
 $builds
 

@@ -13,7 +13,7 @@ class DependenciesIndex(query: QueryResult) {
   private val targets = query
     .getTargetList()
     .asScala
-    .filter(_.getType() == Target.Discriminator.RULE)
+    .filter(_.getType() == Target.Discriminator.GENERATED_FILE)
     .map(TargetIndex.fromQuery)
   private val byName: Map[String, TargetIndex] =
     targets.map(t => t.name -> t).toMap

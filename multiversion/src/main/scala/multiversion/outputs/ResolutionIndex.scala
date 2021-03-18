@@ -61,22 +61,6 @@ final case class ResolutionIndex(
     res.toMap
   }
 
-  // we need this function beause some versions are pulled in
-  // as transitive dependencies of others, and it doesn't contain
-  // its own dependency information
-  def maybeDependencies(dep: Dependency): Seq[Dependency] = {
-    val allVersions = allDependencies
-      .get(dep.module)
-      .getOrElse(Nil)
-      .map(_._1.toDependencyId)
-    allVersions.find(v => dependencies.getOrElse(v, Nil).nonEmpty) match {
-      case Some(v) =>
-        // remove self-edge
-        dependencies(v).filterNot(d => d.module == dep.module)
-      case _ => Nil
-    }
-  }
-
   val allDependencies: collection.Map[Module, collection.Set[(Dependency, Boolean)]] = {
     val result =
       mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, Boolean)]]

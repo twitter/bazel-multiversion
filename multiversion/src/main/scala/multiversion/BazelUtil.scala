@@ -1,6 +1,7 @@
 package multiversion
 
 import java.nio.file.Path
+import java.time.Duration
 
 import geny.ByteData
 import moped.cli.Application
@@ -26,8 +27,18 @@ object BazelUtil {
     }
   }
 
-  def bazel(app: Application, bazelBin: Path, command: List[String]): Result[ByteData.Chunks] = {
-    val pr0 = new ProcessRenderer(command, command, clock = app.env.clock)
+  def bazel(
+      app: Application,
+      bazelBin: Path,
+      command: List[String],
+      minimumDuration: Duration = Duration.ofSeconds(1)
+  ): Result[ByteData.Chunks] = {
+    val pr0 = new ProcessRenderer(
+      command,
+      command,
+      minimumDuration = minimumDuration,
+      clock = app.env.clock
+    )
     val pr = StaticProgressRenderer.ifAnsiDisabled(pr0, app.env.isColorEnabled)
     val pb = ProgressBars.create(app, pr)
     val process = ProgressBars.run(pb) {

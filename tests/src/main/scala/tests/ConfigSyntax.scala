@@ -8,8 +8,9 @@ trait ConfigSyntax {
 
   def dep(str: String): ConfigNode.Dependency =
     str.split(":").toList match {
-      case org :: name :: version :: Nil => ConfigNode.Dependency(org, name, version, Nil, Nil, Nil)
-      case _                             => throw new IllegalArgumentException(str)
+      case org :: name :: version :: Nil =>
+        ConfigNode.Dependency(org, name, version, Nil, Nil, Nil, force = false)
+      case _ => throw new IllegalArgumentException(str)
     }
 }
 
@@ -25,7 +26,8 @@ object ConfigNode {
       version: String,
       dependencies: List[String],
       exclusions: List[Exclusion],
-      targets: List[String]
+      targets: List[String],
+      force: Boolean
   ) extends ConfigNode {
 
     def exclude(exclusion: String): Dependency =
@@ -37,10 +39,8 @@ object ConfigNode {
     def dependency(target: String): Dependency =
       copy(dependencies = target :: dependencies)
 
-    def canonical: Dependency = {
-      val orgPath = organization.replaceAllLiterally(".", "/")
-      target(s"3rdparty/jvm/$orgPath:$name")
-    }
+    def force(value: Boolean): Dependency =
+      copy(force = value)
 
     def toYaml: String = {
       val exclusionsStr =
