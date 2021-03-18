@@ -52,9 +52,9 @@ case class ExportCommand(
     @Inline
     lintCommand: LintCommand = LintCommand(),
     @Description("Retry limit when fetching a file.")
-    retryCount: Int = 2,
+    retryCount: String = "2",
     @Description("Number of parallel resolves and downloads.")
-    parallel: Int = 4,
+    parallel: String = "4",
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -65,7 +65,7 @@ case class ExportCommand(
   }
   def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
     withThreadPool[Result[Unit]](
-      parallel,
+      parallel.toInt,
       { threads =>
         val coursierCache: FileCache[Task] = FileCache().noCredentials
           .withCachePolicies(
@@ -83,7 +83,7 @@ case class ExportCommand(
           .withTtl(scala.concurrent.duration.Duration.Inf)
           .withPool(threads.downloadPool)
           .withChecksums(Nil)
-          .withRetry(retryCount)
+          .withRetry(retryCount.toInt)
         for {
           // transformations <- thirdparty.transformations.map(reportTransformations)
           index <- resolveDependencies(thirdparty, coursierCache)
