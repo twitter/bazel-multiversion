@@ -52,8 +52,10 @@ case class ExportCommand(
     @Inline
     lintCommand: LintCommand = LintCommand(),
     @Description("Retry limit when fetching a file.")
+    @ParseAsNumber
     retryCount: Int = 2,
     @Description("Number of parallel resolves and downloads.")
+    @ParseAsNumber
     parallel: Int = 4,
 ) extends Command {
   def app = lintCommand.app
