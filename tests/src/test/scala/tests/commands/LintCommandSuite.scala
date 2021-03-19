@@ -71,7 +71,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         .target("guice")
     ),
     List("@maven//:reflections", "@maven//:guice"),
-    List(
+    expectedErrors = List(
       lintWarn("com.google.guava", "guava", "20.0", "16.0.1")
     ),
     tags = "dupped_3rdparty" :: Nil
@@ -86,8 +86,24 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         .target("guice")
     ),
     List("@maven//:reflections", "@maven//:guice"),
-    List(
+    expectedErrors = List(
       lintError("com.google.guava", "guava", "20.0", "16.0.1")
+    )
+  )
+
+  testLintResults(
+    "follows aliases",
+    deps(
+      dep("org.reflections:reflections:0.9.11")
+        .target("reflections"),
+      dep("com.google.inject:guice:4.0")
+        .target("guice")
+    ),
+    List("@maven//:reflections", "@maven//:guice"),
+    """alias(name="my-alias", actual=":foo")""",
+    List(
+      lintError("com.google.guava", "guava", "20.0", "16.0.1"),
+      lintError("com.google.guava", "guava", "20.0", "16.0.1").copy(target = "//foo:my-alias")
     )
   )
 
@@ -95,6 +111,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
       name: TestOptions,
       deps: String,
       combine: List[String],
+      extraBuild: String = "",
       expectedErrors: List[LintDiagnostic] = Nil,
       tags: List[String] = Nil,
   ): Unit = {
@@ -111,7 +128,8 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
                                      |  srcs = [],
                                      |  deps = ${combine.mkString("[\"", "\", \"", "\"]")},
                                      |  tags = ${tags.mkString("[\"", "\", \"", "\"]")},
-                                     |)""".stripMargin
+                                     |)
+                                     |$extraBuild""".stripMargin
     test(name) {
       checkCommand(
         arguments = exportCommand ++ List("--no-lint"),
@@ -124,7 +142,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         case Some(err) => Result.error(err)
       }
       val obtainedResult =
-        LintCommand(queryExpressions = "//foo:foo" :: Nil, app = app()).runResult()
+        LintCommand(queryExpressions = "//foo:all" :: Nil, app = app()).runResult()
       assertEquals(obtainedResult, expectedResult)
     }
   }

@@ -2,7 +2,6 @@ package multiversion.commands
 
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 
 import scala.collection.JavaConverters._
 
@@ -19,9 +18,7 @@ import moped.reporters.Diagnostic
 import multiversion.BazelUtil
 import multiversion.diagnostics.LintDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
-import multiversion.loggers.LintProgressRenderer
-import multiversion.loggers.ProgressBars
-import multiversion.resolvers.SimpleDependency
+import multiversion.indexes.DependenciesIndex
 
 @CommandName("lint")
 case class LintCommand(
@@ -35,50 +32,39 @@ case class LintCommand(
     val expr = queryExpressions.mkString(" ")
     for {
       targets <- getTargets(expr)
-      renderer = new LintProgressRenderer(targets.length, app.env.clock, app.isTesting)
-      progressBar = ProgressBars.create(app, renderer)
-      conflicts = ProgressBars.run(progressBar) { targets.map(findConflicts(_, renderer)) }
-      diagnostics <- Result.fromResults(conflicts)
-      diagnostic = Diagnostic.fromDiagnostics(diagnostics.flatten)
+      query <- runQuery(s"allpaths($expr, @maven//:all)")
+      index = new DependenciesIndex(query)
+      conflicts = targets.map(findConflicts(_, index))
+      diagnostic = Diagnostic.fromDiagnostics(conflicts.flatten)
       result <- diagnostic.map(Result.error).getOrElse(Result.value(()))
     } yield result
   }
 
   private def findConflicts(
       target: Target,
-      renderer: LintProgressRenderer
-  ): Result[List[LintDiagnostic]] = {
+      index: DependenciesIndex
+  ): List[LintDiagnostic] = {
     val targetName = target.getRule.getName
-    renderer.advance(targetName)
-    getJars(targetName).map { jars =>
-      val dependencies = jars.flatMap(j =>
-        SimpleDependency.fromTarget(j) match {
-          case None =>
-            app.warning(s"Ignoring unknown dependency: '${j.getGeneratedFile.getName}'")
-            None
-          case some =>
-            some
-        }
-      )
-      val conflicts =
-        dependencies
-          .groupBy(d => (d.module, d.classifier))
-          .filter { case (key, values) => values.length > 1 }
-          .toList
-          .map {
-            case ((module, classifier), dependencies) =>
-              val targetName = target.getRule.getName
-              val pending = isPending(app, targetName)
-              LintDiagnostic(
-                target.getRule.getName,
-                module,
-                classifier,
-                dependencies.map(_.version).sorted,
-                pending
-              )
-          }
-      renderer.reportConflict(conflicts.length)
-      conflicts
+    val dependencies = index.dependencies(targetName).flatMap(_.dependency).toList
+    val conflicts =
+      dependencies
+        .groupBy(d => (d.module, d.classifier))
+        .filter { case (key, values) => values.length > 1 }
+        .toList
+
+    if (conflicts.isEmpty) Nil
+    else {
+      val pending = isPending(app, targetName)
+      conflicts.map {
+        case ((module, classifier), dependencies) =>
+          LintDiagnostic(
+            target.getRule.getName,
+            module,
+            classifier,
+            dependencies.map(_.version).sorted,
+            pending
+          )
+      }
     }
   }
 
@@ -103,11 +89,6 @@ case class LintCommand(
           .toList
       }
 
-  private def getJars(target: String): Result[List[Target]] = {
-    val query = s"kind(file, allpaths($target, @maven//:all))"
-    getTargets(query, _.getType() == Target.Discriminator.GENERATED_FILE)
-  }
-
   private def runQuery(queryExpression: String): Result[QueryResult] = {
     val command = List(
       "query",
@@ -116,7 +97,7 @@ case class LintCommand(
       "--notool_deps",
       "--output=proto"
     )
-    BazelUtil.bazel(app, bazel, command, minimumDuration = Duration.ofSeconds(5)).map { out =>
+    BazelUtil.bazel(app, bazel, command).map { out =>
       QueryResult.parseFrom(out.bytes)
     }
   }
