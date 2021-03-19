@@ -44,13 +44,18 @@ object TargetIndex {
       }
   }
   def fromQuery(t: Target): TargetIndex = {
+    def getStringAttribute(key: String): Option[String] =
+      t.getRule().getAttributeList.asScala.find(_.getName() == key).map(_.getStringValue())
     def getStringListAttribute(key: String): List[String] =
       (for {
         attr <- t.getRule().getAttributeList().asScala.iterator
         if attr.getName() == key
         dep <- attr.getStringListValueList().asScala.iterator
       } yield dep).toList
-    val deps = getStringListAttribute("deps")
+    val deps =
+      if (t.getRule.getRuleClass() == "alias")
+        getStringAttribute("actual").map(List(_)).getOrElse(Nil)
+      else getStringListAttribute("deps")
     val tags = getStringListAttribute("tags")
     val module = tags.collectFirst {
       case JvmModule(module) => module
