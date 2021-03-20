@@ -4,8 +4,11 @@ import java.util.Locale
 
 import scala.collection.mutable
 
+import coursier.core.ArtifactSource
 import coursier.core.Dependency
 import coursier.core.Module
+import coursier.core.Project
+import coursier.core.Resolution
 import coursier.core.Version
 import coursier.version.VersionCompatibility
 import coursier.version.VersionInterval
@@ -21,11 +24,20 @@ final case class ResolutionIndex(
     roots: collection.Map[Dependency, collection.Set[Dependency]]
 ) {
   import ResolutionIndex._
+
+  type ProjectCache = Map[Resolution.ModuleVersion, (ArtifactSource, Project)]
+
   // list of all artifacts including transitive JARs
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
     (d, p, a) <- r.res.dependencyArtifacts() if a.url.endsWith(".jar")
-  } yield ResolvedDependency(r.dep, d, p, a)
+  } yield ResolvedDependency(r.dep, actualDependency(d, r.res.projectCache), p, a)
+
+  def actualDependency(d0: Dependency, projectCache: ProjectCache): Dependency =
+    projectCache.get(d0.moduleVersion) match {
+      case Some((_, p)) => d0.withVersion(p.actualVersion)
+      case _            => d0
+    }
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)
@@ -51,7 +63,8 @@ final case class ResolutionIndex(
     val isVisited = mutable.Set.empty[String]
     val res = for {
       r <- resolutions
-      transitive = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
+      transitive0 = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
+      transitive = transitive0.map { actualDependency(_, r.res.projectCache) }
       dep = r.dep.toCoursierDependency(thirdparty.scala)
       if !isVisited(dep.repr)
     } yield {
