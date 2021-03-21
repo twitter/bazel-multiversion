@@ -6,11 +6,9 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.Duration
-
 import scala.collection.mutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Await, ExecutionContext}
 import scala.util.Try
-
 import coursier.cache.ArtifactError
 import coursier.cache.CacheDefaults
 import coursier.cache.CachePolicy
@@ -65,6 +63,7 @@ case class ExportCommand(
   def runResult(): Result[Unit] = {
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
+  
   def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
     withThreadPool[Result[Unit]](
       parallel,
@@ -83,9 +82,9 @@ case class ExportCommand(
             case _       => CacheDefaults.location
           })
           .withTtl(scala.concurrent.duration.Duration.Inf)
-          .withPool(threads.downloadPool)
           .withChecksums(Nil)
           .withRetry(retryCount)
+          .withPool(threads.downloadPool)
         for {
           // transformations <- thirdparty.transformations.map(reportTransformations)
           index <- resolveDependencies(thirdparty, coursierCache)
@@ -146,10 +145,14 @@ case class ExportCommand(
       case (dep, cdep) =>
         thirdparty.toResolve(dep, cache, progressBar, cdep)
     }
+//    print("===resolveResults====\n", resolveResults)
+    val resolves = Result.fromResults(resolveResults)
+//    print("===resolves====\n", resolves)
     for {
-      resolves <- Result.fromResults(resolveResults)
+      resolves <- resolves
       resolutions <- Result.fromResults(
-        runParallelTasks(resolves, progressBar, cache.ec)
+        resolves.map(_.future()(cache.ec)).map(Await.result(_, scala.concurrent.duration.Duration.Inf))
+//        runParallelTasks(resolves, progressBar, cache.ec)
       )
     } yield ResolutionIndex.fromResolutions(thirdparty, resolutions)
   }

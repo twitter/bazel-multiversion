@@ -146,6 +146,7 @@ object ResolutionIndex {
         roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
       rootsBuffer ++= resolution.res.rootDependencies
     }
+    println("===resolution====", resolutions)
     ResolutionIndex(
       thirdparty,
       resolutions,

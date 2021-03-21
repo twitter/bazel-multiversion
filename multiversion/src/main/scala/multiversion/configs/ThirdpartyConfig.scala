@@ -103,7 +103,7 @@ final case class ThirdpartyConfig(
       val allDependencies = rootDependencies(dep)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
-        Resolve(cache.withLogger(progressBar.loggers.newCacheLogger(cdep)))
+        Resolve()
           .addDependencies(allDependencies: _*)
           .withResolutionParams(
             ResolutionParams()
