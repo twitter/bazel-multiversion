@@ -1,7 +1,10 @@
 package tests.commands
 
+import java.nio.file.Paths
+
 import moped.json.Result
 import moped.reporters.Diagnostic
+import moped.reporters.Input
 import multiversion.commands.LintCommand
 import multiversion.diagnostics.LintDiagnostic
 import multiversion.resolvers.SimpleModule
@@ -74,7 +77,9 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     expectedErrors = List(
       lintWarn("com.google.guava", "guava", "20.0", "16.0.1")
     ),
-    tags = "dupped_3rdparty" :: Nil
+    tags = "dupped_3rdparty" :: Nil,
+    expectedReport =
+      """|"//foo:foo": {"failure": false, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
   )
 
   testLintResults(
@@ -88,7 +93,9 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     List("@maven//:reflections", "@maven//:guice"),
     expectedErrors = List(
       lintError("com.google.guava", "guava", "20.0", "16.0.1")
-    )
+    ),
+    expectedReport =
+      """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
   )
 
   testLintResults(
@@ -104,7 +111,9 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     List(
       lintError("com.google.guava", "guava", "20.0", "16.0.1"),
       lintError("com.google.guava", "guava", "20.0", "16.0.1").copy(target = "//foo:my-alias")
-    )
+    ),
+    """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}
+       |"//foo:my-alias": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
   )
 
   private def testLintResults(
@@ -113,6 +122,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
       combine: List[String],
       extraBuild: String = "",
       expectedErrors: List[LintDiagnostic] = Nil,
+      expectedReport: String = "",
       tags: List[String] = Nil,
   ): Unit = {
     val workingDirectoryLayout = s"""|/3rdparty.yaml
@@ -141,9 +151,17 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         case None      => Result.value(())
         case Some(err) => Result.error(err)
       }
+      val reportName = "report.yaml"
       val obtainedResult =
-        LintCommand(queryExpressions = "//foo:all" :: Nil, app = app()).runResult()
+        LintCommand(
+          lintReportPath = Some(Paths.get(reportName)),
+          queryExpressions = "//foo:all" :: Nil,
+          app = app()
+        ).runResult()
       assertEquals(obtainedResult, expectedResult)
+
+      val obtainedReport = Input.path(app().env.workingDirectory.resolve(reportName)).text
+      assertNoDiff(obtainedReport, expectedReport)
     }
   }
 

@@ -1,5 +1,7 @@
 package multiversion.commands
 
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -19,6 +21,8 @@ import multiversion.BazelUtil
 import multiversion.diagnostics.LintDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.indexes.DependenciesIndex
+import multiversion.outputs.Docs
+import org.typelevel.paiges.Doc
 
 @CommandName("lint")
 case class LintCommand(
@@ -34,8 +38,9 @@ case class LintCommand(
       targets <- getTargets(expr)
       query <- runQuery(s"allpaths($expr, @maven//:all)")
       index = new DependenciesIndex(query)
-      conflicts = targets.map(findConflicts(_, index))
-      diagnostic = Diagnostic.fromDiagnostics(conflicts.flatten.sortBy(_.toString))
+      conflicts = targets.map(findConflicts(_, index)).flatten.sortBy(_.toString)
+      _ = writeLintReport(conflicts, lintReportPath)
+      diagnostic = Diagnostic.fromDiagnostics(conflicts)
       result <- diagnostic.map(Result.error).getOrElse(Result.value(()))
     } yield result
   }
@@ -101,6 +106,29 @@ case class LintCommand(
       QueryResult.parseFrom(out.bytes)
     }
   }
+
+  private def writeLintReport(conflicts: List[LintDiagnostic], path: Option[Path]): Unit =
+    path
+      .map(p => if (p.isAbsolute()) p else app.env.workingDirectory.resolve(p))
+      .foreach { out =>
+        val grouped = conflicts.groupBy(_.target).toList.sortBy(_._1)
+        val docs = grouped.map {
+          case (target, conflicts) =>
+            val isFailure = conflicts.exists(!_.isPending)
+            val moduleVersions = conflicts
+              .map {
+                case LintDiagnostic(_, module, _, versions, _) =>
+                  module.repr -> Docs.array(versions.sorted: _*)
+              }
+              .sortBy(_._1)
+            Docs.literal(target) + Docs.colon + Doc.space + Docs.obj(
+              List("failure" -> Doc.str(isFailure), "conflicts" -> Docs.obj(moduleVersions))
+            )
+        }
+        val rendered = Doc.intercalate(Doc.line, docs).render(Int.MaxValue)
+        Files.createDirectories(out.getParent())
+        Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
+      }
 }
 
 object LintCommand {
