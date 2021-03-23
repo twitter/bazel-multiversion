@@ -137,7 +137,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         expectedOutput = defaultExpectedOutput,
         workingDirectoryLayout = workingDirectoryLayout
       )
-      val expectedResult = Diagnostic.fromDiagnostics(expectedErrors) match {
+      val expectedResult = Diagnostic.fromDiagnostics(expectedErrors.sortBy(_.toString)) match {
         case None      => Result.value(())
         case Some(err) => Result.error(err)
       }

@@ -35,7 +35,7 @@ case class LintCommand(
       query <- runQuery(s"allpaths($expr, @maven//:all)")
       index = new DependenciesIndex(query)
       conflicts = targets.map(findConflicts(_, index))
-      diagnostic = Diagnostic.fromDiagnostics(conflicts.flatten)
+      diagnostic = Diagnostic.fromDiagnostics(conflicts.flatten.sortBy(_.toString))
       result <- diagnostic.map(Result.error).getOrElse(Result.value(()))
     } yield result
   }
