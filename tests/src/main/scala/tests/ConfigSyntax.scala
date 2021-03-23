@@ -9,7 +9,7 @@ trait ConfigSyntax {
   def dep(str: String): ConfigNode.Dependency =
     str.split(":").toList match {
       case org :: name :: version :: Nil =>
-        ConfigNode.Dependency(org, name, version, Nil, Nil, Nil, force = false)
+        ConfigNode.Dependency(org, name, version, None, Nil, Nil, Nil, force = false)
       case _ => throw new IllegalArgumentException(str)
     }
 }
@@ -24,11 +24,15 @@ object ConfigNode {
       organization: String,
       name: String,
       version: String,
+      classifier: Option[String],
       dependencies: List[String],
       exclusions: List[Exclusion],
       targets: List[String],
       force: Boolean
   ) extends ConfigNode {
+
+    def classifier(classifier: String): Dependency =
+      copy(classifier = Option(classifier))
 
     def exclude(exclusion: String): Dependency =
       copy(exclusions = Exclusion(exclusion) :: exclusions)
@@ -70,10 +74,11 @@ object ConfigNode {
         }
 
       s"""|  - dependency: $organization:$name:$version
-        |$exclusionsStr
-        |$dependenciesStr
-        |$targetsStr
-        |""".stripMargin
+          |    classifier: ${classifier.orNull}
+          |$exclusionsStr
+          |$dependenciesStr
+          |$targetsStr
+          |""".stripMargin
     }
   }
 

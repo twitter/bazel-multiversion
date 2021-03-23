@@ -354,4 +354,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:commons-logging/commons-logging/1.2.jar""".stripMargin
     )
   )
+
+  checkMultipleDeps(
+    "Generate target for inexistent classifiers",
+    deps(
+      dep("io.zipkin:zipkin-thrift:1.4.1")
+        .classifier("whatever")
+        .target("with-classifier")
+    ),
+    queries = List(
+      allJars("@maven//:with-classifier") ->
+        "@maven//:org.scala-lang/scala-library/2.11.7.jar"
+    )
+  )
 }
