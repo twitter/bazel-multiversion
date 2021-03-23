@@ -1,5 +1,7 @@
 package multiversion.outputs
 
+import scala.collection.mutable
+
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
 import multiversion.diagnostics.MultidepsEnrichments.XtensionList
 import org.typelevel.paiges.Doc
@@ -16,12 +18,10 @@ final case class DepsOutput(
   }
   def render: String = {
     val width = 120000
-    val thirdParties = artifacts
-      .filter(o => index.thirdparty.declaredDependencies.contains(o.config.toId))
-      .flatMap { output => output.config.targets.map(t => t -> output) }
-      .groupBy(_._1)
-      .toList
-      .map { case (target, outputs) => target -> outputs.map(_._2) }
+    val allTargets = index.thirdparty.dependencies.flatMap(_.targets).toSet
+    val targetToArtifacts = groupByTarget(artifacts)
+    val thirdParties = allTargets.map(target => target -> targetToArtifacts.getOrElse(target, Nil))
+
     val httpFiles = Doc
       .intercalate(Doc.line, artifacts.map(_.httpFile.toDoc))
       .nested(4)
@@ -82,5 +82,18 @@ jvm_deps_rule = repository_rule(
 def jvm_deps():
     jvm_deps_rule(name="maven")
 """.stripMargin
+  }
+
+  private def groupByTarget(
+      artifacts: Seq[ArtifactOutput]
+  ): collection.Map[String, Seq[ArtifactOutput]] = {
+    val acc = mutable.Map.empty[String, mutable.Buffer[ArtifactOutput]]
+    artifacts.foreach { art =>
+      art.config.targets.foreach { target =>
+        val artifacts = acc.getOrElseUpdate(target, mutable.Buffer.empty)
+        artifacts += art
+      }
+    }
+    acc
   }
 }
