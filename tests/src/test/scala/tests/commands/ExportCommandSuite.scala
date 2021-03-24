@@ -131,6 +131,27 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   )
 
   checkDeps(
+    "classifier with eviction 2",
+    s"""|  - dependency: org.apache.kafka:kafka-clients:2.5.0
+        |    versionScheme: pvp
+        |    targets: [client-2.5.0]
+        |  - dependency: org.apache.kafka:kafka-clients:2.4.0
+        |    versionScheme: pvp
+        |    classifier: test
+        |    targets: [client-2.4.0]
+        |""".stripMargin,
+    queryArgs = allScalaImportDeps("@maven//:client-2.4.0"),
+    expectedQuery = """|@maven//:_com.github.luben_zstd-jni_1.4.4-7
+                       |@maven//:_org.lz4_lz4-java_1.7.1
+                       |@maven//:_org.slf4j_slf4j-api_1.7.30
+                       |@maven//:_org.xerial.snappy_snappy-java_1.1.7.3
+                       |@maven//:client-2.4.0
+                       |@maven//:org.apache.kafka_kafka-clients_2.4.0_658677426
+                       |@maven//:org.apache.kafka_kafka-clients_2.4.0_test_658677426
+                       |""".stripMargin
+  )
+
+  checkDeps(
     "kafka-streams",
     s"""|  - dependency: org.apache.kafka:kafka-streams:2.4.1
         |    versionScheme: pvp

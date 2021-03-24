@@ -57,7 +57,7 @@ final case class ThirdpartyConfig(
   }
 
   val declaredDependencies: Set[DependencyId] =
-    dependencies.map(_.toId).toSet
+    dependencies2.map(_.toId).toSet
   val depsByModule: Map[Module, List[DependencyConfig]] =
     dependencies2.groupBy(_.coursierModule(scala))
   val depsByTargets: Map[String, List[DependencyConfig]] = {
