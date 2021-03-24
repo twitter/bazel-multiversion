@@ -20,10 +20,13 @@ class ResolveProgressRenderer(
   private lazy val timer = new Timer(clock)
   override def renderStop(): Doc = {
     if (isTesting) Doc.empty
-    else
+    else {
+      // Force loggers to report
+      loggers.getActiveLoggers()
       Docs.emoji.success + Doc.text(
         s"Resolved ${loggers.totalRootDependencies} root dependencies and ${loggers.totalTransitiveDependencies} transitive dependencies in ${timer.format()}"
       )
+    }
   }
   override def renderStep(): ProgressStep = {
     val activeLoggers =
