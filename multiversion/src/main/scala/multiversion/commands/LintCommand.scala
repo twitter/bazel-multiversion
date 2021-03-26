@@ -59,7 +59,7 @@ case class LintCommand(
 
     if (conflicts.isEmpty) Nil
     else {
-      val pending = isPending(app, targetName)
+      val pending = isPending(index, targetName)
       conflicts.map {
         case ((module, classifier), dependencies) =>
           LintDiagnostic(
@@ -73,17 +73,8 @@ case class LintCommand(
     }
   }
 
-  private def isPending(app: Application, label: String): Boolean = {
-    val command = List(
-      "query",
-      s"""attr("tags", "dupped_3rdparty", $label)"""
-    )
-    BazelUtil
-      .bazel(app, bazel, command)
-      .map { out =>
-        out.trim.linesIterator.contains(label)
-      }
-      .getOrElse(false)
+  private def isPending(index: DependenciesIndex, label: String): Boolean = {
+    index.byName.get(label).map(_.tags.contains("dupped_3rdparty")).getOrElse(false)
   }
 
   private def getTargets(query: String, pred: Target => Boolean = _ => true): Result[List[Target]] =
