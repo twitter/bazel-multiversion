@@ -15,7 +15,7 @@ class DependenciesIndex(query: QueryResult) {
       .filter(_.getType() == Target.Discriminator.RULE)
       .map(TargetIndex.fromQuery)
 
-  private val byName: Map[String, TargetIndex] =
+  val byName: Map[String, TargetIndex] =
     targets.map(t => t.name -> t).toMap
 
   private val jars: mutable.Map[TargetIndex, Set[TargetIndex]] =
