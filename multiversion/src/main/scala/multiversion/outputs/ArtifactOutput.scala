@@ -107,6 +107,25 @@ object ArtifactOutput {
     genrule / scalaImport
   }
 
+  private def resolutionInfoDoc(config: DependencyConfig): Doc = {
+    val targets =
+      if (config.targets.nonEmpty)
+        Doc.text(s"# Originated from targets: ${config.targets.mkString(", ")}") :: Nil
+      else Nil
+    val exclusions =
+      if (config.exclusions.nonEmpty)
+        Doc.text(
+          s"# Exclusions: ${config.exclusions.map(_.repr).toList.sorted.mkString(", ")}"
+        ) :: Nil
+      else Nil
+    val dependencies =
+      if (config.dependencies.nonEmpty)
+        Doc.text(s"# Dependencies: ${config.dependencies.sorted.mkString(", ")}") :: Nil
+      else Nil
+
+    Doc.intercalate(Doc.lineBreak, targets ++ exclusions ++ dependencies)
+  }
+
   private def buildDeclaredDependencyDoc(
       o: ArtifactOutput,
       index: ResolutionIndex,
@@ -122,6 +141,8 @@ object ArtifactOutput {
       .toSeq
       .distinct
 
+    val resolutionInfo = resolutionInfoDoc(o.config)
+
     val scalaImport =
       TargetOutput(
         kind = "scala_import",
@@ -135,7 +156,7 @@ object ArtifactOutput {
 
     val genRuleAndImport = buildGenruleAndImportDoc(o)
 
-    scalaImport / genRuleAndImport
+    resolutionInfo / scalaImport / genRuleAndImport
   }
 
   def tags(dep: Dependency): List[String] =
