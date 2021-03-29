@@ -13,6 +13,7 @@ import coursier.core.Version
 import coursier.version.VersionCompatibility
 import coursier.version.VersionInterval
 import coursier.version.VersionParse
+import multiversion.configs.DependencyConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
 import multiversion.resolvers.DependencyId
@@ -60,16 +61,16 @@ final case class ResolutionIndex(
     resolvedArtifacts.filter(r => !reconciledVersions.contains(r.dependency.withoutConfig))
 
   lazy val dependencies: Map[DependencyId, Seq[Dependency]] = {
-    val isVisited = mutable.Set.empty[String]
+    val isVisited = mutable.Set.empty[DependencyId]
     val res = for {
       r <- resolutions
       transitive0 = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
       transitive = transitive0.map { actualDependency(_, r.res.projectCache) }
-      dep = r.dep.toCoursierDependency(thirdparty.scala)
-      if !isVisited(dep.repr)
+      depId = r.dep.id
+      if !isVisited(depId)
     } yield {
-      isVisited += dep.repr
-      r.dep.toId -> transitive
+      isVisited += depId
+      depId -> transitive
     }
     res.toMap
   }
@@ -97,6 +98,9 @@ final case class ResolutionIndex(
       case r if reconciledVersions.contains(r.dependency.withoutConfig) =>
         (r.dependency, reconciledVersion(r.dependency.withoutConfig))
     }
+
+  def configsOf(dep: Dependency): collection.Set[DependencyConfig] =
+    owningConfigs.getOrElse(dep.bazelLabel, Set.empty)
 
   // the map between evicted dependencies and their resolved versions
   private lazy val reconciledVersions: Map[Dependency, String] = {
@@ -126,6 +130,20 @@ final case class ResolutionIndex(
       if dep.version != reconciledVersion
     } yield dep.withoutConfig -> reconciledVersion
   }.toMap
+
+  private lazy val owningConfigs: collection.Map[String, collection.Set[DependencyConfig]] = {
+    val res = mutable.LinkedHashMap.empty[String, mutable.Set[DependencyConfig]]
+    resolutions.foreach { r =>
+      val transitive0 = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
+      val transitive = transitive0.map { actualDependency(_, r.res.projectCache) }
+      transitive.foreach { dep =>
+        val buffer = res.getOrElseUpdate(dep.bazelLabel, mutable.LinkedHashSet.empty)
+        buffer += r.dep
+      }
+    }
+    res
+  }
+
 }
 
 object ResolutionIndex {

@@ -21,10 +21,10 @@ final case class ArtifactOutput(
     }
   override def hashCode(): Int = this.repr.##
 
-  val suffix: String =
-    "_" + ("_dependencies_" + config.dependencies.sorted.mkString(
-      "_"
-    ) + "_exclusions_" + config.exclusions.map(_.repr).toSeq.sorted.mkString("_")).hashCode()
+  val isDeclaredDependency: Boolean =
+    dependency.module.organization.value == config.organization.value &&
+      dependency.module.name.value == config.name &&
+      dependency.version == config.version
   val classifierRepr: String =
     if (dependency.publication.classifier.nonEmpty)
       s"_${dependency.publication.classifier.value}"
@@ -57,19 +57,36 @@ object ArtifactOutput {
       index: ResolutionIndex,
       outputIndex: collection.Map[String, ArtifactOutput],
   ): Doc = {
-    val depId = o.config.toId
-    val isDeclaredDependency = index.thirdparty.declaredDependencies.contains(depId)
-    if (isDeclaredDependency) buildDeclaredDependencyDoc(o, index, outputIndex)
+    if (o.isDeclaredDependency) buildDeclaredDependencyDoc(o, index, outputIndex)
     else buildGenruleAndImportDoc(o)
   }
 
   def buildThirdPartyDoc(
       target: String,
-      outputs: Seq[ArtifactOutput]
+      index: ResolutionIndex,
+      outputs: Seq[ArtifactOutput],
+      outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
     val name = target.replace(':', '_').stripPrefix("//")
-    val jars = outputs.map(_.dependency.mavenLabel)
-    val depLabels = outputs.map(o => o.dependency.bazelLabel + o.suffix)
+    val targetConfigs = index.thirdparty.depsByTargets.getOrElse(target, Nil)
+    val jarsAndLabels = targetConfigs.flatMap { cfg =>
+      val dependency = cfg.toCoursierDependency(index.thirdparty.scala)
+      val reconciledDependency = index.reconciledDependency(dependency)
+      outputIndex
+        .get(reconciledDependency.bazelLabel)
+        .map(o => (o.mavenLabel, o.label + cfg.suffix))
+    }
+
+    val (jars, depLabels) =
+      if (jarsAndLabels.nonEmpty) {
+        jarsAndLabels.unzip
+      } else {
+        // Some resolutions produce no artifacts because they configure a classifier that
+        // doesn't exist. In this case, we return the dependencies that were resolved
+        // alongside this non-existent artifact.
+        outputs.map(o => (o.mavenLabel, "_" + o.label)).unzip
+      }
+
     TargetOutput(
       kind = "scala_import",
       "name" -> Docs.literal(name),
@@ -112,30 +129,33 @@ object ArtifactOutput {
       index: ResolutionIndex,
       outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
-    val depsRef = index.dependencies
-      .getOrElse(o.config.toId, Nil)
-      .filterNot(_ == o.dependency)
-      .iterator
-      .map(index.reconciledDependency(_).bazelLabel)
-      .flatMap(outputIndex.get)
-      .map("_" + _.label)
-      .toSeq
-      .distinct
+    // This `ArtifactOutput` may belong to several `DependencyConfig`. We need to create a target
+    // corresponding to each of these configurations, to reflect the different resolution contexts.
+    val scalaImports = index.configsOf(o.dependency).map { config =>
+      val depsRef = index.dependencies
+        .getOrElse(config.id, Nil)
+        .filterNot(_.repr == o.dependency.repr)
+        .iterator
+        .map(index.reconciledDependency(_).bazelLabel)
+        .flatMap(outputIndex.get)
+        .map("_" + _.label)
+        .toSeq
+        .distinct
 
-    val scalaImport =
       TargetOutput(
         kind = "scala_import",
-        "name" -> Docs.literal(o.label + o.suffix),
+        "name" -> Docs.literal(o.label + config.suffix),
         "jars" -> Docs.array(o.mavenLabel),
         "deps" -> Docs.array(depsRef: _*),
         "exports" -> Docs.array(depsRef: _*),
         "tags" -> Docs.array(tags(o.dependency): _*),
         "visibility" -> Docs.array("//visibility:public")
       ).toDoc
+    }
 
     val genRuleAndImport = buildGenruleAndImportDoc(o)
 
-    scalaImport / genRuleAndImport
+    Doc.stack(scalaImports) / genRuleAndImport
   }
 
   def tags(dep: Dependency): List[String] =
