@@ -36,7 +36,7 @@ final case class ThirdpartyConfig(
 ) {
   val dependencies2: List[DependencyConfig] = {
     // populate classifiers to all versions to make them eviction proof
-    def fillIn(p: (Module, Vector[DependencyConfig])): Vector[DependencyConfig] = {
+    def fillIn(p: (DependencyId, Vector[DependencyConfig])): Vector[DependencyConfig] = {
       val xs = p._2
       val versions = xs.map(_.version).distinct
       val classifiers = xs.map(_.classifier).distinct
@@ -51,13 +51,11 @@ final case class ThirdpartyConfig(
       }
     }
     dependencies.toVector
-      .groupBy(_.coursierModule(scala))
+      .groupBy(_.id)
       .flatMap(fillIn)
       .toList
   }
 
-  val declaredDependencies: Set[DependencyId] =
-    dependencies2.map(_.toId).toSet
   val depsByModule: Map[Module, List[DependencyConfig]] =
     dependencies2.groupBy(_.coursierModule(scala))
   val depsByTargets: Map[String, List[DependencyConfig]] = {

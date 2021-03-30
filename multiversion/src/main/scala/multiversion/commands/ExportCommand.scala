@@ -152,7 +152,7 @@ case class ExportCommand(
           val dep = originalDependency.toCoursierDependency(thirdparty.scala)
           val reconciledVersion = index.reconciledVersion(dep)
           val reconciledDependency = originalDependency.copy(version = reconciledVersion)
-          val reconciledId = reconciledDependency.toId
+          val reconciledId = reconciledDependency.id
           // Different dependencies may reconcile to the same version. In this case, make sure
           // we don't lose the targets they originate from.
           deps.get(reconciledId) match {

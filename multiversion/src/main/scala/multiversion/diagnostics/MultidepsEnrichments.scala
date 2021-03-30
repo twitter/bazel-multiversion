@@ -14,7 +14,6 @@ import moped.json.Result
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
 import moped.reporters.Reporter
-import multiversion.resolvers.DependencyId
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
@@ -80,15 +79,6 @@ object MultidepsEnrichments {
 
       s"@maven//:${org}/${moduleName}/${version}${classifierOrConfigRepr}.jar"
     }
-
-    def toDependencyId: DependencyId =
-      DependencyId(
-        dep.module.organization.value,
-        dep.module.name.value,
-        dep.version,
-        if (isEmptyLikeConfiguration(dep.configuration)) None
-        else Some(dep.configuration.value)
-      )
 
     def withoutConfig: Dependency =
       dep.withConfiguration(Configuration.empty)

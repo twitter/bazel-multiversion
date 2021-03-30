@@ -130,7 +130,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
                        |""".stripMargin
   )
 
-  checkDeps(
+  checkMultipleDeps(
     "classifier with eviction 2",
     s"""|  - dependency: org.apache.kafka:kafka-clients:2.5.0
         |    versionScheme: pvp
@@ -140,15 +140,24 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    classifier: test
         |    targets: [client-2.4.0]
         |""".stripMargin,
-    queryArgs = allScalaImportDeps("@maven//:client-2.4.0"),
-    expectedQuery = """|@maven//:_com.github.luben_zstd-jni_1.4.4-7
-                       |@maven//:_org.lz4_lz4-java_1.7.1
-                       |@maven//:_org.slf4j_slf4j-api_1.7.30
-                       |@maven//:_org.xerial.snappy_snappy-java_1.1.7.3
-                       |@maven//:client-2.4.0
-                       |@maven//:org.apache.kafka_kafka-clients_2.4.0_658677426
-                       |@maven//:org.apache.kafka_kafka-clients_2.4.0_test_658677426
-                       |""".stripMargin
+    queries = List(
+      allScalaImportDeps("@maven//:client-2.5.0") ->
+        """|@maven//:_com.github.luben_zstd-jni_1.4.4-7
+           |@maven//:_org.lz4_lz4-java_1.7.1
+           |@maven//:_org.slf4j_slf4j-api_1.7.30
+           |@maven//:_org.xerial.snappy_snappy-java_1.1.7.3
+           |@maven//:client-2.5.0
+           |@maven//:org.apache.kafka_kafka-clients_2.5.0_1493927235
+           |""".stripMargin,
+      allScalaImportDeps("@maven//:client-2.4.0") ->
+        """|@maven//:_com.github.luben_zstd-jni_1.4.4-7
+           |@maven//:_org.lz4_lz4-java_1.7.1
+           |@maven//:_org.slf4j_slf4j-api_1.7.30
+           |@maven//:_org.xerial.snappy_snappy-java_1.1.7.3
+           |@maven//:client-2.4.0
+           |@maven//:org.apache.kafka_kafka-clients_2.4.0_test_1232654558
+           |""".stripMargin
+    )
   )
 
   checkDeps(
@@ -399,6 +408,64 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     queries = List(
       allJars("@maven//:with-classifier") ->
         "@maven//:org.scala-lang/scala-library/2.11.7.jar"
+    )
+  )
+
+  checkMultipleDeps(
+    "different exclusions and eviction",
+    deps(
+      dep("org.apache.parquet:parquet-thrift:1.9.0")
+        .target("parquet-thrift-1.9.0")
+        .exclude("com.twitter.elephantbird:*"),
+      dep("org.apache.parquet:parquet-thrift:1.11.0")
+        .target("parquet-thrift-1.11.0")
+        .exclude("com.hadoop.gplcompression:hadoop-lzo")
+    ),
+    queries = List(
+      allJars("@maven//:parquet-thrift-1.11.0") ->
+        s"""|@maven//:com.google.code.findbugs/jsr305/1.3.9.jar
+            |@maven//:com.google.guava/guava/11.0.1.jar
+            |@maven//:com.google.protobuf/protobuf-java/2.4.1.jar
+            |@maven//:com.googlecode.json-simple/json-simple/1.1.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-core/4.4.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-hadoop-compat/4.4.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-pig/4.4.jar
+            |@maven//:commons-codec/commons-codec/1.3.jar
+            |@maven//:commons-lang/commons-lang/2.5.jar
+            |@maven//:commons-logging/commons-logging/1.1.1.jar
+            |@maven//:commons-pool/commons-pool/1.6.jar
+            |@maven//:javax.annotation/javax.annotation-api/1.3.2.jar
+            |@maven//:javax.servlet/servlet-api/2.5.jar
+            |@maven//:org.apache.httpcomponents/httpclient/4.0.1.jar
+            |@maven//:org.apache.httpcomponents/httpcore/4.0.1.jar
+            |@maven//:org.apache.parquet/parquet-column/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-common/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-encoding/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-format-structures/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-hadoop/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-jackson/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-pig/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-thrift/1.11.0.jar
+            |@maven//:org.apache.thrift/libthrift/0.7.0.jar
+            |@maven//:org.apache.yetus/audience-annotations/0.11.0.jar
+            |@maven//:org.slf4j/slf4j-api/1.7.22.jar
+            |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
+            |""".stripMargin,
+      allJars("@maven//:parquet-thrift-1.9.0") ->
+        s"""|@maven//:commons-pool/commons-pool/1.6.jar
+            |@maven//:javax.annotation/javax.annotation-api/1.3.2.jar
+            |@maven//:org.apache.parquet/parquet-column/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-common/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-encoding/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-format-structures/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-hadoop/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-jackson/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-pig/1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-thrift/1.11.0.jar
+            |@maven//:org.apache.yetus/audience-annotations/0.11.0.jar
+            |@maven//:org.slf4j/slf4j-api/1.7.22.jar
+            |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
+            |""".stripMargin
     )
   )
 }

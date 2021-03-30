@@ -43,13 +43,17 @@ final case class DependencyConfig(
     transitive: Boolean = true
 ) {
 
-  def toId: DependencyId =
+  val id: DependencyId =
     DependencyId(
       organization.value,
       name,
       version,
-      classifier
+      classifier,
+      dependencies,
+      exclusions
     )
+
+  val suffix: String = "_" + id.##
 
   def toCoursierDependency(scalaVersion: VersionsConfig): Dependency =
     Dependency(
