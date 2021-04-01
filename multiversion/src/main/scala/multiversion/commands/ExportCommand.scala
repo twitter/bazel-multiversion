@@ -59,6 +59,9 @@ case class ExportCommand(
     @Description("Number of parallel resolves and downloads.")
     @ParseAsNumber
     parallel: Int = 4,
+    @Description("Number of parallel resolves and downloads.")
+    @ParseAsNumber
+    parallelDownload: Option[Int] = None,
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -67,53 +70,54 @@ case class ExportCommand(
   def runResult(): Result[Unit] = {
     parseThirdpartyConfig().flatMap(t => runResult(t))
   }
-  def runResult(thirdparty: ThirdpartyConfig): Result[Unit] = {
-    withThreadPool[Result[Unit]](
-      parallel,
-      { threads =>
-        val coursierCache: FileCache[Task] = FileCache().noCredentials
-          .withCachePolicies(
-            List(
-              // first, use what's available locally
-              CachePolicy.LocalOnly,
-              // then, try to download what's missing
-              CachePolicy.Update
-            )
+
+  private def downloadPar: Int =
+    parallelDownload.getOrElse(parallel)
+
+  def runResult(thirdparty: ThirdpartyConfig): Result[Unit] =
+    withThreadPool[Result[Unit]](parallel, downloadPar) { threads =>
+      val coursierCache: FileCache[Task] = FileCache().noCredentials
+        .withCachePolicies(
+          List(
+            // first, use what's available locally
+            CachePolicy.LocalOnly,
+            // then, try to download what's missing
+            CachePolicy.Update
           )
-          .withLocation(cache match {
-            case Some(c) => c.toFile
-            case _       => CacheDefaults.location
-          })
-          .withTtl(scala.concurrent.duration.Duration.Inf)
-          .withPool(threads.downloadPool)
-          .withChecksums(Nil)
-          .withRetry(retryCount)
-        for {
-          initialResolutions <- runResolutions(thirdparty, thirdparty.coursierDeps, coursierCache)
-          initialIndex = ResolutionIndex.fromResolutions(thirdparty, initialResolutions)
-          updatedThirdparty = selectVersionsFromIndex(thirdparty, initialIndex)
-          resolutions <-
-            runResolutions(updatedThirdparty, updatedThirdparty.coursierDeps, coursierCache)
-          index = ResolutionIndex.fromResolutions(updatedThirdparty, resolutions)
-          _ <- {
-            if (lint) lintPostResolution(index)
-            else ValueResult(())
-          }
-          output <- generateBzlFile(index, coursierCache)
-          _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
-          lint <-
-            if (lint)
-              lintCommand
-                .copy(
-                  queryExpressions = List("@maven//:all"),
-                  app = app
-                )
-                .runResult()
-            else ValueResult(())
-        } yield lint
-      }
-    )
-  }
+        )
+        .withLocation(cache match {
+          case Some(c) => c.toFile
+          case _       => CacheDefaults.location
+        })
+        .withTtl(scala.concurrent.duration.Duration.Inf)
+        .withPool(threads.downloadPool)
+        .withChecksums(Nil)
+        .withRetry(retryCount)
+
+      for {
+        initialResolutions <- runResolutions(thirdparty, thirdparty.coursierDeps, coursierCache)
+        initialIndex = ResolutionIndex.fromResolutions(thirdparty, initialResolutions)
+        updatedThirdparty = selectVersionsFromIndex(thirdparty, initialIndex)
+        resolutions <-
+          runResolutions(updatedThirdparty, updatedThirdparty.coursierDeps, coursierCache)
+        index = ResolutionIndex.fromResolutions(updatedThirdparty, resolutions)
+        _ <- {
+          if (lint) lintPostResolution(index)
+          else ValueResult(())
+        }
+        output <- generateBzlFile(index, coursierCache)
+        _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
+        lint <-
+          if (lint)
+            lintCommand
+              .copy(
+                queryExpressions = List("@maven//:all"),
+                app = app
+              )
+              .runResult()
+          else ValueResult(())
+      } yield lint
+    }
 
   private def parseThirdpartyConfig(): Result[ThirdpartyConfig] = {
     val configPath =
@@ -363,8 +367,8 @@ case class ExportCommand(
   }
    */
 
-  private def withThreadPool[T](threadCount: Int, fn: CoursierThreadPools => T): T = {
-    val threads = new CoursierThreadPools(threadCount)
+  private def withThreadPool[A](taskPar: Int, downloadPar: Int)(fn: CoursierThreadPools => A): A = {
+    val threads = new CoursierThreadPools(taskPar, downloadPar)
     try fn(threads)
     finally threads.close()
   }
