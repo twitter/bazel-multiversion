@@ -31,6 +31,19 @@ object MultidepsEnrichments {
   implicit class XtensionApplication(app: Application) {
     def isTesting: Boolean =
       app.env.isSettingTrue("MULTIDEPS_TESTING")
+
+    def completeEither(result: Result[Either[Diagnostic, Unit]]): Int =
+      result match {
+        case ValueResult(Right(())) =>
+          app.reporter.exitCode()
+        case ValueResult(Left(diagnostic)) =>
+          app.reporter.log(diagnostic)
+          100
+        case ErrorResult(error) =>
+          app.reporter.log(error)
+          1
+      }
+
     def complete(result: Result[Unit]): Int =
       result match {
         case ValueResult(()) =>

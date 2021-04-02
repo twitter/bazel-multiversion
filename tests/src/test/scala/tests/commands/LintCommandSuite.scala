@@ -7,6 +7,7 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import multiversion.commands.LintCommand
 import multiversion.diagnostics.LintDiagnostic
+import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.resolvers.SimpleModule
 import munit.TestOptions
 import tests.BaseSuite
@@ -77,6 +78,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     expectedErrors = List(
       lintWarn("com.google.guava", "guava", "20.0", "16.0.1")
     ),
+    expectedExitCode = 100,
     tags = "dupped_3rdparty" :: Nil,
     expectedReport =
       """|"//foo:foo": {"failure": false, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
@@ -94,6 +96,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     expectedErrors = List(
       lintError("com.google.guava", "guava", "20.0", "16.0.1")
     ),
+    expectedExitCode = 100,
     expectedReport =
       """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
   )
@@ -112,7 +115,9 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
       lintError("com.google.guava", "guava", "20.0", "16.0.1"),
       lintError("com.google.guava", "guava", "20.0", "16.0.1").copy(target = "//foo:my-alias")
     ),
-    """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}
+    expectedExitCode = 100,
+    expectedReport =
+      """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}
        |"//foo:my-alias": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
   )
 
@@ -122,6 +127,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
       combine: List[String],
       extraBuild: String = "",
       expectedErrors: List[LintDiagnostic] = Nil,
+      expectedExitCode: Int = 0,
       expectedReport: String = "",
       tags: List[String] = Nil,
   ): Unit = {
@@ -147,10 +153,11 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
         expectedOutput = defaultExpectedOutput,
         workingDirectoryLayout = workingDirectoryLayout
       )
-      val expectedResult = Diagnostic.fromDiagnostics(expectedErrors.sortBy(_.toString)) match {
-        case None      => Result.value(())
-        case Some(err) => Result.error(err)
-      }
+      val expectedResult: Result[Either[Diagnostic, Unit]] =
+        Diagnostic.fromDiagnostics(expectedErrors.sortBy(_.toString)) match {
+          case None      => Result.value(Right(()))
+          case Some(err) => Result.value(Left(err))
+        }
       val reportName = "report.yaml"
       val obtainedResult =
         LintCommand(
@@ -158,8 +165,10 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
           queryExpressions = "//foo:all" :: Nil,
           app = app()
         ).runResult()
-      assertEquals(obtainedResult, expectedResult)
+      val actualExitCode = app().completeEither(obtainedResult)
+      assert(actualExitCode == expectedExitCode)
 
+      assertEquals(obtainedResult, expectedResult)
       val obtainedReport = Input.path(app().env.workingDirectory.resolve(reportName)).text
       assertNoDiff(obtainedReport, expectedReport)
     }

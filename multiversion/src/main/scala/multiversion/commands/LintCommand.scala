@@ -31,8 +31,9 @@ case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
-  def run(): Int = app.complete(runResult())
-  def runResult(): Result[Unit] = {
+  def run(): Int = app.completeEither(runResult())
+
+  def runResult(): Result[Either[Diagnostic, Unit]] = {
     val expr = queryExpressions.mkString(" ")
     for {
       targets <- getTargets(expr)
@@ -41,7 +42,12 @@ case class LintCommand(
       conflicts = targets.map(findConflicts(_, index)).flatten.sortBy(_.toString)
       _ = writeLintReport(conflicts, lintReportPath)
       diagnostic = Diagnostic.fromDiagnostics(conflicts)
-      result <- diagnostic.map(Result.error).getOrElse(Result.value(()))
+      result <-
+        diagnostic
+          .map { d =>
+            Result.value(Left(d))
+          }
+          .getOrElse(Result.value(Right(())))
     } yield result
   }
 
