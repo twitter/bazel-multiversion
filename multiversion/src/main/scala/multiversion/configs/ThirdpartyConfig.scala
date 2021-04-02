@@ -10,6 +10,7 @@ import coursier.cache.FileCache
 import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.Reconciliation
+import coursier.core.Resolution
 import coursier.params.ResolutionParams
 import coursier.util.ModuleMatchers
 import coursier.util.Task
@@ -98,7 +99,8 @@ final case class ThirdpartyConfig(
       dep: DependencyConfig,
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
-      cdep: Dependency
+      cdep: Dependency,
+      retryCount: Int
   ): Result[Task[Result[DependencyResolution]]] =
     Result.fromResults(decodeForceVersions(dep)).map { decodedForceVersions =>
       val allDependencies = for {
@@ -116,7 +118,20 @@ final case class ThirdpartyConfig(
           .withRepositories(
             if (repos.isEmpty) Resolve.defaultRepositories else repos
           )
-      resolve.io.map(r => DependencyResolution(dep, r)).toResult
+
+      def retry(m: Int) =
+        Task.tailRecM[Int, Resolution](m) { (n: Int) =>
+          if (n <= 0) resolve.io.map(Right(_))
+          else
+            resolve.io.attempt map {
+              case Right(r) => Right(r)
+              case Left(e) if e.getMessage.contains("concurrent download") =>
+                Thread.sleep(100)
+                Left(n - 1)
+              case Left(e) => throw e
+            }
+        }
+      retry(retryCount).map(r => DependencyResolution(dep, r)).toResult
     }
 
   private type ForceVersionResult =

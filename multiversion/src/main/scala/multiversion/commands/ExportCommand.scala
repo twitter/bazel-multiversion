@@ -55,7 +55,7 @@ case class ExportCommand(
     lintCommand: LintCommand = LintCommand(),
     @Description("Retry limit when fetching a file.")
     @ParseAsNumber
-    retryCount: Int = 2,
+    retryCount: Int = 5,
     @Description("Number of parallel resolves and downloads.")
     @ParseAsNumber
     parallel: Int = 4,
@@ -401,7 +401,8 @@ case class ExportCommand(
       dep,
       cache,
       progressBar,
-      cdep
+      cdep,
+      retryCount
     )
 
     for {
