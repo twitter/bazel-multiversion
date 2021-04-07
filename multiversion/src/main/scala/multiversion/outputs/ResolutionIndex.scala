@@ -26,19 +26,12 @@ final case class ResolutionIndex(
 ) {
   import ResolutionIndex._
 
-  type ProjectCache = Map[Resolution.ModuleVersion, (ArtifactSource, Project)]
-
   // list of all artifacts including transitive JARs
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
     (d, p, a) <- r.res.dependencyArtifacts() if a.url.endsWith(".jar")
-  } yield ResolvedDependency(r.dep, actualDependency(d, r.res.projectCache), p, a)
-
-  def actualDependency(d0: Dependency, projectCache: ProjectCache): Dependency =
-    projectCache.get(d0.moduleVersion) match {
-      case Some((_, p)) => d0.withVersion(p.actualVersion)
-      case _            => d0
-    }
+    dependency = ResolutionIndex.actualDependency(d, r.res.projectCache)
+  } yield ResolvedDependency(r.dep, dependency, p, a)
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)
@@ -155,7 +148,8 @@ object ResolutionIndex {
       mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
     for {
       resolution <- resolutions
-      (dependency, publication, artifact) <- resolution.res.dependencyArtifacts()
+      (d, _, _) <- resolution.res.dependencyArtifacts()
+      dependency = actualDependency(d, resolution.res.projectCache)
     } {
       val rootsBuffer =
         roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
@@ -167,6 +161,14 @@ object ResolutionIndex {
       roots
     )
   }
+
+  type ProjectCache = Map[Resolution.ModuleVersion, (ArtifactSource, Project)]
+
+  def actualDependency(d0: Dependency, projectCache: ProjectCache): Dependency =
+    projectCache.get(d0.moduleVersion) match {
+      case Some((_, p)) => d0.withVersion(p.actualVersion)
+      case _            => d0
+    }
 
   private val overrideTags = Set("-tw")
   def resolveVersions(
