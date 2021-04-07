@@ -159,7 +159,7 @@ object ResolutionIndex {
     } {
       val rootsBuffer =
         roots.getOrElseUpdate(dependency, mutable.LinkedHashSet.empty)
-      rootsBuffer ++= resolution.res.rootDependencies
+      rootsBuffer += resolution.dep.toCoursierDependency(thirdparty.scala)
     }
     ResolutionIndex(
       thirdparty,
