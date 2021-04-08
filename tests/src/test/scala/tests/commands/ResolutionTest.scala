@@ -66,6 +66,11 @@ class ResolutionTest extends tests.BaseSuite {
     assertEquals(vs.head, "2.11.2")
   }
 
+  test("semver compat") {
+    assert(ResolutionIndex.isCompat("2.0.0", "2.4.3", VersionCompatibility.EarlySemVer))
+    assert(ResolutionIndex.isCompat("2.0.0", "2.4.3", VersionCompatibility.SemVerSpec))
+  }
+
   def jodaTime(v: String): (Dependency, Boolean) =
     Dependency(
       Module(Organization("joda-time"), ModuleName("joda-time"), Map.empty),

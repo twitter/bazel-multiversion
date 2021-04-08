@@ -237,7 +237,7 @@ object ResolutionIndex {
   def isCompat(version1: String, version2: String, compat: VersionCompatibility): Boolean = {
     val min1 = minimumVersion(version1, compat)
     val min2 = minimumVersion(version2, compat)
-    (min1 == min2) || (min1 + ".0" == min2) || (min1 == min2 + ".0")
+    (min1 == min2) || (min1 + ".0" == min2) || (min1 == min2 + ".0") || (min1 + ".0.0" == min2) || (min1 == min2 + ".0.0")
   }
 
   def minimumVersion(v0: String, compat: VersionCompatibility): String = {
