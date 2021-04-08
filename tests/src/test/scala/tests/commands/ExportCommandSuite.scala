@@ -69,7 +69,10 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   checkDeps(
     "basic",
     """|  - dependency: com.google.guava:guava:29.0-jre
+       |  - dependency: org.apiguardian:apiguardian-api:1.1.1
+       |    targets: [apiguardian]
        |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
+       |    dependencies: [apiguardian]
        |""".stripMargin,
     expectedOutput = """|/workingDirectory/3rdparty.yaml:3:16 error: transitive dependency 'com.google.guava:guava' has conflicting versions.
          |       found versions: 27.1-jre
