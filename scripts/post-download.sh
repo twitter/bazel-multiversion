@@ -7,8 +7,8 @@ cp $HOME/Downloads/dist-Linux.zip target/dist-Linux.zip
 cd target/
 unzip dist-macOS.zip
 chmod +x multiversion
-mv multiversion multiversion-x64_64-apple-darwin
+mv multiversion multiversion-x86_64-apple-darwin
 unzip dist-Linux.zip
 chmod +x multiversion
-mv multiversion multiversion-x64_64-pc-linux
+mv multiversion multiversion-x86_64-pc-linux
 cd ..
