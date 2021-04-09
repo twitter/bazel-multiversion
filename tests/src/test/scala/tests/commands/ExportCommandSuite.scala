@@ -471,4 +471,54 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
             |""".stripMargin
     )
   )
+
+  checkMultipleDeps(
+    "round-trip dependency",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift"),
+    ) ++ overrideTargets("org.apache.httpcomponents:httpclient" -> "@//foo:bar"),
+    extraBuild = """|/foo/BUILD
+                    |load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library", "scala_binary")
+                    |
+                    |scala_library(
+                    |  name = "bar",
+                    |  srcs = [],
+                    |)""".stripMargin,
+    queries = List(
+      allScalaLibDeps("@maven//:libthrift") ->
+        """|//foo:bar""".stripMargin,
+      allJars("@maven//:libthrift") ->
+        """|@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+    )
+  )
+
+  checkMultipleDeps(
+    "round-trip dependency with dependencies",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift"),
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian")
+    ) ++ overrideTargets("org.apache.httpcomponents:httpclient" -> "@//foo:bar"),
+    extraBuild = """|/foo/BUILD
+                    |load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library", "scala_binary")
+                    |
+                    |scala_library(
+                    |  name = "bar",
+                    |  srcs = [],
+                    |  deps = ["@maven//:apiguardian"]
+                    |)""".stripMargin,
+    queries = List(
+      allScalaLibDeps("@maven//:libthrift") ->
+        """|//foo:bar""".stripMargin,
+      allJars("@maven//:libthrift") ->
+        """|@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+    )
+  )
 }

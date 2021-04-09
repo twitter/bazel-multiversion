@@ -87,12 +87,19 @@ object ArtifactOutput {
         outputs.map(o => (o.mavenLabel, "_" + o.label)).unzip
       }
 
+    val overriddingTargets = for {
+      config <- targetConfigs
+      dependency <- config.dependencies
+      if index.thirdparty.overriddingTargets.contains(dependency)
+    } yield dependency
+
+    val allLabels = (overriddingTargets ++ depLabels).distinct
     TargetOutput(
       kind = "scala_import",
       "name" -> Docs.literal(name),
       "jars" -> Docs.array(jars: _*),
-      "deps" -> Docs.array(depLabels: _*),
-      "exports" -> Docs.array(depLabels: _*),
+      "deps" -> Docs.array(allLabels: _*),
+      "exports" -> Docs.array(allLabels: _*),
       "visibility" -> Docs.array("//visibility:public")
     ).toDoc
   }

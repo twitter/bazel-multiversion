@@ -23,6 +23,8 @@ final case class ModuleConfig(
 object ModuleConfig {
   def apply(organization: String, moduleName: String): ModuleConfig =
     ModuleConfig(JsonString(organization), JsonString(moduleName))
+  def apply(module: Module): ModuleConfig =
+    ModuleConfig(module.organization.value, module.name.value)
   val default: ModuleConfig = ModuleConfig()
   implicit val codec: JsonCodec[ModuleConfig] =
     moped.macros.deriveCodec(default)
