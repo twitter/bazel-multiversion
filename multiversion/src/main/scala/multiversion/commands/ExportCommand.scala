@@ -33,6 +33,7 @@ import moped.reporters.Diagnostic
 import moped.reporters.Input
 import moped.reporters.NoPosition
 import multiversion.configs.DependencyConfig
+import multiversion.configs.ModuleConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
@@ -97,10 +98,11 @@ case class ExportCommand(
       for {
         initialResolutions <- runResolutions(thirdparty, thirdparty.coursierDeps, coursierCache)
         initialIndex = ResolutionIndex.fromResolutions(thirdparty, initialResolutions)
-        updatedThirdparty = selectVersionsFromIndex(thirdparty, initialIndex)
+        withSelectedVersions = selectVersionsFromIndex(thirdparty, initialIndex)
+        withOverriddenTargets = overrideTargets(withSelectedVersions, initialIndex)
         resolutions <-
-          runResolutions(updatedThirdparty, updatedThirdparty.coursierDeps, coursierCache)
-        index = ResolutionIndex.fromResolutions(updatedThirdparty, resolutions)
+          runResolutions(withOverriddenTargets, withOverriddenTargets.coursierDeps, coursierCache)
+        index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
         _ <- {
           if (lint) lintPostResolution(index)
           else ValueResult(())
@@ -141,6 +143,37 @@ case class ExportCommand(
     VersionCompatibility.PackVer -> "pvp",
     VersionCompatibility.Strict -> "strict"
   )
+
+  /**
+   * Re-configure the dependencies whose resolution include overridden targets
+   * (artifacts that are published but that are available as source dependency),
+   * so that the published artifacts are excluded, and add the dependency on the
+   * overridding target.
+   *
+   * This is required to support Pants' round-trip dependencies:
+   * https://v1.pantsbuild.org/3rdparty_jvm.html#round-trip-dependencies
+   */
+  private def overrideTargets(
+      thirdparty: ThirdpartyConfig,
+      index: ResolutionIndex
+  ): ThirdpartyConfig = {
+    val updatedDependencies = thirdparty.dependencies
+      .map { config =>
+        val overridden = index.dependencies.getOrElse(config.id, Nil).flatMap { dep =>
+          thirdparty.overrideTargetsMap.getOrElse(dep.module, Nil).map { target =>
+            ModuleConfig(dep.module) -> target
+          }
+        }
+        val depsToExclude = overridden.map(_._1)
+        val targetsToAdd = overridden.map(_._2)
+
+        config.copy(
+          exclusions = config.exclusions ++ depsToExclude,
+          dependencies = (config.dependencies ++ targetsToAdd).distinct
+        )
+      }
+    thirdparty.copy(dependencies = updatedDependencies)
+  }
 
   /**
    * Update the thirdparty configuration so that the versions of the declared dependencies matches

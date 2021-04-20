@@ -29,7 +29,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
                                    |  - dependency: org.eclipse.lsp4j:org.eclipse.lsp4j:0.9.0
                                    |    dependencies:
                                    |      - guava27
-                                   |$bazelWorkspace
+                                   |${bazelWorkspace("")}
                                    |""".stripMargin
     )
   }
@@ -60,7 +60,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
                                    |    "@maven//:kafka-test-2.4.1",
                                    |  ],
                                    |)
-                                   |$bazelWorkspace
+                                   |${bazelWorkspace("")}
                                    |""".stripMargin,
       lintArgs = List("lint", "//foo:foo"),
     )
@@ -135,7 +135,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
                                      |scala: 2.12.1403772
                                      |dependencies:
                                      |$deps
-                                     |$bazelWorkspace
+                                     |${bazelWorkspace("")}
                                      |/foo/BUILD
                                      |load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library")
                                      |

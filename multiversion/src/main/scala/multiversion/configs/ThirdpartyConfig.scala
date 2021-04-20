@@ -35,6 +35,13 @@ final case class ThirdpartyConfig(
     dependencies: List[DependencyConfig] = List(),
     scala: VersionsConfig = VersionsConfig()
 ) {
+  val overrideTargetsMap: Map[Module, List[String]] =
+    overrideTargets
+      .groupBy(_.from)
+      .mapValues(_.map(_.to))
+      .toMap
+  val overriddingTargets: Set[String] =
+    overrideTargets.map(_.to).toSet
   val dependencies2: List[DependencyConfig] = {
     // populate classifiers to all versions to make them eviction proof
     def fillIn(p: (DependencyId, Vector[DependencyConfig])): Vector[DependencyConfig] = {

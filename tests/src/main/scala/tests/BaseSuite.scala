@@ -85,6 +85,8 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     List(s"kind(scala_import, allpaths($target, @maven//:all))")
   def allJars(target: String): List[String] =
     List(s"kind(file, allpaths($target, @maven//:all))")
+  def allScalaLibDeps(target: String): List[String] =
+    List(s"kind(scala_library, deps($target))")
 
   def exportCommand: List[String] =
     List("export", "--output-path", "3rdparty/jvm_deps.bzl")
@@ -92,6 +94,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def checkMultipleDeps(
       name: TestOptions,
       deps: String,
+      extraBuild: String = "",
       buildQuery: String = "",
       queries: List[(List[String], String)] = Nil,
       expectedExit: Int = 0,
@@ -108,14 +111,18 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
                                      |scala: 2.12.12
                                      |dependencies:
                                      |$deps
-                                     |$bazelWorkspace
+                                     |${bazelWorkspace(extraBuild)}
                                      |""".stripMargin
       )
       queries.foreach {
         case (queryArgs, expectedQuery) =>
           val obtainedQuery =
             app()
-              .process(("bazel" :: "query" :: queryArgs).map(x => (x: Shellable)): _*)
+              .process(
+                ("bazel" :: "query" :: "--notool_deps" :: "--noimplicit_deps" :: queryArgs).map(x =>
+                  (x: Shellable)
+                ): _*
+              )
               .call()
               .out
               .text()
@@ -143,6 +150,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def checkDeps(
       name: TestOptions,
       deps: String,
+      extraBuild: String = "",
       buildQuery: String = "",
       queryArgs: List[String] = Nil,
       expectedQuery: String = "",
@@ -154,7 +162,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     val queries =
       if (queryArgs.nonEmpty) List((queryArgs, expectedQuery))
       else Nil
-    checkMultipleDeps(name, deps, buildQuery, queries, expectedExit, expectedOutput)
+    checkMultipleDeps(name, deps, extraBuild, buildQuery, queries, expectedExit, expectedOutput)
   }
 
   def scalaLibrary(name: String, code: String): String =
@@ -168,7 +176,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
         |)
         |""".stripMargin
 
-  def bazelWorkspace: String = {
+  def bazelWorkspace(extraBuild: String): String = {
     new StringBuilder()
       .append("/WORKSPACE\n")
       .append(Utils.readFile(Paths.get("multiversion-example/WORKSPACE")))
@@ -178,6 +186,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
       .append("# Empty package\n")
       .append("/3rdparty/BUILD\n")
       .append("# Empty package\n")
+      .append(extraBuild)
       .toString()
   }
 

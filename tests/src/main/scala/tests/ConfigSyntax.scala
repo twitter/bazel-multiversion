@@ -6,12 +6,24 @@ trait ConfigSyntax {
     dependencies.map(_.toYaml).mkString(System.lineSeparator())
   }
 
+  def overrideTargets(overrides: (String, String)*): String = {
+    s"""|
+        |overrideTargets:
+        |${overrides.map(overrideYaml).mkString(System.lineSeparator())}
+        |""".stripMargin
+  }
+
   def dep(str: String): ConfigNode.Dependency =
     str.split(":").toList match {
       case org :: name :: version :: Nil =>
         ConfigNode.Dependency(org, name, version, None, Nil, Nil, Nil, force = false)
       case _ => throw new IllegalArgumentException(str)
     }
+
+  private def overrideYaml(or: (String, String)): String =
+    s"""|  - from: '${or._1}'
+        |    to: '${or._2}'
+        |""".stripMargin
 }
 
 sealed trait ConfigNode {
