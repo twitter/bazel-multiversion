@@ -36,6 +36,7 @@ import multiversion.configs.DependencyConfig
 import multiversion.configs.ModuleConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
+import multiversion.diagnostics.IntraTargetConflictDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers._
 import multiversion.outputs.ArtifactOutput
@@ -103,6 +104,7 @@ case class ExportCommand(
         resolutions <-
           runResolutions(withOverriddenTargets, withOverriddenTargets.coursierDeps, coursierCache)
         index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
+        _ <- lintIntraTargetConflicts(index)
         _ <- {
           if (lint) lintPostResolution(index)
           else ValueResult(())
@@ -302,6 +304,39 @@ case class ExportCommand(
           Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
           ValueResult(out)
         }
+    }
+  }
+
+  /**
+   * Report the conflicts that happen in a single target.
+   *
+   * Such conflicts arise when several dependencies share the same `target`, and these dependencies
+   * have conflicting transitive dependencies.
+   *
+   * @param index The resolution index
+   * @return The linting report
+   */
+  private def lintIntraTargetConflicts(index: ResolutionIndex): Result[Unit] = {
+    val errors = index.unevictedArtifacts
+      .flatMap { rdep =>
+        rdep.config.targets.map(t => (t, rdep.dependency.module) -> rdep.dependency.version)
+      }
+      .groupBy(_._1)
+      .toList
+      .sortBy { case ((target, module), _) => target + module.repr }
+      .collect {
+        case ((target, module), conflicts) if conflicts.distinct.length > 1 =>
+          val pos = index.thirdparty.depsByTargets
+            .getOrElse(target, Nil)
+            .headOption
+            .map(_.organization.position)
+            .getOrElse(NoPosition)
+          val versions = conflicts.map(_._2).distinct.sorted
+          new IntraTargetConflictDiagnostic(target, module, versions, pos)
+      }
+    Diagnostic.fromDiagnostics(errors) match {
+      case Some(diagnostic) => ErrorResult(diagnostic)
+      case None             => ValueResult(())
     }
   }
 
