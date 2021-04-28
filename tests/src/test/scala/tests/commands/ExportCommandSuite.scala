@@ -521,4 +521,21 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
     )
   )
+
+  checkMultipleDeps(
+    "intra-target conflict",
+    deps(
+      dep("com.google.auto:auto-common:1.0")
+        .target("broken-target"),
+      dep("com.google.inject:guice:4.0")
+        .target("broken-target")
+    ),
+    expectedExit = 1,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:11:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
+         |To fix this problem, update your dependencies to compatible versions, or add exclusion rules to force compatible versions of 'com.google.guava:guava'.
+         |
+         |  - dependency: com.google.inject:guice:4.0
+         |                ^""".stripMargin
+  )
 }
