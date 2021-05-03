@@ -252,7 +252,6 @@ case class ExportCommand(
             List(Try {
               val output = ArtifactOutput(
                 dependency = r.dependency,
-                config = r.config,
                 artifact = r.artifact,
                 artifactSha256 = Sha256.compute(file)
               )

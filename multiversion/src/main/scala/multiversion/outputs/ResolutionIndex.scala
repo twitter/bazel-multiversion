@@ -127,12 +127,10 @@ final case class ResolutionIndex(
   private lazy val owningConfigs: collection.Map[String, collection.Set[DependencyConfig]] = {
     val res = mutable.LinkedHashMap.empty[String, mutable.Set[DependencyConfig]]
     resolutions.foreach { r =>
-      val transitive0 = r.res.dependencyArtifacts().map(_._1).distinct.toSeq
-      val transitive = transitive0.map { actualDependency(_, r.res.projectCache) }
-      transitive.foreach { dep =>
-        val buffer = res.getOrElseUpdate(dep.bazelLabel, mutable.LinkedHashSet.empty)
-        buffer += r.dep
-      }
+      val dep = r.dep.toCoursierDependency(thirdparty.scala)
+      val reconciled = reconciledDependency(dep)
+      val buffer = res.getOrElseUpdate(reconciled.bazelLabel, mutable.LinkedHashSet.empty)
+      buffer += r.dep
     }
     res
   }

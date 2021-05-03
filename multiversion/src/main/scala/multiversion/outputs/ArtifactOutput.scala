@@ -2,13 +2,12 @@ package multiversion.outputs
 
 import coursier.core.Dependency
 import coursier.util.Artifact
-import multiversion.configs.DependencyConfig
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
+import multiversion.resolvers.ResolvedDependency
 import org.typelevel.paiges.Doc
 
 final case class ArtifactOutput(
     dependency: Dependency,
-    config: DependencyConfig,
     artifact: Artifact,
     artifactSha256: String,
     sourcesArtifact: Option[Artifact] = None,
@@ -21,10 +20,6 @@ final case class ArtifactOutput(
     }
   override def hashCode(): Int = this.repr.##
 
-  val isDeclaredDependency: Boolean =
-    dependency.module.organization.value == config.organization.value &&
-      dependency.module.name.value == config.name &&
-      dependency.version == config.version
   val classifierRepr: String =
     if (dependency.publication.classifier.nonEmpty)
       s"_${dependency.publication.classifier.value}"
@@ -52,19 +47,9 @@ final case class ArtifactOutput(
 
 object ArtifactOutput {
 
-  def buildDoc(
-      o: ArtifactOutput,
-      index: ResolutionIndex,
-      outputIndex: collection.Map[String, ArtifactOutput],
-  ): Doc = {
-    if (o.isDeclaredDependency) buildDeclaredDependencyDoc(o, index, outputIndex)
-    else buildGenruleAndImportDoc(o)
-  }
-
   def buildThirdPartyDoc(
       target: String,
       index: ResolutionIndex,
-      outputs: Seq[ArtifactOutput],
       outputIndex: collection.Map[String, ArtifactOutput]
   ): Doc = {
     val name = target.replace(':', '_').stripPrefix("//")
@@ -84,7 +69,10 @@ object ArtifactOutput {
         // Some resolutions produce no artifacts because they configure a classifier that
         // doesn't exist. In this case, we return the dependencies that were resolved
         // alongside this non-existent artifact.
-        outputs.map(o => (o.mavenLabel, "_" + o.label)).unzip
+        index.unevictedArtifacts.collect {
+          case ResolvedDependency(config, dependency, _, _) if config.targets.contains(target) =>
+            (dependency.mavenLabel, "_" + dependency.bazelLabel)
+        }.unzip
       }
 
     val overriddingTargets = for {
@@ -131,7 +119,7 @@ object ArtifactOutput {
     genrule / scalaImport
   }
 
-  private def buildDeclaredDependencyDoc(
+  def buildDoc(
       o: ArtifactOutput,
       index: ResolutionIndex,
       outputIndex: collection.Map[String, ArtifactOutput]
