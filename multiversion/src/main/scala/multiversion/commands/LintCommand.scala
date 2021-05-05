@@ -12,6 +12,7 @@ import com.twitter.multiversion.Build.Target
 import moped.annotations.CommandName
 import moped.annotations.Description
 import moped.annotations.PositionalArguments
+import moped.annotations.Repeated
 import moped.cli.Application
 import moped.cli.Command
 import moped.cli.CommandParser
@@ -28,6 +29,7 @@ import org.typelevel.paiges.Doc
 case class LintCommand(
     @Description("File to write lint report") lintReportPath: Option[Path] = None,
     @Description("Path to bazel executable") bazel: Path = Paths.get("bazel"),
+    @Repeated @Description("Additional arguments to pass to bazel") bazelArgs: List[String] = Nil,
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
@@ -36,8 +38,8 @@ case class LintCommand(
   def runResult(): Result[Either[Diagnostic, Unit]] = {
     val expr = queryExpressions.mkString(" ")
     for {
-      targets <- getTargets(expr)
-      query <- runQuery(s"allpaths($expr, @maven//:all)")
+      targets <- getTargets(expr, bazelArgs)
+      query <- runQuery(s"allpaths($expr, @maven//:all)", bazelArgs)
       index = new DependenciesIndex(query)
       conflicts = targets.map(findConflicts(_, index)).flatten.sortBy(_.toString)
       _ = writeLintReport(conflicts, lintReportPath)
@@ -83,22 +85,26 @@ case class LintCommand(
     index.byName.get(label).map(_.tags.contains("dupped_3rdparty")).getOrElse(false)
   }
 
-  private def getTargets(query: String, pred: Target => Boolean = _ => true): Result[List[Target]] =
-    runQuery(query)
+  private def getTargets(
+      query: String,
+      bazelArgs: List[String],
+      pred: Target => Boolean = _ => true
+  ): Result[List[Target]] =
+    runQuery(query, bazelArgs)
       .map {
         _.getTargetList().asScala
           .filter(pred)
           .toList
       }
 
-  private def runQuery(queryExpression: String): Result[QueryResult] = {
+  private def runQuery(queryExpression: String, bazelArgs: List[String]): Result[QueryResult] = {
     val command = List(
       "query",
       queryExpression,
       "--noimplicit_deps",
       "--notool_deps",
       "--output=proto"
-    )
+    ) ++ bazelArgs
     BazelUtil.bazel(app, bazel, command).map { out =>
       QueryResult.parseFrom(out.bytes)
     }
