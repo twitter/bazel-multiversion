@@ -22,23 +22,39 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
         |    force: false
         |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.1
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.1
-                       |""".stripMargin
+                       |""".stripMargin,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'org.slf4j:slf4j-log4j12:1.6.4' is evicted in favor of 'org.slf4j:slf4j-log4j12:1.6.1'.
+         |Update the third party declaration to use version '1.6.1' instead of '1.6.4' to reflect the effective dependency graph.
+         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkDeps(
-    "evicted artifacts do not create genrules",
+    "evicted artifacts do not create genrules without forces",
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
         |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.4
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.4
-                       |""".stripMargin
+                       |""".stripMargin,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'org.slf4j:slf4j-log4j12:1.6.1' is evicted in favor of 'org.slf4j:slf4j-log4j12:1.6.4'.
+         |Update the third party declaration to use version '1.6.4' instead of '1.6.1' to reflect the effective dependency graph.
+         |  - dependency: org.slf4j:slf4j-log4j12:1.6.1
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkDeps(
@@ -61,9 +77,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     """|  - dependency: io.netty:netty:3.10.1.Final
        |  - dependency: io.netty:netty:3.7.0.Final
        |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/io.netty_netty_3.10.1.Final
-                       |""".stripMargin
+                       |""".stripMargin,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:4:16 warning: Declared third party dependency 'io.netty:netty:3.7.0.Final' is evicted in favor of 'io.netty:netty:3.10.1.Final'.
+         |Update the third party declaration to use version '3.10.1.Final' instead of '3.7.0.Final' to reflect the effective dependency graph.
+         |  - dependency: io.netty:netty:3.7.0.Final
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkDeps(
@@ -103,6 +127,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |  - dependency: com.lihaoyi:pprint_2.12:0.5.9
         |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
         |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
+    expectedOutput = """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'com.lihaoyi:fansi_2.12:0.2.8' is evicted in favor of 'com.lihaoyi:fansi_2.12:0.2.9'.
+                        |Update the third party declaration to use version '0.2.9' instead of '0.2.8' to reflect the effective dependency graph.
+                        |  - dependency: com.lihaoyi:fansi_2.12:0.2.8
+                        |                ^
+                        |/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'com.lihaoyi:sourcecode_2.12:0.2.0' is evicted in favor of 'com.lihaoyi:sourcecode_2.12:0.2.1'.
+                        |Update the third party declaration to use version '0.2.1' instead of '0.2.0' to reflect the effective dependency graph.
+                        |  - dependency: com.lihaoyi:sourcecode_2.12:0.2.0
+                        |                ^
+                        |warning: 2 declared dependencies were evicted.
+                        |""".stripMargin + defaultExpectedOutput
   )
 
   checkDeps(
@@ -123,6 +158,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    classifier: test
         |    targets: [client-2.4.0]
         |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/com.github.luben_zstd-jni_1.4.3-1
                        |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1
@@ -130,7 +166,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
                        |@maven//:genrules/org.lz4_lz4-java_1.6.0
                        |@maven//:genrules/org.slf4j_slf4j-api_1.7.28
                        |@maven//:genrules/org.xerial.snappy_snappy-java_1.1.7.3
-                       |""".stripMargin
+                       |""".stripMargin,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:6:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
+         |Update the third party declaration to use version '2.4.1' instead of '2.4.0' to reflect the effective dependency graph.
+         |  - dependency: org.apache.kafka:kafka-clients:2.4.0
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput,
   )
 
   checkMultipleDeps(
@@ -196,6 +239,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    versionScheme: pvp
         |    targets: [kafka-streams-2.4.0]
         |""".stripMargin,
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allJars("@maven//:kafka-streams-2.4.0"),
     expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0.jar
                        |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0.jar
@@ -210,7 +254,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
                        |@maven//:org.rocksdb/rocksdbjni/5.18.3.jar
                        |@maven//:org.slf4j/slf4j-api/1.7.28.jar
                        |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
-                       |""".stripMargin
+                       |""".stripMargin,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
+         |Update the third party declaration to use version '2.4.1' instead of '2.4.0' to reflect the effective dependency graph.
+         |  - dependency: org.apache.kafka:kafka-clients:2.4.0
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkMultipleDeps(
@@ -348,12 +399,20 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
       dep("org.apiguardian:apiguardian-api:1.1.0")
         .target("apiguardian-old")
     ),
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:apiguardian") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian-old") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
-    )
+    ),
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:11:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+         |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
+         |  - dependency: org.apiguardian:apiguardian-api:1.1.0
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkMultipleDeps(
@@ -366,13 +425,21 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
       dep("org.apiguardian:apiguardian-api:1.1.0")
         .target("apiguardian-old")
     ),
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:multi-jar") ->
         """|@maven//:commons-logging/commons-logging/1.2.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian-old") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
-    )
+    ),
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:19:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+         |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
+         |  - dependency: org.apiguardian:apiguardian-api:1.1.0
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkMultipleDeps(
@@ -424,6 +491,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("parquet-thrift-1.11.0")
         .exclude("com.hadoop.gplcompression:hadoop-lzo")
     ),
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:parquet-thrift-1.11.0") ->
         s"""|@maven//:com.google.code.findbugs/jsr305/1.3.9.jar
@@ -469,7 +537,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
             |@maven//:org.slf4j/slf4j-api/1.7.22.jar
             |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
             |""".stripMargin
-    )
+    ),
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'org.apache.parquet:parquet-thrift:1.9.0' is evicted in favor of 'org.apache.parquet:parquet-thrift:1.11.0'.
+         |Update the third party declaration to use version '1.11.0' instead of '1.9.0' to reflect the effective dependency graph.
+         |  - dependency: org.apache.parquet:parquet-thrift:1.9.0
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 
   checkMultipleDeps(
@@ -536,6 +611,22 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |To fix this problem, update your dependencies to compatible versions, or add exclusion rules to force compatible versions of 'com.google.guava:guava'.
          |
          |  - dependency: com.google.inject:guice:4.0
+         |                ^""".stripMargin
+  )
+
+  checkDeps(
+    "report evicted declared dependencies",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift"),
+      dep("org.slf4j:slf4j-api:1.7.10")
+        .target("slf4j")
+    ),
+    expectedExit = 1,
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:11:16 error: Declared third party dependency 'org.slf4j:slf4j-api:1.7.10' is evicted in favor of 'org.slf4j:slf4j-api:1.7.12'.
+         |Update the third party declaration to use version '1.7.12' instead of '1.7.10' to reflect the effective dependency graph.
+         |  - dependency: org.slf4j:slf4j-api:1.7.10
          |                ^""".stripMargin
   )
 }

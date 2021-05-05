@@ -64,6 +64,8 @@ case class ExportCommand(
     @Description("Number of parallel resolves and downloads.")
     @ParseAsNumber
     parallelDownload: Option[Int] = None,
+    @Description("Report an error if a declared dependency is evicted")
+    failOnEvictedDeclared: Boolean = true,
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -104,6 +106,12 @@ case class ExportCommand(
         resolutions <-
           runResolutions(withOverriddenTargets, withOverriddenTargets.coursierDeps, coursierCache)
         index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
+        _ <- lintEvictedDeclaredDependencies(
+          thirdparty,
+          initialIndex,
+          index,
+          failOnEvictedDeclared
+        )
         _ <- lintIntraTargetConflicts(index)
         _ <- {
           if (lint) lintPostResolution(index)
@@ -303,6 +311,68 @@ case class ExportCommand(
           Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
           ValueResult(out)
         }
+    }
+  }
+
+  /**
+   * Report dependencies that are declared in `originalThirdParty` but were evicted. If
+   * `failOnEvictedDeclared` is set, then an error will be returned when such
+   * dependencies are found.
+   *
+   * @param originalThirdParty    The original third party configuration, as configured in the
+   *                              input file.
+   * @param originalIndex         The resolution index built after the first resolution.
+   * @param index                 The final resolution index, representing the dependencies that are
+   *                              selected for the dependency graph.
+   * @param failOnEvictedDeclared If set, the eviction of a declared dependency will trigger and
+   *                              error, otherwise a warning.
+   * @return The linting report.
+   */
+  private def lintEvictedDeclaredDependencies(
+      originalThirdParty: ThirdpartyConfig,
+      originalIndex: ResolutionIndex,
+      index: ResolutionIndex,
+      failOnEvictedDeclared: Boolean
+  ): Result[Unit] = {
+    val diagnostic =
+      if (failOnEvictedDeclared) Diagnostic.error _
+      else Diagnostic.warning _
+
+    def selectedVersionOf(config: DependencyConfig): String = {
+      val originalDependency = config.toCoursierDependency(originalThirdParty.scala)
+      // The original dependency could have been evicted after the first resolution already,
+      // and not appear in `index` at all.
+      val selectedDependency =
+        if (index.dependencies.contains(config.id)) originalDependency
+        else originalIndex.reconciledDependency(originalDependency)
+      index.reconciledVersion(selectedDependency)
+    }
+
+    val diagnostics =
+      for {
+        dependency <- originalThirdParty.dependencies
+        declaredVersion = dependency.version
+        selectedVersion = selectedVersionOf(dependency)
+        coursierDep = dependency.toCoursierDependency(originalThirdParty.scala)
+        if declaredVersion != selectedVersion
+        message =
+          s"""|Declared third party dependency '${coursierDep.repr}' is evicted in favor of '${coursierDep.module.repr}:$selectedVersion'.
+              |Update the third party declaration to use version '$selectedVersion' instead of '${coursierDep.version}' to reflect the effective dependency graph.""".stripMargin
+      } yield diagnostic(message, dependency.organization.position)
+
+    if (failOnEvictedDeclared) {
+      Diagnostic.fromDiagnostics(diagnostics) match {
+        case Some(diagnostic) => ErrorResult(diagnostic)
+        case None             => ValueResult(())
+      }
+    } else {
+      diagnostics.foreach(app.reporter.log)
+      if (diagnostics.length == 1) {
+        app.reporter.warning("1 declared dependency was evicted.")
+      } else if (diagnostics.length > 1) {
+        app.reporter.warning(s"${diagnostics.length} declared dependencies were evicted.")
+      }
+      ValueResult(())
     }
   }
 
