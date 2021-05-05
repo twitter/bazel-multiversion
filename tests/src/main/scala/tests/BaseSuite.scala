@@ -94,6 +94,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def checkMultipleDeps(
       name: TestOptions,
       deps: String,
+      arguments: List[String] = exportCommand,
       extraBuild: String = "",
       buildQuery: String = "",
       queries: List[(List[String], String)] = Nil,
@@ -104,7 +105,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   ): Unit = {
     test(name) {
       checkCommand(
-        arguments = exportCommand,
+        arguments = arguments,
         expectedExit = expectedExit,
         expectedOutput = expectedOutput,
         workingDirectoryLayout = s"""|/3rdparty.yaml
@@ -150,6 +151,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   def checkDeps(
       name: TestOptions,
       deps: String,
+      arguments: List[String] = exportCommand,
       extraBuild: String = "",
       buildQuery: String = "",
       queryArgs: List[String] = Nil,
@@ -162,7 +164,16 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     val queries =
       if (queryArgs.nonEmpty) List((queryArgs, expectedQuery))
       else Nil
-    checkMultipleDeps(name, deps, extraBuild, buildQuery, queries, expectedExit, expectedOutput)
+    checkMultipleDeps(
+      name,
+      deps,
+      arguments,
+      extraBuild,
+      buildQuery,
+      queries,
+      expectedExit,
+      expectedOutput
+    )
   }
 
   def scalaLibrary(name: String, code: String): String =
