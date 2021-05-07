@@ -8,6 +8,8 @@ import java.nio.file.Paths
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 
+import scala.collection.mutable
+
 import moped.internal.console.Utils
 import moped.testkit.DeleteVisitor
 import moped.testkit.FileLayout
@@ -89,7 +91,7 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     List(s"kind(scala_library, deps($target))")
 
   def exportCommand: List[String] =
-    List("export", "--output-path", "3rdparty/jvm_deps.bzl")
+    List("export", "--output-path", "3rdparty/jvm_deps.bzl", "--manifests-root", "manifests")
 
   def checkMultipleDeps(
       name: TestOptions,
@@ -99,7 +101,8 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
       buildQuery: String = "",
       queries: List[(List[String], String)] = Nil,
       expectedExit: Int = 0,
-      expectedOutput: String = defaultExpectedOutput
+      expectedOutput: String = defaultExpectedOutput,
+      expectedManifests: Map[String, String] = Map.empty,
   )(implicit
       loc: munit.Location
   ): Unit = {
@@ -144,6 +147,21 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
             ),
             propagateEnv = true
           )
+      }
+      if (expectedManifests.nonEmpty) {
+        val actualManifests = mutable.Map.empty[String, String]
+        val manifestsDir = app().env.workingDirectory.resolve("manifests")
+        Files.walkFileTree(
+          manifestsDir,
+          new SimpleFileVisitor[Path] {
+            override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
+              val relativePath = manifestsDir.relativize(file)
+              actualManifests += relativePath.toString -> new String(Files.readAllBytes(file))
+              FileVisitResult.CONTINUE
+            }
+          }
+        )
+        assertEquals(actualManifests.toMap, expectedManifests)
       }
     }
   }

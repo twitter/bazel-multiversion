@@ -465,6 +465,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
       allJars("@maven//:commons-logging-and-commons-codec") ->
         """|@maven//:commons-codec/commons-codec/1.9.jar
            |@maven//:commons-logging/commons-logging/1.2.jar""".stripMargin
+    ),
+    expectedManifests = Map(
+      "bazel-deps-apiguardian-and-commons-logging.txt" ->
+        """|commons-logging:commons-logging:1.2
+           |org.apiguardian:apiguardian-api:1.1.1""".stripMargin,
+      "bazel-deps-apiguardian-and-commons-codec.txt" ->
+        """|commons-codec:commons-codec:1.9
+           |org.apiguardian:apiguardian-api:1.1.1""".stripMargin,
+      "bazel-deps-commons-logging-and-commons-codec.txt" ->
+        """|commons-codec:commons-codec:1.9
+           |commons-logging:commons-logging:1.2""".stripMargin
     )
   )
 
@@ -485,15 +496,15 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     "different exclusions and eviction",
     deps(
       dep("org.apache.parquet:parquet-thrift:1.9.0")
-        .target("parquet-thrift-1.9.0")
+        .target("3rdparty/jvm/org/apache/parquet:parquet-thrift-1.9.0")
         .exclude("com.twitter.elephantbird:*"),
       dep("org.apache.parquet:parquet-thrift:1.11.0")
-        .target("parquet-thrift-1.11.0")
+        .target("3rdparty/jvm/org/apache/parquet:parquet-thrift-1.11.0")
         .exclude("com.hadoop.gplcompression:hadoop-lzo")
     ),
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
-      allJars("@maven//:parquet-thrift-1.11.0") ->
+      allJars("@maven//:3rdparty/jvm/org/apache/parquet_parquet-thrift-1.11.0") ->
         s"""|@maven//:com.google.code.findbugs/jsr305/1.3.9.jar
             |@maven//:com.google.guava/guava/11.0.1.jar
             |@maven//:com.google.protobuf/protobuf-java/2.4.1.jar
@@ -522,7 +533,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
             |@maven//:org.slf4j/slf4j-api/1.7.22.jar
             |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
             |""".stripMargin,
-      allJars("@maven//:parquet-thrift-1.9.0") ->
+      allJars("@maven//:3rdparty/jvm/org/apache/parquet_parquet-thrift-1.9.0") ->
         s"""|@maven//:commons-pool/commons-pool/1.6.jar
             |@maven//:javax.annotation/javax.annotation-api/1.3.2.jar
             |@maven//:org.apache.parquet/parquet-column/1.11.0.jar
@@ -544,7 +555,51 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  - dependency: org.apache.parquet:parquet-thrift:1.9.0
          |                ^
          |warning: 1 declared dependency was evicted.
-         |""".stripMargin + defaultExpectedOutput
+         |""".stripMargin + defaultExpectedOutput,
+    expectedManifests = Map(
+      "3rdparty/jvm/org/apache/parquet/bazel-deps-parquet-thrift-1.11.0.txt" ->
+        """|com.google.code.findbugs:jsr305:1.3.9
+           |com.google.guava:guava:11.0.1
+           |com.google.protobuf:protobuf-java:2.4.1
+           |com.googlecode.json-simple:json-simple:1.1
+           |com.twitter.elephantbird:elephant-bird-core:4.4
+           |com.twitter.elephantbird:elephant-bird-hadoop-compat:4.4
+           |com.twitter.elephantbird:elephant-bird-pig:4.4
+           |commons-codec:commons-codec:1.3
+           |commons-lang:commons-lang:2.5
+           |commons-logging:commons-logging:1.1.1
+           |commons-pool:commons-pool:1.6
+           |javax.annotation:javax.annotation-api:1.3.2
+           |javax.servlet:servlet-api:2.5
+           |org.apache.httpcomponents:httpclient:4.0.1
+           |org.apache.httpcomponents:httpcore:4.0.1
+           |org.apache.parquet:parquet-column:1.11.0
+           |org.apache.parquet:parquet-common:1.11.0
+           |org.apache.parquet:parquet-encoding:1.11.0
+           |org.apache.parquet:parquet-format-structures:1.11.0
+           |org.apache.parquet:parquet-hadoop:1.11.0
+           |org.apache.parquet:parquet-jackson:1.11.0
+           |org.apache.parquet:parquet-pig:1.11.0
+           |org.apache.parquet:parquet-thrift:1.11.0
+           |org.apache.thrift:libthrift:0.7.0
+           |org.apache.yetus:audience-annotations:0.11.0
+           |org.slf4j:slf4j-api:1.7.22
+           |org.xerial.snappy:snappy-java:1.1.7.3""".stripMargin,
+      "3rdparty/jvm/org/apache/parquet/bazel-deps-parquet-thrift-1.9.0.txt" ->
+        """|commons-pool:commons-pool:1.6
+           |javax.annotation:javax.annotation-api:1.3.2
+           |org.apache.parquet:parquet-column:1.11.0
+           |org.apache.parquet:parquet-common:1.11.0
+           |org.apache.parquet:parquet-encoding:1.11.0
+           |org.apache.parquet:parquet-format-structures:1.11.0
+           |org.apache.parquet:parquet-hadoop:1.11.0
+           |org.apache.parquet:parquet-jackson:1.11.0
+           |org.apache.parquet:parquet-pig:1.11.0
+           |org.apache.parquet:parquet-thrift:1.11.0
+           |org.apache.yetus:audience-annotations:0.11.0
+           |org.slf4j:slf4j-api:1.7.22
+           |org.xerial.snappy:snappy-java:1.1.7.3""".stripMargin
+    )
   )
 
   checkMultipleDeps(
@@ -567,6 +622,12 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apache.httpcomponents/httpcore/4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+    ),
+    expectedManifests = Map(
+      "bazel-deps-libthrift.txt" ->
+        """|org.apache.httpcomponents:httpcore:4.4.1
+           |org.apache.thrift:libthrift:0.10.0
+           |org.slf4j:slf4j-api:1.7.12""".stripMargin,
     )
   )
 
@@ -594,6 +655,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:org.apache.thrift/libthrift/0.10.0.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12.jar""".stripMargin,
+    ),
+    expectedManifests = Map(
+      "bazel-deps-libthrift.txt" ->
+        """|org.apache.httpcomponents:httpcore:4.4.1
+           |org.apache.thrift:libthrift:0.10.0
+           |org.slf4j:slf4j-api:1.7.12""".stripMargin,
+      "bazel-deps-apiguardian.txt" ->
+        """|org.apiguardian:apiguardian-api:1.1.1""".stripMargin
     )
   )
 
