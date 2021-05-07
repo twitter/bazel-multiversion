@@ -17,6 +17,7 @@ object MultiVersion {
       CommandParser[ExportCommand],
       CommandParser[PantsExportCommand],
       CommandParser[LintCommand],
+      CommandParser[JarsCommand],
       CommandParser[CompletionsCommand]
     )
   )
