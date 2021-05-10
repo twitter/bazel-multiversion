@@ -105,7 +105,7 @@ case class LintCommand(
       "--notool_deps",
       "--output=proto"
     ) ++ bazelArgs
-    BazelUtil.bazel(app, bazel, command).map { out =>
+    BazelUtil.bazelBytes(app, bazel, command).map { out =>
       QueryResult.parseFrom(out.bytes)
     }
   }

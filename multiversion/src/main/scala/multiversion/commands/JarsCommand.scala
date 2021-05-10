@@ -9,9 +9,12 @@ import moped.annotations.ExampleUsage
 import moped.annotations.PositionalArguments
 import moped.annotations.Repeated
 import moped.cli.Application
+import moped.cli.Command
 import moped.cli.CommandParser
 import moped.json.Result
 import moped.reporters.Diagnostic
+import multiversion.BazelUtil
+import multiversion.diagnostics.MultidepsEnrichments._
 
 @ExampleUsage("multiversion jars junit:junit")
 @CommandName("jars")
@@ -21,11 +24,18 @@ case class JarsCommand(
     @Repeated @Description("Additional arguments to pass to bazel") bazelArgs: List[String] = Nil,
     @PositionalArguments modules: List[String] = Nil,
     app: Application = Application.default
-) extends QueryBasedCommand {
+) extends Command {
 
   private val OrgArtifact = """(^[a-zA-Z0-9\.\-_]+)\:([a-zA-Z0-9\.\-_]+)$""".r
   private val OrgArtifactVersion =
     """(^[a-zA-Z0-9\.\-_]+)\:([a-zA-Z0-9\.\-_]+):([a-zA-Z0-9\.\-_]+)$""".r
+
+  override def run(): Int = app.complete(runResult())
+
+  def runResult(): Result[Unit] =
+    for {
+      r <- runCustomQuery()
+    } yield r.foreach(app.println(_))
 
   private def jarsQuery(org: String, name: String, version: String): String =
     s"""filter("@maven//:${org}/${name}/.*${version}\\.jar", kind("generated file", @maven//...:*))"""
@@ -35,9 +45,15 @@ case class JarsCommand(
     def runResult0(module: String) =
       module match {
         case OrgArtifactVersion(o, n, v) =>
-          runQueryStr(jarsQuery(o, n, v.replaceAllLiterally(".", "\\.")))
-        case OrgArtifact(o, n) => runQueryStr(jarsQuery(o, n, ""))
-        case _                 => usage
+          BazelUtil.runQueryStr(
+            app,
+            bazel,
+            jarsQuery(o, n, v.replaceAllLiterally(".", "\\.")),
+            bazelArgs
+          )
+        case OrgArtifact(o, n) =>
+          BazelUtil.runQueryStr(app, bazel, jarsQuery(o, n, ""), bazelArgs)
+        case _ => usage
       }
     if (modules.size != 1) usage
     else runResult0(modules.head)
