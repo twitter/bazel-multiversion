@@ -23,7 +23,7 @@ abstract class QueryBasedCommand extends Command {
   def runResult(): Result[Unit] =
     for {
       r <- runCustomQuery()
-    } yield r.foreach(Console.out.println(_))
+    } yield r.foreach(app.println(_))
 
   /**
    * Run Bazel query using moped and capture the output as text.
