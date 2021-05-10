@@ -16,7 +16,17 @@ import moped.reporters.Diagnostic
 import multiversion.BazelUtil
 import multiversion.diagnostics.MultidepsEnrichments._
 
-@ExampleUsage("multiversion resolve //aaa/bbb:ccc")
+@ExampleUsage("""Prints list of JAR references:
+                |  multiversion resolve //aaa/bbb:ccc
+                |
+                |Prints dependency graph:
+                |  multiversion resolve --tree //aaa/bbb:ccc
+                |
+                |Prints //3rdparty references
+                |  multiversion resolve --3rdparty //aaa/bbb:ccc
+                |
+                |Prints dependency graph of dependent 3rdparty targets:
+                |  multiversion resolve --3rdparty //aaa/bbb:ccc""".stripMargin)
 @CommandName("resolve")
 @Description("Query the classpath resolution given a target")
 case class ResolveCommand(
@@ -39,17 +49,27 @@ case class ResolveCommand(
     s"""filter("@maven.*", kind("generated file", deps(${target})))"""
 
   private def resolve3rdpartyQuery(target: String): String =
-    s"""kind("third_party_jvm_import", deps(${target}))"""
+    s"""filter("//3rdparty/jvm/.*", deps(${target}))"""
 
   private def allPathQuery(target: String): String =
     s"""allpaths($target, @maven//:all)"""
 
+  private def allPathTo3rdpartyQuery(target: String): String =
+    s"""allpaths($target, //3rdparty/jvm/...)"""
+
   def runCustomQuery(): Result[List[String]] = {
     val usage = Result.error(Diagnostic.error("resolve command requires 1 target argument"))
-    def runResult0(target: String) =
-      if (`3rdparty`) runQueryStr(resolve3rdpartyQuery(target))
-      else if (tree) runQueryStr(allPathQuery(target))
-      else runQueryStr(resolveQuery(target))
+    def runResult0(target: String) = {
+      val q = target match {
+        case _ if `3rdparty` =>
+          if (tree) allPathTo3rdpartyQuery(target)
+          else resolve3rdpartyQuery(target)
+        case _ =>
+          if (tree) allPathQuery(target)
+          else resolveQuery(target)
+      }
+      runQueryStr(q)
+    }
     if (targets.size != 1) usage
     else runResult0(targets.head)
   }
