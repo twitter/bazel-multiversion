@@ -407,7 +407,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     ),
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:11:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+      """|/workingDirectory/3rdparty.yaml:14:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
@@ -434,7 +434,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     ),
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:19:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+      """|/workingDirectory/3rdparty.yaml:25:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
@@ -607,7 +607,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     expectedExit = 1,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:11:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
+      """|/workingDirectory/3rdparty.yaml:14:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
          |To fix this problem, update your dependencies to compatible versions, or add exclusion rules to force compatible versions of 'com.google.guava:guava'.
          |
          |  - dependency: com.google.inject:guice:4.0
@@ -624,9 +624,36 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     expectedExit = 1,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:11:16 error: Declared third party dependency 'org.slf4j:slf4j-api:1.7.10' is evicted in favor of 'org.slf4j:slf4j-api:1.7.12'.
+      """|/workingDirectory/3rdparty.yaml:14:16 error: Declared third party dependency 'org.slf4j:slf4j-api:1.7.10' is evicted in favor of 'org.slf4j:slf4j-api:1.7.12'.
          |Update the third party declaration to use version '1.7.12' instead of '1.7.10' to reflect the effective dependency graph.
          |  - dependency: org.slf4j:slf4j-api:1.7.10
          |                ^""".stripMargin
+  )
+
+  checkMultipleDeps(
+    "reconciliation with version extractor",
+    deps(
+      dep("com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1")
+        .target("storage-1.30.1")
+        .transitive(false)
+        .versionPattern("-([0-9\\.]+)$"),
+      dep("com.google.apis:google-api-services-storage:v1-rev20200326-1.30.9")
+        .target("storage-1.30.9")
+        .transitive(false),
+    ),
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
+    expectedExit = 0,
+    queries = List(
+      allGenrules ->
+        """|@maven//:genrules/com.google.apis_google-api-services-storage_v1-rev20200326-1.30.9
+           |""".stripMargin
+    ),
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1' is evicted in favor of 'com.google.apis:google-api-services-storage:v1-rev20200326-1.30.9'.
+         |Update the third party declaration to use version 'v1-rev20200326-1.30.9' instead of 'v1-rev20190624-1.30.1' to reflect the effective dependency graph.
+         |  - dependency: com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1
+         |                ^
+         |warning: 1 declared dependency was evicted.
+         |""".stripMargin + defaultExpectedOutput
   )
 }

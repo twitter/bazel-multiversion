@@ -16,7 +16,18 @@ trait ConfigSyntax {
   def dep(str: String): ConfigNode.Dependency =
     str.split(":").toList match {
       case org :: name :: version :: Nil =>
-        ConfigNode.Dependency(org, name, version, None, Nil, Nil, Nil, force = false)
+        ConfigNode.Dependency(
+          org,
+          name,
+          version,
+          classifier = None,
+          dependencies = Nil,
+          exclusions = Nil,
+          targets = Nil,
+          force = false,
+          transitive = true,
+          versionPattern = None
+        )
       case _ => throw new IllegalArgumentException(str)
     }
 
@@ -40,7 +51,9 @@ object ConfigNode {
       dependencies: List[String],
       exclusions: List[Exclusion],
       targets: List[String],
-      force: Boolean
+      force: Boolean,
+      transitive: Boolean,
+      versionPattern: Option[String]
   ) extends ConfigNode {
 
     def classifier(classifier: String): Dependency =
@@ -57,6 +70,12 @@ object ConfigNode {
 
     def force(value: Boolean): Dependency =
       copy(force = value)
+
+    def transitive(value: Boolean): Dependency =
+      copy(transitive = value)
+
+    def versionPattern(value: String): Dependency =
+      copy(versionPattern = Option(value))
 
     def toYaml: String = {
       val exclusionsStr =
@@ -87,6 +106,9 @@ object ConfigNode {
 
       s"""|  - dependency: $organization:$name:$version
           |    classifier: ${classifier.orNull}
+          |    force: $force
+          |    transitive: $transitive
+          |    versionPattern: ${versionPattern.orNull}
           |$exclusionsStr
           |$dependenciesStr
           |$targetsStr

@@ -39,6 +39,7 @@ final case class DependencyConfig(
     exports: List[String] = Nil,
     targets: List[String] = Nil,
     versionScheme: Option[VersionCompatibility] = None,
+    versionPattern: Option[String] = None,
     force: Boolean = true,
     transitive: Boolean = true
 ) {
@@ -52,6 +53,10 @@ final case class DependencyConfig(
       dependencies,
       exclusions
     )
+
+  val versionExtractor: Option[String => String] = versionPattern.map { pattern => v =>
+    pattern.r.findAllMatchIn(v).flatMap(_.subgroups).mkString(".")
+  }
 
   val suffix: String = "_" + id.##
 
