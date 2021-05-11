@@ -66,6 +66,12 @@ final case class ThirdpartyConfig(
 
   val depsByModule: Map[Module, List[DependencyConfig]] =
     dependencies2.groupBy(_.coursierModule(scala))
+  def versionExtractorByModule(module: Module): String => String =
+    depsByModule
+      .getOrElse(module, Nil)
+      .flatMap(_.versionExtractor)
+      .headOption
+      .getOrElse(identity)
   val depsByTargets: Map[String, List[DependencyConfig]] = {
     val map = mutable.Map.empty[String, mutable.ListBuffer[DependencyConfig]]
     for {

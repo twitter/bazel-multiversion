@@ -15,6 +15,7 @@ import coursier.version.VersionInterval
 import coursier.version.VersionParse
 import multiversion.configs.DependencyConfig
 import multiversion.configs.ThirdpartyConfig
+import multiversion.configs.VersionConfig
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
 import multiversion.resolvers.DependencyId
 import multiversion.resolvers.ResolvedDependency
@@ -68,16 +69,18 @@ final case class ResolutionIndex(
     res.toMap
   }
 
-  val allDependencies: collection.Map[Module, collection.Set[(Dependency, Boolean)]] = {
+  val allDependencies: collection.Map[Module, collection.Set[(Dependency, VersionConfig)]] = {
     val result =
-      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, Boolean)]]
+      mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, VersionConfig)]]
     rawArtifacts.foreach {
       case ResolvedDependency(config, d, _, _) =>
         val buf = result.getOrElseUpdate(
           d.module,
           mutable.LinkedHashSet.empty
         )
-        buf += ((d, config.force))
+        val extractedVersion = thirdparty.versionExtractorByModule(d.module)(d.version)
+        val version = VersionConfig(d.version, Version(extractedVersion), config.force)
+        buf += d -> version
     }
     result
   }
@@ -118,7 +121,7 @@ final case class ResolutionIndex(
             VersionCompatibility.EarlySemVer
           }
       versions = reconcileVersions(deps, compat)
-      (dep, force) <- deps
+      (dep, _) <- deps
       reconciledVersion <- versions.get(dep)
       if dep.version != reconciledVersion
     } yield dep.withoutConfig -> reconciledVersion
@@ -170,9 +173,9 @@ object ResolutionIndex {
 
   private val overrideTags = Set("-tw")
   def resolveVersions(
-      verForces: Set[(String, Boolean)],
+      verForces: Set[VersionConfig],
       compat: VersionCompatibility
-  ): Set[String] = {
+  ): Set[VersionConfig] = {
     def isUnstable(v: Version): Boolean = {
       val s = v.repr
       s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
@@ -184,12 +187,11 @@ object ResolutionIndex {
     def lessThan(v1: Version, v2: Version): Boolean =
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2 && hasOverride(v1) == hasOverride(v2))
     // The "winners" are the highest selected versions
-    val winners = mutable.Set.empty[(Version, Boolean)]
+    val winners = mutable.Set.empty[VersionConfig]
     verForces.foreach {
-      case (v, force) =>
-        val version = Version(v)
+      case current @ VersionConfig(original, version, force) =>
         val isCompatible = winners.exists {
-          case (winner, wforce) =>
+          case w @ VersionConfig(originalWinner, winner, wforce) =>
             if (isCompat(version.repr, winner.repr, compat)) {
               if (
                 (
@@ -198,8 +200,8 @@ object ResolutionIndex {
                 )
                 && !isUnstable(version)
               ) {
-                winners.remove((winner, wforce))
-                winners.add(version -> force)
+                winners.remove(w)
+                winners.add(current)
               }
               true
             } else {
@@ -207,28 +209,25 @@ object ResolutionIndex {
             }
         }
         if (!isCompatible) {
-          winners.add(version -> force)
+          winners.add(current)
         }
     }
-    winners.map(_._1.repr).toSet
+    winners.toSet
   }
 
   def reconcileVersions(
-      deps: collection.Set[(Dependency, Boolean)],
+      deps: collection.Set[(Dependency, VersionConfig)],
       compat: VersionCompatibility
   ): Map[Dependency, String] = {
     val winners = resolveVersions(
-      deps.map {
-        case (d, fc) =>
-          (d.version, fc)
-      }.toSet,
+      deps.map(_._2).toSet,
       compat
     )
     val result = (for {
-      (dep, force) <- deps
-      winner <- winners
-      if (dep.version != winner) && isCompat(dep.version, winner, compat)
-    } yield dep -> winner).toMap
+      (dep, config) <- deps
+      VersionConfig(original, winner, _) <- winners
+      if (config.original != original) && isCompat(config.extracted.repr, winner.repr, compat)
+    } yield dep -> original).toMap
     result
   }
 

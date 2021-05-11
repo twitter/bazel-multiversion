@@ -4,7 +4,9 @@ import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.ModuleName
 import coursier.core.Organization
+import coursier.core.Version
 import coursier.version.VersionCompatibility
+import multiversion.configs.VersionConfig
 import multiversion.outputs.ResolutionIndex
 
 class ResolutionTest extends tests.BaseSuite {
@@ -38,32 +40,32 @@ class ResolutionTest extends tests.BaseSuite {
   test("resolveVersions") {
     val vs = ResolutionIndex.resolveVersions(
       Set(
-        "2.11.2" -> true,
-        "2.6.7.1" -> true,
-        "2.9.9" -> true,
-        "2.10.0" -> true,
-        "2.10.2" -> true,
-        "2.8.4" -> true
+        vc("2.11.2", true),
+        vc("2.6.7.1", true),
+        vc("2.9.9", true),
+        vc("2.10.0", true),
+        vc("2.10.2", true),
+        vc("2.8.4", true)
       ),
       VersionCompatibility.EarlySemVer
     )
-    assertEquals(vs.head, "2.11.2")
+    assertEquals(vs.head, vc("2.11.2", true))
   }
 
   test("resolveVersions with and force = True and False") {
     val vs = ResolutionIndex.resolveVersions(
-      Set("2.11.2" -> false, "2.6.7.1" -> true, "2.11.3" -> false),
+      Set(vc("2.11.2", false), vc("2.6.7.1", true), vc("2.11.3", false)),
       VersionCompatibility.EarlySemVer
     )
-    assertEquals(vs.head, "2.6.7.1")
+    assertEquals(vs.head, vc("2.6.7.1", true))
   }
 
   test("resolveVersions with force = False") {
     val vs = ResolutionIndex.resolveVersions(
-      Set("2.11.2" -> false, "2.6.7.1" -> false),
+      Set(vc("2.11.2", false), vc("2.6.7.1", false)),
       VersionCompatibility.EarlySemVer
     )
-    assertEquals(vs.head, "2.11.2")
+    assertEquals(vs.head, vc("2.11.2", false))
   }
 
   test("semver compat") {
@@ -72,9 +74,11 @@ class ResolutionTest extends tests.BaseSuite {
     assert(ResolutionIndex.isCompat("2.0.0.Final", "2.4.3", VersionCompatibility.SemVerSpec))
   }
 
-  def jodaTime(v: String): (Dependency, Boolean) =
+  def jodaTime(v: String): (Dependency, VersionConfig) =
     Dependency(
       Module(Organization("joda-time"), ModuleName("joda-time"), Map.empty),
       v
-    ) -> true
+    ) -> vc(v, true)
+
+  def vc(v: String, force: Boolean): VersionConfig = VersionConfig(v, Version(v), force)
 }
