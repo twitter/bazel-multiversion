@@ -32,15 +32,19 @@ object MultidepsEnrichments {
     def isTesting: Boolean =
       app.env.isSettingTrue("MULTIDEPS_TESTING")
 
-    def completeEither(result: Result[Either[Diagnostic, Unit]]): Int =
+    def completeEither(result: Result[Either[Diagnostic, Unit]], silence: Boolean = false): Int =
       result match {
         case ValueResult(Right(())) =>
           app.reporter.exitCode()
         case ValueResult(Left(diagnostic)) =>
-          app.reporter.log(diagnostic)
+          if (!silence) {
+            app.reporter.log(diagnostic)
+          }
           100
         case ErrorResult(error) =>
-          app.reporter.log(error)
+          if (!silence) {
+            app.reporter.log(error)
+          }
           1
       }
 
