@@ -33,7 +33,7 @@ case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
-  val silence = lintReportPath.exists { p => p.toString() == "-" }
+  val silence: Boolean = lintReportPath.exists { p => p.toString() == "-" }
   def run(): Int = app.completeEither(runResult(), silence)
 
   def runResult(): Result[Either[Diagnostic, Unit]] = {
@@ -135,19 +135,19 @@ case class LintCommand(
           writeToFile(rendered, out)
         }
       }
-      
-  def writeToStdout(report: String): Unit = 
+
+  def writeToStdout(report: String): Unit =
     app.println(report)
-      
+
   def writeToFile(report: String, path: Path): Unit = {
     val pathAbs = if (path.isAbsolute()) {
-                  path
-                } else {
-                  app.env.workingDirectory.resolve(path)
-                }
+      path
+    } else {
+      app.env.workingDirectory.resolve(path)
+    }
     Files.createDirectories(pathAbs.getParent())
     Files.write(pathAbs, report.getBytes(StandardCharsets.UTF_8))
-    }
+  }
 }
 
 object LintCommand {

@@ -39,7 +39,7 @@ object MultidepsEnrichments {
         case ValueResult(Left(diagnostic)) =>
           if (!silence) {
             app.reporter.log(diagnostic)
-          }  
+          }
           100
         case ErrorResult(error) =>
           if (!silence) {
