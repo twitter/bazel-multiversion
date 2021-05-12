@@ -136,8 +136,11 @@ case class LintCommand(
         }
       }
 
-  def writeToStdout(report: String): Unit =
+  def writeToStdout(report: String): Unit = {
+    app.println("# -------- Begin Lint Result")
     app.println(report)
+    app.println("# -------- End Lint Result")
+  }
 
   def writeToFile(report: String, path: Path): Unit = {
     val pathAbs = if (path.isAbsolute()) {
