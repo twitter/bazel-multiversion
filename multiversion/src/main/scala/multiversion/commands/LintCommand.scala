@@ -33,7 +33,8 @@ case class LintCommand(
     @PositionalArguments queryExpressions: List[String] = Nil,
     app: Application = Application.default
 ) extends Command {
-  def run(): Int = app.completeEither(runResult())
+  val silence = lintReportPath.exists { p => p.toString() == "-" }
+  def run(): Int = app.completeEither(runResult(), silence)
 
   def runResult(): Result[Either[Diagnostic, Unit]] = {
     val expr = queryExpressions.mkString(" ")
@@ -112,7 +113,6 @@ case class LintCommand(
 
   private def writeLintReport(conflicts: List[LintDiagnostic], path: Option[Path]): Unit =
     path
-      .map(p => if (p.isAbsolute()) p else app.env.workingDirectory.resolve(p))
       .foreach { out =>
         val grouped = conflicts.groupBy(_.target).toList.sortBy(_._1)
         val docs = grouped.map {
@@ -129,9 +129,25 @@ case class LintCommand(
             )
         }
         val rendered = Doc.intercalate(Doc.line, docs).render(Int.MaxValue)
-        Files.createDirectories(out.getParent())
-        Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
+        if (out.toString() == "-") {
+          writeToStdout(rendered)
+        } else {
+          writeToFile(rendered, out)
+        }
       }
+      
+  def writeToStdout(report: String): Unit = 
+    app.println(report)
+      
+  def writeToFile(report: String, path: Path): Unit = {
+    val pathAbs = if (path.isAbsolute()) {
+                  path
+                } else {
+                  app.env.workingDirectory.resolve(path)
+                }
+    Files.createDirectories(pathAbs.getParent())
+    Files.write(pathAbs, report.getBytes(StandardCharsets.UTF_8))
+    }
 }
 
 object LintCommand {
