@@ -22,19 +22,12 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
         |    force: false
         |""".stripMargin,
-    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
+    arguments = exportCommand,
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.1
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.1
-                       |""".stripMargin,
-    expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'org.slf4j:slf4j-log4j12:1.6.4' is evicted in favor of 'org.slf4j:slf4j-log4j12:1.6.1'.
-         |Update the third party declaration to use version '1.6.1' instead of '1.6.4' to reflect the effective dependency graph.
-         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
-         |                ^
-         |warning: 1 declared dependency was evicted.
-         |""".stripMargin + defaultExpectedOutput
+                       |""".stripMargin
   )
 
   checkDeps(
@@ -628,6 +621,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |Update the third party declaration to use version '1.7.12' instead of '1.7.10' to reflect the effective dependency graph.
          |  - dependency: org.slf4j:slf4j-api:1.7.10
          |                ^""".stripMargin
+  )
+
+  checkDeps(
+    "don't report evicted declared unforced dependencies",
+    deps(
+      dep("org.apache.thrift:libthrift:0.10.0")
+        .target("libthrift"),
+      dep("org.slf4j:slf4j-api:1.7.10")
+        .target("slf4j")
+        .force(false)
+    )
   )
 
   checkMultipleDeps(

@@ -354,7 +354,7 @@ case class ExportCommand(
         declaredVersion = dependency.version
         selectedVersion = selectedVersionOf(dependency)
         coursierDep = dependency.toCoursierDependency(originalThirdParty.scala)
-        if declaredVersion != selectedVersion
+        if declaredVersion != selectedVersion && dependency.force
         message =
           s"""|Declared third party dependency '${coursierDep.repr}' is evicted in favor of '${coursierDep.module.repr}:$selectedVersion'.
               |Update the third party declaration to use version '$selectedVersion' instead of '${coursierDep.version}' to reflect the effective dependency graph.""".stripMargin
