@@ -24,7 +24,7 @@ trait ConfigSyntax {
           dependencies = Nil,
           exclusions = Nil,
           targets = Nil,
-          force = false,
+          force = true,
           transitive = true,
           versionPattern = None
         )
