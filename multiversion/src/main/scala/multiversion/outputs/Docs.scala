@@ -21,6 +21,7 @@ object Docs {
   val openBracket: Doc = Doc.char('[')
   val closeBracket: Doc = Doc.char(']')
   val colon: Doc = Doc.char(':')
+  val dash: Doc = Doc.char('-')
   def obj(entries: Iterable[(String, Doc)]): Doc = {
     val mappings = entries.map {
       case (key, value) =>

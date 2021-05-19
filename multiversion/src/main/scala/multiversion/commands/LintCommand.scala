@@ -119,13 +119,23 @@ case class LintCommand(
           case (target, conflicts) =>
             val isFailure = conflicts.exists(!_.isPending)
             val moduleVersions = conflicts
+              .sortBy(_.module.repr)
               .map {
                 case LintDiagnostic(_, module, _, versions, _) =>
-                  module.repr -> Docs.array(versions.sorted: _*)
+                  Docs.obj(
+                    List(
+                      "dependency" -> Docs.literal(module.repr),
+                      "versions" -> Docs.array(versions.sorted: _*)
+                    )
+                  )
               }
-              .sortBy(_._1)
-            Docs.literal(target) + Docs.colon + Doc.space + Docs.obj(
-              List("failure" -> Doc.str(isFailure), "conflicts" -> Docs.obj(moduleVersions))
+            Docs.dash + Doc.space + Docs.obj(
+              List(
+                "target" -> Docs.literal(target),
+                "failure" -> Doc.str(isFailure),
+                "conflicts" -> (Docs.openBracket + Doc
+                  .intercalate(Doc.comma + Doc.space, moduleVersions) + Docs.closeBracket)
+              )
             )
         }
         val rendered = Doc.intercalate(Doc.line, docs).render(Int.MaxValue)
