@@ -178,10 +178,6 @@ object ResolutionIndex {
       verForces: Set[VersionConfig],
       compat: VersionCompatibility
   ): Set[VersionConfig] = {
-    def isUnstable(v: Version): Boolean = {
-      val s = v.repr
-      s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
-    }
     def hasOverride(v: Version): Boolean = {
       val lower = v.repr.toLowerCase(Locale.ENGLISH)
       overrideTags.exists(t => lower.contains(t)) && !lower.contains("shaded")
@@ -196,11 +192,8 @@ object ResolutionIndex {
           case w @ VersionConfig(originalWinner, winner, wforce) =>
             if (isCompat(version.repr, winner.repr, compat)) {
               if (
-                (
-                  (lessThan(winner, version) && force == wforce)
-                  || (force && !wforce)
-                )
-                && !isUnstable(version)
+                (lessThan(winner, version) && force == wforce)
+                || (force && !wforce)
               ) {
                 winners.remove(w)
                 winners.add(current)
