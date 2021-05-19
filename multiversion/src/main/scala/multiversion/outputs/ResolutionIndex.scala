@@ -178,32 +178,25 @@ object ResolutionIndex {
       verForces: Set[VersionConfig],
       compat: VersionCompatibility
   ): Set[VersionConfig] = {
-    def isUnstable(v: Version): Boolean = {
-      val s = v.repr
-      s.contains("-M") || s.contains("-alpha") || s.contains("-beta")
-    }
     def hasOverride(v: Version): Boolean = {
       val lower = v.repr.toLowerCase(Locale.ENGLISH)
       overrideTags.exists(t => lower.contains(t)) && !lower.contains("shaded")
     }
     def lessThan(v1: Version, v2: Version): Boolean =
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2 && hasOverride(v1) == hasOverride(v2))
-    // The "winners" are the highest selected versions
+    // The "winners" are the highest or forced selected versions
     val winners = mutable.Set.empty[VersionConfig]
     verForces.foreach {
-      case current @ VersionConfig(original, version, force) =>
+      case challenger @ VersionConfig(_, version, force) =>
         val isCompatible = winners.exists {
-          case w @ VersionConfig(originalWinner, winner, wforce) =>
-            if (isCompat(version.repr, winner.repr, compat)) {
+          case w @ VersionConfig(_, wversion, wforce) =>
+            if (isCompat(version.repr, wversion.repr, compat)) {
               if (
-                (
-                  (lessThan(winner, version) && force == wforce)
-                  || (force && !wforce)
-                )
-                && !isUnstable(version)
+                (lessThan(wversion, version) && force == wforce)
+                || (force && !wforce)
               ) {
                 winners.remove(w)
-                winners.add(current)
+                winners.add(challenger)
               }
               true
             } else {
@@ -211,7 +204,7 @@ object ResolutionIndex {
             }
         }
         if (!isCompatible) {
-          winners.add(current)
+          winners.add(challenger)
         }
     }
     winners.toSet
