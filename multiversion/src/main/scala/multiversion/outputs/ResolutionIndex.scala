@@ -79,7 +79,7 @@ final case class ResolutionIndex(
           mutable.LinkedHashSet.empty
         )
         val extractedVersion = thirdparty.versionExtractorByModule(d.module)(d.version)
-        val direct = config.toCoursierDependency(thirdparty.scala).module == d.module
+        val direct = config.coursierModule(thirdparty.scala) == d.module
         // weaken the transitive dependencies
         val version = VersionConfig(d.version, Version(extractedVersion), config.force && direct)
         buf += d -> version
