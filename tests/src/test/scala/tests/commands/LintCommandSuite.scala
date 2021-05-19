@@ -81,7 +81,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     expectedExitCode = 100,
     tags = "dupped_3rdparty" :: Nil,
     expectedReport =
-      """|"//foo:foo": {"failure": false, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
+      """|- {"target": "//foo:foo", "failure": false, "conflicts": [{"dependency": "com.google.guava:guava", "versions": ["16.0.1", "20.0"]}]}""".stripMargin
   )
 
   testLintResults(
@@ -98,7 +98,7 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
     ),
     expectedExitCode = 100,
     expectedReport =
-      """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
+      """|- {"target": "//foo:foo", "failure": true, "conflicts": [{"dependency": "com.google.guava:guava", "versions": ["16.0.1", "20.0"]}]}""".stripMargin
   )
 
   testLintResults(
@@ -116,9 +116,8 @@ class LintCommandSuite extends BaseSuite with ConfigSyntax {
       lintError("com.google.guava", "guava", "20.0", "16.0.1").copy(target = "//foo:my-alias")
     ),
     expectedExitCode = 100,
-    expectedReport =
-      """|"//foo:foo": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}
-       |"//foo:my-alias": {"failure": true, "conflicts": {"com.google.guava:guava": ["16.0.1", "20.0"]}}""".stripMargin
+    expectedReport = """|- {"target": "//foo:foo", "failure": true, "conflicts": [{"dependency": "com.google.guava:guava", "versions": ["16.0.1", "20.0"]}]}
+                         |- {"target": "//foo:my-alias", "failure": true, "conflicts": [{"dependency": "com.google.guava:guava", "versions": ["16.0.1", "20.0"]}]}""".stripMargin
   )
 
   private def testLintResults(
