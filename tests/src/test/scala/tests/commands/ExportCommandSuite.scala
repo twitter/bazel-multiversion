@@ -119,18 +119,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    versionScheme: pvp
         |  - dependency: com.lihaoyi:pprint_2.12:0.5.9
         |${scalaLibrary("MyApp.scala", "object MyApp { val x = 42 }")}
-        |""".stripMargin,
-    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
-    expectedOutput = """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'com.lihaoyi:fansi_2.12:0.2.8' is evicted in favor of 'com.lihaoyi:fansi_2.12:0.2.9'.
-                        |Update the third party declaration to use version '0.2.9' instead of '0.2.8' to reflect the effective dependency graph.
-                        |  - dependency: com.lihaoyi:fansi_2.12:0.2.8
-                        |                ^
-                        |/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'com.lihaoyi:sourcecode_2.12:0.2.0' is evicted in favor of 'com.lihaoyi:sourcecode_2.12:0.2.1'.
-                        |Update the third party declaration to use version '0.2.1' instead of '0.2.0' to reflect the effective dependency graph.
-                        |  - dependency: com.lihaoyi:sourcecode_2.12:0.2.0
-                        |                ^
-                        |warning: 2 declared dependencies were evicted.
-                        |""".stripMargin + defaultExpectedOutput
+        |""".stripMargin
   )
 
   checkDeps(
@@ -608,19 +597,15 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   )
 
   checkDeps(
-    "report evicted declared dependencies",
+    "direct force wins over higher transitive dependencies",
     deps(
-      dep("org.apache.thrift:libthrift:0.10.0")
-        .target("libthrift"),
-      dep("org.slf4j:slf4j-api:1.7.10")
-        .target("slf4j")
-    ),
-    expectedExit = 1,
-    expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:14:16 error: Declared third party dependency 'org.slf4j:slf4j-api:1.7.10' is evicted in favor of 'org.slf4j:slf4j-api:1.7.12'.
-         |Update the third party declaration to use version '1.7.12' instead of '1.7.10' to reflect the effective dependency graph.
-         |  - dependency: org.slf4j:slf4j-api:1.7.10
-         |                ^""".stripMargin
+      dep("com.google.cloud:pubsublite-kafka:0.1.1")
+        .target("pubsublite-kafka")
+        .force(true),
+      dep("com.fasterxml.jackson.core:jackson-core:2.11.0")
+        .target("jackson-core")
+        .force(true)
+    )
   )
 
   checkDeps(
