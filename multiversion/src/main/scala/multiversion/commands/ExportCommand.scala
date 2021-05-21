@@ -36,6 +36,7 @@ import multiversion.configs.DependencyConfig
 import multiversion.configs.ModuleConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
+import multiversion.diagnostics.EvictedDeclaredDependencyDiagnostic
 import multiversion.diagnostics.IntraTargetConflictDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers._
@@ -334,9 +335,9 @@ case class ExportCommand(
       index: ResolutionIndex,
       failOnEvictedDeclared: Boolean
   ): Result[Unit] = {
-    val diagnostic =
-      if (failOnEvictedDeclared) Diagnostic.error _
-      else Diagnostic.warning _
+    val severity =
+      if (failOnEvictedDeclared) moped.reporters.ErrorSeverity
+      else moped.reporters.WarningSeverity
 
     def selectedDependencyOf(config: DependencyConfig): Dependency = {
       val originalDependency = config.toCoursierDependency(originalThirdParty.scala)
@@ -371,15 +372,14 @@ case class ExportCommand(
         selectedDependency = selectedDependencyOf(dependency)
         if declaredDependency.version != selectedDependency.version && dependency.force
         breakingTargets = targetsDependingOn(selectedDependency) -- declaringTargets
-        message =
-          s"""|Declared third party dependency '${declaredDependency.repr}' is evicted in favor of '${selectedDependency.repr}'.
-              |Update the third party declaration to use version '${selectedDependency.version}' instead of '${declaredDependency.version}' to reflect the effective dependency graph.
-              |Info:
-              |  '${declaredDependency.repr}' is declared in ${declaringTargets.toList.sorted
-            .mkString(", ")}.
-              |  '${selectedDependency.repr}' is a transitive dependency of ${breakingTargets.toList.sorted
-            .mkString(", ")}.""".stripMargin
-      } yield diagnostic(message, dependency.organization.position)
+      } yield new EvictedDeclaredDependencyDiagnostic(
+        declaredDependency,
+        declaringTargets,
+        selectedDependency,
+        breakingTargets,
+        severity,
+        dependency.organization.position
+      )
 
     if (failOnEvictedDeclared) {
       Diagnostic.fromDiagnostics(diagnostics) match {
