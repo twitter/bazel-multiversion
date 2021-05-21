@@ -36,6 +36,7 @@ import multiversion.configs.DependencyConfig
 import multiversion.configs.ModuleConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
+import multiversion.diagnostics.EvictedDeclaredDependencyDiagnostic
 import multiversion.diagnostics.IntraTargetConflictDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers._
@@ -334,31 +335,51 @@ case class ExportCommand(
       index: ResolutionIndex,
       failOnEvictedDeclared: Boolean
   ): Result[Unit] = {
-    val diagnostic =
-      if (failOnEvictedDeclared) Diagnostic.error _
-      else Diagnostic.warning _
+    val severity =
+      if (failOnEvictedDeclared) moped.reporters.ErrorSeverity
+      else moped.reporters.WarningSeverity
 
-    def selectedVersionOf(config: DependencyConfig): String = {
+    def selectedDependencyOf(config: DependencyConfig): Dependency = {
       val originalDependency = config.toCoursierDependency(originalThirdParty.scala)
       // The original dependency could have been evicted after the first resolution already,
       // and not appear in `index` at all.
       val selectedDependency =
         if (index.dependencies.contains(config.id)) originalDependency
         else originalIndex.reconciledDependency(originalDependency)
-      index.reconciledVersion(selectedDependency)
+      index.reconciledDependency(selectedDependency)
+    }
+
+    def targetsDependingOn(dep: Dependency): Set[String] = {
+      val needleRepr = dep.repr
+      val ids = index.dependencies.collect {
+        case (id, dependencies) if dependencies.exists(_.repr == needleRepr) => id
+      }.toSet
+      originalThirdParty.dependencies
+        .collect {
+          case cfg if ids.contains(cfg.id) =>
+            cfg.targets
+        }
+        .flatten
+        .toSet
     }
 
     val diagnostics =
       for {
         dependency <- originalThirdParty.dependencies
+        declaringTargets = dependency.targets
         declaredVersion = dependency.version
-        selectedVersion = selectedVersionOf(dependency)
-        coursierDep = dependency.toCoursierDependency(originalThirdParty.scala)
-        if declaredVersion != selectedVersion && dependency.force
-        message =
-          s"""|Declared third party dependency '${coursierDep.repr}' is evicted in favor of '${coursierDep.module.repr}:$selectedVersion'.
-              |Update the third party declaration to use version '$selectedVersion' instead of '${coursierDep.version}' to reflect the effective dependency graph.""".stripMargin
-      } yield diagnostic(message, dependency.organization.position)
+        declaredDependency = dependency.toCoursierDependency(originalThirdParty.scala)
+        selectedDependency = selectedDependencyOf(dependency)
+        if declaredDependency.version != selectedDependency.version && dependency.force
+        breakingTargets = targetsDependingOn(selectedDependency) -- declaringTargets
+      } yield new EvictedDeclaredDependencyDiagnostic(
+        declaredDependency,
+        declaringTargets,
+        selectedDependency,
+        breakingTargets,
+        severity,
+        dependency.organization.position
+      )
 
     if (failOnEvictedDeclared) {
       Diagnostic.fromDiagnostics(diagnostics) match {
