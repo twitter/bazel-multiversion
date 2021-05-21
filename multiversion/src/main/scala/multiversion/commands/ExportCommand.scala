@@ -338,26 +338,47 @@ case class ExportCommand(
       if (failOnEvictedDeclared) Diagnostic.error _
       else Diagnostic.warning _
 
-    def selectedVersionOf(config: DependencyConfig): String = {
+    def selectedDependencyOf(config: DependencyConfig): Dependency = {
       val originalDependency = config.toCoursierDependency(originalThirdParty.scala)
       // The original dependency could have been evicted after the first resolution already,
       // and not appear in `index` at all.
       val selectedDependency =
         if (index.dependencies.contains(config.id)) originalDependency
         else originalIndex.reconciledDependency(originalDependency)
-      index.reconciledVersion(selectedDependency)
+      index.reconciledDependency(selectedDependency)
+    }
+
+    def targetsDependingOn(dep: Dependency): Set[String] = {
+      val needleRepr = dep.repr
+      val ids = index.dependencies.collect {
+        case (id, dependencies) if dependencies.exists(_.repr == needleRepr) => id
+      }.toSet
+      originalThirdParty.dependencies
+        .collect {
+          case cfg if ids.contains(cfg.id) =>
+            cfg.targets
+        }
+        .flatten
+        .toSet
     }
 
     val diagnostics =
       for {
         dependency <- originalThirdParty.dependencies
+        declaringTargets = dependency.targets
         declaredVersion = dependency.version
-        selectedVersion = selectedVersionOf(dependency)
-        coursierDep = dependency.toCoursierDependency(originalThirdParty.scala)
-        if declaredVersion != selectedVersion && dependency.force
+        declaredDependency = dependency.toCoursierDependency(originalThirdParty.scala)
+        selectedDependency = selectedDependencyOf(dependency)
+        if declaredDependency.version != selectedDependency.version && dependency.force
+        breakingTargets = targetsDependingOn(selectedDependency) -- declaringTargets
         message =
-          s"""|Declared third party dependency '${coursierDep.repr}' is evicted in favor of '${coursierDep.module.repr}:$selectedVersion'.
-              |Update the third party declaration to use version '$selectedVersion' instead of '${coursierDep.version}' to reflect the effective dependency graph.""".stripMargin
+          s"""|Declared third party dependency '${declaredDependency.repr}' is evicted in favor of '${selectedDependency.repr}'.
+              |Update the third party declaration to use version '${selectedDependency.version}' instead of '${declaredDependency.version}' to reflect the effective dependency graph.
+              |Info:
+              |  '${declaredDependency.repr}' is declared in ${declaringTargets.toList.sorted
+            .mkString(", ")}.
+              |  '${selectedDependency.repr}' is a transitive dependency of ${breakingTargets.toList.sorted
+            .mkString(", ")}.""".stripMargin
       } yield diagnostic(message, dependency.organization.position)
 
     if (failOnEvictedDeclared) {

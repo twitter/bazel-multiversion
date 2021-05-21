@@ -33,7 +33,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   checkDeps(
     "evicted artifacts do not create genrules without forces",
     s"""|  - dependency: org.slf4j:slf4j-log4j12:1.6.1
+        |    targets: [slf4j-1.6.1]
         |  - dependency: org.slf4j:slf4j-log4j12:1.6.4
+        |    targets: [slf4j-1.6.4]
         |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
@@ -44,6 +46,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'org.slf4j:slf4j-log4j12:1.6.1' is evicted in favor of 'org.slf4j:slf4j-log4j12:1.6.4'.
          |Update the third party declaration to use version '1.6.4' instead of '1.6.1' to reflect the effective dependency graph.
+         |Info:
+         |  'org.slf4j:slf4j-log4j12:1.6.1' is declared in slf4j-1.6.1.
+         |  'org.slf4j:slf4j-log4j12:1.6.4' is a transitive dependency of slf4j-1.6.4.
          |  - dependency: org.slf4j:slf4j-log4j12:1.6.1
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -68,15 +73,20 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   checkDeps(
     "netty",
     """|  - dependency: io.netty:netty:3.10.1.Final
+       |    targets: [netty-310]
        |  - dependency: io.netty:netty:3.7.0.Final
+       |    targets: [netty-37]
        |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allGenrules,
     expectedQuery = """|@maven//:genrules/io.netty_netty_3.10.1.Final
                        |""".stripMargin,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:4:16 warning: Declared third party dependency 'io.netty:netty:3.7.0.Final' is evicted in favor of 'io.netty:netty:3.10.1.Final'.
+      """|/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'io.netty:netty:3.7.0.Final' is evicted in favor of 'io.netty:netty:3.10.1.Final'.
          |Update the third party declaration to use version '3.10.1.Final' instead of '3.7.0.Final' to reflect the effective dependency graph.
+         |Info:
+         |  'io.netty:netty:3.7.0.Final' is declared in netty-37.
+         |  'io.netty:netty:3.10.1.Final' is a transitive dependency of netty-310.
          |  - dependency: io.netty:netty:3.7.0.Final
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -152,6 +162,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:6:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
          |Update the third party declaration to use version '2.4.1' instead of '2.4.0' to reflect the effective dependency graph.
+         |Info:
+         |  'org.apache.kafka:kafka-clients:2.4.0' is declared in client-2.4.0.
+         |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of client-2.4.1.
          |  - dependency: org.apache.kafka:kafka-clients:2.4.0
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -214,9 +227,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     "classifier with eviction dependencies",
     s"""|  - dependency: org.apache.kafka:kafka-clients:2.4.1
         |    versionScheme: pvp
+        |    targets: [kafka-clients-2.4.1]
         |  - dependency: org.apache.kafka:kafka-clients:2.4.0
         |    versionScheme: pvp
         |    classifier: test
+        |    targets: [kafka-clients-2.4.0]
         |  - dependency: org.apache.kafka:kafka-streams:2.4.0
         |    versionScheme: pvp
         |    targets: [kafka-streams-2.4.0]
@@ -238,8 +253,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
                        |@maven//:org.xerial.snappy/snappy-java/1.1.7.3.jar
                        |""".stripMargin,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:5:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
+      """|/workingDirectory/3rdparty.yaml:6:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
          |Update the third party declaration to use version '2.4.1' instead of '2.4.0' to reflect the effective dependency graph.
+         |Info:
+         |  'org.apache.kafka:kafka-clients:2.4.0' is declared in kafka-clients-2.4.0.
+         |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of kafka-clients-2.4.1.
          |  - dependency: org.apache.kafka:kafka-clients:2.4.0
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -391,6 +409,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:14:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
+         |Info:
+         |  'org.apiguardian:apiguardian-api:1.1.0' is declared in apiguardian-old.
+         |  'org.apiguardian:apiguardian-api:1.1.1' is a transitive dependency of apiguardian.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -418,6 +439,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:25:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
+         |Info:
+         |  'org.apiguardian:apiguardian-api:1.1.0' is declared in apiguardian-old.
+         |  'org.apiguardian:apiguardian-api:1.1.1' is a transitive dependency of multi-jar.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -523,6 +547,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'org.apache.parquet:parquet-thrift:1.9.0' is evicted in favor of 'org.apache.parquet:parquet-thrift:1.11.0'.
          |Update the third party declaration to use version '1.11.0' instead of '1.9.0' to reflect the effective dependency graph.
+         |Info:
+         |  'org.apache.parquet:parquet-thrift:1.9.0' is declared in parquet-thrift-1.9.0.
+         |  'org.apache.parquet:parquet-thrift:1.11.0' is a transitive dependency of parquet-thrift-1.11.0.
          |  - dependency: org.apache.parquet:parquet-thrift:1.9.0
          |                ^
          |warning: 1 declared dependency was evicted.
@@ -640,6 +667,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:3:16 warning: Declared third party dependency 'com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1' is evicted in favor of 'com.google.apis:google-api-services-storage:v1-rev20200326-1.30.9'.
          |Update the third party declaration to use version 'v1-rev20200326-1.30.9' instead of 'v1-rev20190624-1.30.1' to reflect the effective dependency graph.
+         |Info:
+         |  'com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1' is declared in storage-1.30.1.
+         |  'com.google.apis:google-api-services-storage:v1-rev20200326-1.30.9' is a transitive dependency of storage-1.30.9.
          |  - dependency: com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1
          |                ^
          |warning: 1 declared dependency was evicted.
