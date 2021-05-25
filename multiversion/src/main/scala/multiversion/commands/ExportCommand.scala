@@ -67,6 +67,8 @@ case class ExportCommand(
     parallelDownload: Option[Int] = None,
     @Description("Report an error if a declared dependency is evicted")
     failOnEvictedDeclared: Boolean = true,
+    @Description("If set, write resolution manifests in the given directory")
+    manifestsRoot: Option[Path] = None,
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -118,8 +120,10 @@ case class ExportCommand(
           if (lint) lintPostResolution(index)
           else ValueResult(())
         }
-        output <- generateBzlFile(index, coursierCache)
+        depsOutput <- dependenciesOutput(index, coursierCache)
+        output <- generateBzlFile(depsOutput)
         _ = app.err.println(Docs.successMessage(s"Generated '$output'"))
+        _ <- generateManifests(depsOutput, manifestsRoot)
         lint <-
           if (lint)
             lintCommand
@@ -216,10 +220,10 @@ case class ExportCommand(
   }
 
   // This also downloads SHA files
-  def generateBzlFile(
+  def dependenciesOutput(
       index: ResolutionIndex,
       cache: FileCache[Task]
-  ): Result[Path] = {
+  ): Result[DepsOutput] = {
     val resolvedArtifacts = index.unevictedArtifacts
     val outputIndex: mutable.Map[String, ArtifactOutput] =
       collection.concurrent.TrieMap.empty[String, ArtifactOutput]
@@ -297,22 +301,41 @@ case class ExportCommand(
             )
           )
         } else {
-          val rendered =
+          val depsOutput =
             DepsOutput(
               artifacts.sortBy(_.dependency.repr),
               index,
               outputIndex
-            ).render
-          val out =
-            if (outputPath.isAbsolute()) outputPath
-            else app.env.workingDirectory.resolve(outputPath)
-          if (!Files.exists(out.getParent())) {
-            Files.createDirectories(out.getParent())
-          }
-          Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
-          ValueResult(out)
+            )
+          ValueResult(depsOutput)
         }
     }
+
+  }
+
+  def generateBzlFile(depsOutput: DepsOutput): Result[Path] = {
+    val rendered = depsOutput.render
+    val out =
+      if (outputPath.isAbsolute()) outputPath
+      else app.env.workingDirectory.resolve(outputPath)
+    if (!Files.exists(out.getParent())) {
+      Files.createDirectories(out.getParent())
+    }
+    Files.write(out, rendered.getBytes(StandardCharsets.UTF_8))
+    ValueResult(out)
+  }
+
+  private def generateManifests(
+      depsOutput: DepsOutput,
+      manifestsRoot: Option[Path]
+  ): Result[Unit] = {
+    manifestsRoot.foreach { root =>
+      val outDir =
+        if (root.isAbsolute()) root
+        else app.env.workingDirectory.resolve(root)
+      depsOutput.writeManifests(outDir)
+    }
+    ValueResult(())
   }
 
   /**

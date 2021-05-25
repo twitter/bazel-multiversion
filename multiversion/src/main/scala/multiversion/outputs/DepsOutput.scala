@@ -1,5 +1,8 @@
 package multiversion.outputs
 
+import java.nio.file.Files
+import java.nio.file.Path
+
 import multiversion.diagnostics.MultidepsEnrichments.XtensionDependency
 import multiversion.diagnostics.MultidepsEnrichments.XtensionList
 import org.typelevel.paiges.Doc
@@ -10,13 +13,11 @@ final case class DepsOutput(
     outputIndex: collection.Map[String, ArtifactOutput]
 ) {
   require(artifacts.nonEmpty)
-  def validate(): Unit = {
-    // val names = artifacts.map()
 
-  }
+  val allTargets: Set[String] = index.thirdparty.dependencies2.flatMap(_.targets).toSet
+
   def render: String = {
     val width = 120000
-    val allTargets = index.thirdparty.dependencies2.flatMap(_.targets).toSet
 
     val httpFiles = Doc
       .intercalate(Doc.line, artifacts.map(_.httpFile.toDoc))
@@ -76,5 +77,23 @@ jvm_deps_rule = repository_rule(
 def jvm_deps():
     jvm_deps_rule(name="maven")
 """.stripMargin
+  }
+
+  def writeManifests(root: Path): Unit =
+    allTargets.foreach { target =>
+      val manifest = manifestPath(root, target)
+      val dependencies = for {
+        config <- index.thirdparty.depsByTargets(target)
+        dependency <- index.dependencies.getOrElse(config.id, Nil)
+      } yield index.reconciledDependency(dependency).repr
+      val output = dependencies.distinct.sorted.mkString(System.lineSeparator())
+      Files.createDirectories(manifest.getParent())
+      Files.write(manifest, output.getBytes)
+    }
+
+  private def manifestPath(root: Path, target: String): Path = {
+    val cleanTarget = target.replaceAll("^/*", "")
+    val (path, name) = cleanTarget.splitAt(cleanTarget.indexOf(':'))
+    root.resolve(path).resolve(s"bazel-deps-${name.stripPrefix(":")}.txt")
   }
 }
