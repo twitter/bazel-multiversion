@@ -14,7 +14,7 @@ class JarsCommandTest extends BaseSuite with ConfigSyntax {
     ),
     List(),
     query = "junit:junit",
-    expectedOutput = List("@maven//:junit/junit/4.12.jar")
+    expectedOutput = List("@maven//:junit/junit/junit-4.12.jar")
   )
 
   testJarsResults(
@@ -25,7 +25,7 @@ class JarsCommandTest extends BaseSuite with ConfigSyntax {
     ),
     List(),
     query = "junit:junit:4.12",
-    expectedOutput = List("@maven//:junit/junit/4.12.jar")
+    expectedOutput = List("@maven//:junit/junit/junit-4.12.jar")
   )
 
   private def testJarsResults(
