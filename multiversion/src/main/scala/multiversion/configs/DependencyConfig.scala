@@ -29,6 +29,7 @@ final case class DependencyConfig(
     organization: JsonString = JsonString(""),
     name: String = "",
     version: String = "",
+    url: Option[String] = None,
     classifier: Option[String] = None,
     exclusions: Set[ModuleConfig] = Set.empty,
     crossVersions: List[CrossVersionsConfig] = Nil,

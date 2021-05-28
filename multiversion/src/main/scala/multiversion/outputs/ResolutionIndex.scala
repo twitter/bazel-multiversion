@@ -30,9 +30,15 @@ final case class ResolutionIndex(
   // list of all artifacts including transitive JARs
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
+    resolutionModule = r.dep.coursierModule(thirdparty.scala)
     (d, p, a) <- r.res.dependencyArtifacts() if a.url.endsWith(".jar")
     dependency = ResolutionIndex.actualDependency(d, r.res.projectCache)
-  } yield ResolvedDependency(r.dep, dependency, p, a)
+    artifact = r.dep.url match {
+      case Some(url) if dependency.module == resolutionModule =>
+        a.withUrl(url).withChecksumUrls(Map.empty)
+      case _ => a
+    }
+  } yield ResolvedDependency(r.dep, dependency, p, artifact)
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)

@@ -51,7 +51,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'org.slf4j:slf4j-log4j12:1.6.4' is a transitive dependency of slf4j-1.6.4.
          |  - dependency: org.slf4j:slf4j-log4j12:1.6.1
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -89,7 +89,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'io.netty:netty:3.10.1.Final' is a transitive dependency of netty-310.
          |  - dependency: io.netty:netty:3.7.0.Final
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -167,7 +167,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of client-2.4.1.
          |  - dependency: org.apache.kafka:kafka-clients:2.4.0
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput,
   )
 
@@ -260,7 +260,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of kafka-clients-2.4.1.
          |  - dependency: org.apache.kafka:kafka-clients:2.4.0
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -407,14 +407,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     ),
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:14:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+      """|/workingDirectory/3rdparty.yaml:15:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
          |Info:
          |  'org.apiguardian:apiguardian-api:1.1.0' is declared in apiguardian-old.
          |  'org.apiguardian:apiguardian-api:1.1.1' is a transitive dependency of apiguardian.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -437,14 +437,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1.jar""".stripMargin
     ),
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:25:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
+      """|/workingDirectory/3rdparty.yaml:27:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
          |Update the third party declaration to use version '1.1.1' instead of '1.1.0' to reflect the effective dependency graph.
          |Info:
          |  'org.apiguardian:apiguardian-api:1.1.0' is declared in apiguardian-old.
          |  'org.apiguardian:apiguardian-api:1.1.1' is a transitive dependency of multi-jar.
          |  - dependency: org.apiguardian:apiguardian-api:1.1.0
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -552,7 +552,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'org.apache.parquet:parquet-thrift:1.11.0' is a transitive dependency of parquet-thrift-1.11.0.
          |  - dependency: org.apache.parquet:parquet-thrift:1.9.0
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
   )
 
@@ -616,7 +616,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     expectedExit = 1,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:14:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
+      """|/workingDirectory/3rdparty.yaml:15:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
          |To fix this problem, update your dependencies to compatible versions, or add exclusion rules to force compatible versions of 'com.google.guava:guava'.
          |
          |  - dependency: com.google.inject:guice:4.0
@@ -672,7 +672,98 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |  'com.google.apis:google-api-services-storage:v1-rev20200326-1.30.9' is a transitive dependency of storage-1.30.9.
          |  - dependency: com.google.apis:google-api-services-storage:v1-rev20190624-1.30.1
          |                ^
-         |warning: 1 declared dependency was evicted.
+         |warning: 1 warning(s) found.
          |""".stripMargin + defaultExpectedOutput
+  )
+
+  checkMultipleDeps(
+    "custom URL",
+    deps(
+      dep("com.nimbusds:nimbus-jose-jwt:4.41.1")
+        .url(
+          "https://repo1.maven.org/maven2/org/apiguardian/apiguardian-api/1.1.0/apiguardian-api-1.1.0.jar"
+        )
+        .target("with-url")
+        .transitive(false)
+    ),
+    extraBuild = """|/foo/BUILD
+                    |load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library", "scala_binary")
+                    |
+                    |scala_library(
+                    |  name = "bar",
+                    |  srcs = ["A.scala"],
+                    |  deps = ["@maven//:with-url"]
+                    |)
+                    |/foo/A.scala
+                    |import org.apiguardian.api.API // wouldn't compile without `url = ...`
+                    |object A""".stripMargin,
+    buildQuery = "foo:bar"
+  )
+
+  checkMultipleDeps(
+    "warn about transitive deps with custom URLs",
+    deps(
+      dep("com.nimbusds:nimbus-jose-jwt:4.41.1")
+        .url(
+          "https://repo1.maven.org/maven2/org/apiguardian/apiguardian-api/1.1.0/apiguardian-api-1.1.0.jar"
+        )
+        .target("with-url")
+        .transitive(true)
+    ),
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 warning: The third party dependency declaration in with-url is defining the URL of the JAR
+         |to resolve, but isn't marked as intransitive. It will be considered intransitive.
+         |
+         |  - dependency: com.nimbusds:nimbus-jose-jwt:4.41.1
+         |                ^
+         |warning: 1 warning(s) found.
+         |""".stripMargin + defaultExpectedOutput
+  )
+
+  checkMultipleDeps(
+    "reject custom URL when configured to",
+    deps(
+      dep("com.nimbusds:nimbus-jose-jwt:4.41.1")
+        .url(
+          "https://repo1.maven.org/maven2/org/apiguardian/apiguardian-api/1.1.0/apiguardian-api-1.1.0.jar"
+        )
+        .target("with-url")
+        .transitive(false)
+    ),
+    arguments = exportCommand :+ "--no-allow-url",
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 error: The third party dependency declaration in with-url is defining the URL of the JAR
+         |to resolve, which is not permitted.
+         |
+         |  - dependency: com.nimbusds:nimbus-jose-jwt:4.41.1
+         |                ^
+         |""".stripMargin,
+    expectedExit = 1
+  )
+
+  checkMultipleDeps(
+    "error when dep with custom URL is evicted",
+    deps(
+      dep("commons-logging:commons-logging:1.0")
+        .target("with-url")
+        .transitive(false)
+        .url(
+          "https://repo1.maven.org/maven2/org/commons-logging/commons-logging/1.0/commons-logging-1.0.jar"
+        ),
+      dep("commons-logging:commons-logging:1.2")
+        .target("commons-logging")
+    ),
+    arguments = exportCommand :+ "--no-fail-on-evicted-declared",
+    expectedOutput =
+      """|/workingDirectory/3rdparty.yaml:3:16 error: Declared third party dependency 'commons-logging:commons-logging:1.0' is evicted in favor of 'commons-logging:commons-logging:1.2'.
+         |Update the third party declaration to use version '1.2' instead of '1.0' to reflect the effective dependency graph.
+         |Info:
+         |  This dependency defines the URL of the JAR to resolve, forcing this message to the ERROR level.
+         |  'commons-logging:commons-logging:1.0' is declared in with-url.
+         |  'commons-logging:commons-logging:1.2' is a transitive dependency of commons-logging.
+         |  - dependency: commons-logging:commons-logging:1.0
+         |                ^
+         |""".stripMargin,
+    expectedExit = 1
   )
 }

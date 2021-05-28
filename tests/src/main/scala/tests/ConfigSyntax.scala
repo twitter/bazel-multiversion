@@ -20,6 +20,7 @@ trait ConfigSyntax {
           org,
           name,
           version,
+          url = None,
           classifier = None,
           dependencies = Nil,
           exclusions = Nil,
@@ -47,6 +48,7 @@ object ConfigNode {
       organization: String,
       name: String,
       version: String,
+      url: Option[String],
       classifier: Option[String],
       dependencies: List[String],
       exclusions: List[Exclusion],
@@ -55,6 +57,9 @@ object ConfigNode {
       transitive: Boolean,
       versionPattern: Option[String]
   ) extends ConfigNode {
+
+    def url(url: String): Dependency =
+      copy(url = Option(url))
 
     def classifier(classifier: String): Dependency =
       copy(classifier = Option(classifier))
@@ -105,6 +110,7 @@ object ConfigNode {
         }
 
       s"""|  - dependency: $organization:$name:$version
+          |    url: ${url.orNull}
           |    classifier: ${classifier.orNull}
           |    force: $force
           |    transitive: $transitive

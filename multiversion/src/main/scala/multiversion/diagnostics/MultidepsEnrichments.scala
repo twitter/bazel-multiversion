@@ -13,7 +13,9 @@ import moped.json.ErrorResult
 import moped.json.Result
 import moped.json.ValueResult
 import moped.reporters.Diagnostic
+import moped.reporters.ErrorSeverity
 import moped.reporters.Reporter
+import moped.reporters.WarningSeverity
 
 object MultidepsEnrichments {
   implicit class XtensionString(string: String) {
@@ -56,6 +58,23 @@ object MultidepsEnrichments {
           app.reporter.log(error)
           1
       }
+
+    def reportOrElse[T](diagnostics: List[Diagnostic], result: => T): Result[T] = {
+      val hasError = diagnostics.exists(_.severity >= ErrorSeverity)
+      if (hasError) {
+        Diagnostic.fromDiagnostics(diagnostics) match {
+          case Some(diagnostic) => ErrorResult(diagnostic)
+          case None             => ValueResult(result)
+        }
+      } else {
+        diagnostics.foreach(app.reporter.log)
+        val warnings = diagnostics.count(_.severity == WarningSeverity)
+        if (warnings > 0) {
+          app.reporter.warning(warnings + " warning(s) found.")
+        }
+        ValueResult(result)
+      }
+    }
   }
   private val isEmptyLikeConfiguration = Set(
     Configuration.empty,
