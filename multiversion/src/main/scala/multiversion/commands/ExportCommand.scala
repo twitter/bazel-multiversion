@@ -30,15 +30,19 @@ import moped.json.Result
 import moped.json.ValueResult
 import moped.progressbars.ProgressRenderer
 import moped.reporters.Diagnostic
+import moped.reporters.ErrorSeverity
 import moped.reporters.Input
 import moped.reporters.NoPosition
+import moped.reporters.WarningSeverity
 import multiversion.configs.DependencyConfig
 import multiversion.configs.ModuleConfig
 import multiversion.configs.ThirdpartyConfig
 import multiversion.diagnostics.ConflictingTransitiveDependencyDiagnostic
 import multiversion.diagnostics.EvictedDeclaredDependencyDiagnostic
+import multiversion.diagnostics.ForbiddenUrlAttributeDiagnostic
 import multiversion.diagnostics.IntraTargetConflictDiagnostic
 import multiversion.diagnostics.MultidepsEnrichments._
+import multiversion.diagnostics.TransitiveUrlDiagnostic
 import multiversion.loggers._
 import multiversion.outputs.ArtifactOutput
 import multiversion.outputs.DependencyResolution
@@ -67,6 +71,8 @@ case class ExportCommand(
     parallelDownload: Option[Int] = None,
     @Description("Report an error if a declared dependency is evicted")
     failOnEvictedDeclared: Boolean = true,
+    @Description("Whether to allow `url` attribute in dependency configurations")
+    allowUrl: Boolean = true,
 ) extends Command {
   def app = lintCommand.app
   def run(): Int = {
@@ -100,15 +106,16 @@ case class ExportCommand(
         .withRetry(retryCount)
 
       for {
-        initialResolutions <- runResolutions(thirdparty, thirdparty.coursierDeps, coursierCache)
-        initialIndex = ResolutionIndex.fromResolutions(thirdparty, initialResolutions)
-        withSelectedVersions = selectVersionsFromIndex(thirdparty, initialIndex)
+        withUrls <- lintUrls(thirdparty, allowUrl)
+        initialResolutions <- runResolutions(withUrls, withUrls.coursierDeps, coursierCache)
+        initialIndex = ResolutionIndex.fromResolutions(withUrls, initialResolutions)
+        withSelectedVersions = selectVersionsFromIndex(withUrls, initialIndex)
         withOverriddenTargets = overrideTargets(withSelectedVersions, initialIndex)
         resolutions <-
           runResolutions(withOverriddenTargets, withOverriddenTargets.coursierDeps, coursierCache)
         index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
         _ <- lintEvictedDeclaredDependencies(
-          thirdparty,
+          withUrls,
           initialIndex,
           index,
           failOnEvictedDeclared
@@ -154,6 +161,40 @@ case class ExportCommand(
     VersionCompatibility.PackVer -> "pvp",
     VersionCompatibility.Strict -> "strict"
   )
+
+  /**
+   * Report errors for dependencies that set the URL of the JAR to resolve when
+   * `allowUrl` is not set, and report warnings for dependencies that set the URL of the JAR
+   * to resolve, but do not set the intransitive flag.
+   *
+   * @param thirdparty The third party configuration
+   * @param allowUrl   Whether setting the URL of the JAR in a dependency is allowed
+   * @return The new third party configuration where dependencies that set the URl of the JAR
+   * to resolve are all marked `intransitive`.
+   */
+  private def lintUrls(
+      thirdparty: ThirdpartyConfig,
+      allowUrl: Boolean
+  ): Result[ThirdpartyConfig] = {
+    val diagnostics = thirdparty.dependencies.flatMap { dep =>
+      val forbiddenUrl =
+        if (dep.url.isDefined && !allowUrl)
+          List(new ForbiddenUrlAttributeDiagnostic(dep.targets, dep.organization.position))
+        else Nil
+      val transitiveUrl =
+        if (dep.url.isDefined && dep.transitive)
+          List(new TransitiveUrlDiagnostic(dep.targets, dep.organization.position))
+        else Nil
+      forbiddenUrl ++ transitiveUrl
+    }
+
+    val newDependencies = thirdparty.dependencies.map {
+      case dep if dep.url.isDefined && dep.transitive => dep.copy(transitive = false)
+      case dep                                        => dep
+    }
+
+    app.reportOrElse(diagnostics, thirdparty.copy(dependencies = newDependencies))
+  }
 
   /**
    * Re-configure the dependencies whose resolution include overridden targets
@@ -320,6 +361,9 @@ case class ExportCommand(
    * `failOnEvictedDeclared` is set, then an error will be returned when such
    * dependencies are found.
    *
+   * When a declared dependency is evicted and sets the URL of the JAR to resolve, then the
+   * message will always be considered an error, regardless of `failOnEvictedDeclared`.
+   *
    * @param originalThirdParty    The original third party configuration, as configured in the
    *                              input file.
    * @param originalIndex         The resolution index built after the first resolution.
@@ -335,10 +379,6 @@ case class ExportCommand(
       index: ResolutionIndex,
       failOnEvictedDeclared: Boolean
   ): Result[Unit] = {
-    val severity =
-      if (failOnEvictedDeclared) moped.reporters.ErrorSeverity
-      else moped.reporters.WarningSeverity
-
     def selectedDependencyOf(config: DependencyConfig): Dependency = {
       val originalDependency = config.toCoursierDependency(originalThirdParty.scala)
       // The original dependency could have been evicted after the first resolution already,
@@ -372,29 +412,19 @@ case class ExportCommand(
         selectedDependency = selectedDependencyOf(dependency)
         if declaredDependency.version != selectedDependency.version && dependency.force
         breakingTargets = targetsDependingOn(selectedDependency) -- declaringTargets
+        severity =
+          if (dependency.url.isDefined || failOnEvictedDeclared) ErrorSeverity else WarningSeverity
       } yield new EvictedDeclaredDependencyDiagnostic(
         declaredDependency,
         declaringTargets,
         selectedDependency,
         breakingTargets,
+        hasUrl = dependency.url.isDefined,
         severity,
         dependency.organization.position
       )
 
-    if (failOnEvictedDeclared) {
-      Diagnostic.fromDiagnostics(diagnostics) match {
-        case Some(diagnostic) => ErrorResult(diagnostic)
-        case None             => ValueResult(())
-      }
-    } else {
-      diagnostics.foreach(app.reporter.log)
-      if (diagnostics.length == 1) {
-        app.reporter.warning("1 declared dependency was evicted.")
-      } else if (diagnostics.length > 1) {
-        app.reporter.warning(s"${diagnostics.length} declared dependencies were evicted.")
-      }
-      ValueResult(())
-    }
+    app.reportOrElse(diagnostics, ())
   }
 
   /**
