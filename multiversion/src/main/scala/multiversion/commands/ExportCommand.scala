@@ -361,7 +361,7 @@ case class ExportCommand(
    * `failOnEvictedDeclared` is set, then an error will be returned when such
    * dependencies are found.
    *
-   * When a declared dependency is evicted and sets the URL of the JAR to resole, then the
+   * When a declared dependency is evicted and sets the URL of the JAR to resolve, then the
    * message will always be considered an error, regardless of `failOnEvictedDeclared`.
    *
    * @param originalThirdParty    The original third party configuration, as configured in the
