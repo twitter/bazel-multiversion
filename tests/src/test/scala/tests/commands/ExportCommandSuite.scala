@@ -766,4 +766,38 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |""".stripMargin,
     expectedExit = 1
   )
+
+  checkMultipleDeps(
+    "different targets with the same dependencies",
+    deps(
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian"),
+      dep("org.apiguardian:apiguardian-api:1.1.1")
+        .target("apiguardian-2"),
+      dep("io.netty:netty:3.10.1.Final")
+        .target("netty"),
+      dep("commons-codec:commons-codec:1.9")
+        .target("target-0")
+        .transitive(false)
+        .dependency("netty")
+        .dependency("apiguardian-2")
+        .force(false),
+      dep("commons-codec:commons-codec:1.8")
+        .target("target-1")
+        .transitive(false)
+        .dependency("apiguardian")
+        .dependency("netty")
+        .force(true)
+    ),
+    queries = List(
+      allJars("@maven//:target-0") ->
+        """|@maven//:commons-codec/commons-codec/commons-codec-1.8.jar
+           |@maven//:io.netty/netty/netty-3.10.1.Final.jar
+           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+      allJars("@maven//:target-1") ->
+        """|@maven//:commons-codec/commons-codec/commons-codec-1.8.jar
+           |@maven//:io.netty/netty/netty-3.10.1.Final.jar
+           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+    )
+  )
 }
