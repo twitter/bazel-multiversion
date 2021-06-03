@@ -86,7 +86,7 @@ final case class ThirdpartyConfig(
   def coursierDeps: List[(DependencyConfig, Dependency)] =
     dependencies2
       .flatMap(d => d.coursierDependencies(scala).map(cd => d -> cd))
-      .distinctBy(_._2)
+      .distinctBy { case (d, cd) => (d.targets.sorted, cd) }
   def relaxedForAllModules: Seq[(ModuleMatchers, Reconciliation)] =
     Vector((ModuleMatchers.all, Reconciliation.Relaxed))
 
