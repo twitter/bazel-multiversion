@@ -1,10 +1,16 @@
 scala: 2.12.12
 dependencies:
   - dependency: org.apache.thrift:libthrift:0.10.0
+    targets: [3rdparty/jvm/org/apache/thrift/libthrift]
   - dependency: com.google.guava:guava:29.0-jre
+    targets: [3rdparty/jvm/com/google/guava/guava]
   - dependency: com.google.guava:guava:24.1.1-jre
+    targets: [3rdparty/jvm/com/google/guava/guava-24]
   - dependency: com.google.protobuf:protobuf-java:3.13.0
+    targets: [3rdparty/jvm/com/google/protobuf/protobuf-java]
     versionScheme: semver-spec
   - dependency: org.scala-lang:scala-library:2.12.12
+    targets: [3rdparty/jvm/org/scala-lang/scala-library]
     versionScheme: pvp
   - dependency: org.scalameta:scalameta_2.12:4.0.0
+    targets: [3rdparty/jvm/org/scalameta/scalameta]
