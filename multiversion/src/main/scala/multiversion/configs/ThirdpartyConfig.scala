@@ -27,6 +27,7 @@ import moped.reporters.Input
 import multiversion.diagnostics.MultidepsEnrichments._
 import multiversion.loggers.ResolveProgressRenderer
 import multiversion.outputs.DependencyResolution
+import multiversion.outputs.ResolutionIndex
 import multiversion.resolvers.DependencyId
 
 final case class ThirdpartyConfig(
@@ -91,7 +92,10 @@ final case class ThirdpartyConfig(
     Vector((ModuleMatchers.all, Reconciliation.Relaxed))
 
   /** Collect all the root dependencies to resolve together. */
-  def rootDependencies(root: DependencyConfig): Seq[Dependency] = {
+  def rootDependencies(
+      root: DependencyConfig,
+      previousIndex: Option[ResolutionIndex]
+  ): Seq[Dependency] = {
     val seen = mutable.Set.empty[String]
     val roots = mutable.Buffer.empty[Dependency]
     val queue = mutable.Queue(root)
@@ -106,10 +110,27 @@ final case class ThirdpartyConfig(
         }
       }
     }
+    // Use a previous index to explicitly resolve selected versions of transitive
+    // dependencies. This is necessary to pick up the transitive dependencies of the selected
+    // versions of our dependencies.
+    // For instance, if A depends on D v1, but D v1 is evicted in favor of D v2 and D v2 has a
+    // dependency on E, which D v1 didn't have, then resolving A along with D v2 will ensure
+    // that E will end up on the classpath of A.
+    previousIndex.foreach { index =>
+      index.dependencies
+        .getOrElse(root.id, Nil)
+        .foreach { d =>
+          val reconciledVersion = index.reconciledVersion(d)
+          if (reconciledVersion != d.version) {
+            roots += d.withVersion(reconciledVersion)
+          }
+        }
+    }
     roots
   }
   def toResolve(
       dep: DependencyConfig,
+      previousIndex: Option[ResolutionIndex],
       cache: FileCache[Task],
       progressBar: ResolveProgressRenderer,
       cdep: Dependency,
@@ -117,7 +138,7 @@ final case class ThirdpartyConfig(
   ): Result[Task[Result[DependencyResolution]]] =
     Result.fromResults(decodeForceVersions(dep)).map { decodedForceVersions =>
       val allDependencies = for {
-        d <- rootDependencies(dep)
+        d <- rootDependencies(dep, previousIndex)
       } yield d.withExclusions(d.exclusions)
       val repos = repositories.flatMap(_.coursierRepository)
       val resolve =
