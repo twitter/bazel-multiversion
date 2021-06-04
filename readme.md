@@ -14,35 +14,26 @@ cd bazel-multiversion
 # Step 2: Build and run code with different versions of Guava
 cd multiversion-example/
 bazel build tricky/...
-bazel run tricky/user/src/main/scala/bincompat:NeedsGuava24
-bazel run tricky/user/src/main/scala/bincompat:NeedsGuava29
-cd ..
-
-# (optional) Step 3: make changes to 3rdparty.yaml and regenerate 3rdparty/jvm_deps.bzl
-# NOTE: This step can become a native-imagine binary with instant startup.
-./sbt multiversion/run export
+bazel run tricky/user/src/main/scala/bincompat:bin-needs-guava24
+bazel run tricky/user/src/main/scala/bincompat:bin-needs-guava29
 ```
 
-### Build a fat jar
+### Install bazel-multiversion
+
+Download GraalVM native image from https://github.com/twitter/bazel-multiversion/releases,
+and put `multiversion` in your `PATH`.
+
+Make changes to `3rdparty.yaml`.
+Next, regenerate the `3rdparty/jvm_deps.bzl` file inside the example:
 
 ```sh
-$ sbt multiversion/assembly
-[info] welcome to sbt 1.4.5 (Oracle Corporation Java 11.0.8)
-[info] loading settings for project global-plugins from idea.sbt,metals.sbt ...
-[info] loading global plugins from /Users/user/.sbt/1.0/plugins
-[info] loading settings for project multiversion-build from plugins.sbt ...
-[info] loading project definition from /Users/user/workspace/multiversion/project
-[info] loading settings for project default-bcbf9b from build.sbt ...
-[info] set current project to default-bcbf9b (in build file:/Users/user/workspace/multiversion/)
-[warn] there's a key that's not used by any other settings/tasks:
-[warn]  
-[warn] * ThisBuild / scalafixCaching
-[warn]   +- /Users/user/workspace/multiversion/build.sbt:6
-[warn]  
-[warn] note: a setting might still be used by a command; to exclude a key from this `lintUnused` check
-[warn] either append it to `Global / excludeLintKeys` or call .withRank(KeyRanks.Invisible) on the key
-[info] Strategy 'deduplicate' was applied to a file (Run the task at debug level to see details)
-[info] Strategy 'discard' was applied to 27 files (Run the task at debug level to see details)
-[info] Assembly up to date: /Users/user/workspace/multiversion/multiversion/target/scala-2.12/bazel-multiversion-assembly-0.1.0-SNAPSHOT.jar
-[success] Total time: 2 s, completed Mar 5, 2021, 1:45:05 PM
+$ multiversion export  --output-path=3rdparty/jvm_deps.bzl
 ```
+
+## Building from source
+
+See [DEVELOP](DEVELOP.md).
+
+## License
+
+Apache v2
