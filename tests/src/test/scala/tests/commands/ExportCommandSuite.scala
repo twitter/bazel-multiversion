@@ -62,11 +62,12 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
        |""".stripMargin,
     // queryArgs = allScalaImports,
     queryArgs = allJars("@maven//:scalatest"),
-    expectedQuery = """|@maven//:org.scala-lang.modules/scala-xml_2.12/scala-xml_2.12-1.2.0.jar
-                       |@maven//:org.scala-lang/scala-library/scala-library-2.12.11.jar
-                       |@maven//:org.scala-lang/scala-reflect/scala-reflect-2.12.11.jar
-                       |@maven//:org.scalactic/scalactic_2.12/scalactic_2.12-3.1.2.jar
-                       |@maven//:org.scalatest/scalatest_2.12/scalatest_2.12-3.1.2.jar
+    expectedQuery =
+      """|@maven//:org.scala-lang.modules/scala-xml_2.12/1.2.0/scala-xml_2.12-1.2.0.jar
+                       |@maven//:org.scala-lang/scala-library/2.12.11/scala-library-2.12.11.jar
+                       |@maven//:org.scala-lang/scala-reflect/2.12.11/scala-reflect-2.12.11.jar
+                       |@maven//:org.scalactic/scalactic_2.12/3.1.2/scalactic_2.12-3.1.2.jar
+                       |@maven//:org.scalatest/scalatest_2.12/3.1.2/scalatest_2.12-3.1.2.jar
                        |""".stripMargin
   )
 
@@ -208,19 +209,19 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    targets: [kafka-streams]
         |""".stripMargin,
     queryArgs = allJars("@maven//:kafka-streams"),
-    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/jackson-annotations-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.core/jackson-core/jackson-core-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.core/jackson-databind/jackson-databind-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/jackson-datatype-jdk8-2.10.0.jar
-                       |@maven//:com.github.luben/zstd-jni/zstd-jni-1.4.3-1.jar
-                       |@maven//:org.apache.kafka/connect-api/connect-api-2.4.1.jar
-                       |@maven//:org.apache.kafka/connect-json/connect-json-2.4.1.jar
-                       |@maven//:org.apache.kafka/kafka-clients/kafka-clients-2.4.1.jar
-                       |@maven//:org.apache.kafka/kafka-streams/kafka-streams-2.4.1.jar
-                       |@maven//:org.lz4/lz4-java/lz4-java-1.6.0.jar
-                       |@maven//:org.rocksdb/rocksdbjni/rocksdbjni-5.18.3.jar
-                       |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.28.jar
-                       |@maven//:org.xerial.snappy/snappy-java/snappy-java-1.1.7.3.jar""".stripMargin
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0/jackson-annotations-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0/jackson-core-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0/jackson-databind-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.10.0/jackson-datatype-jdk8-2.10.0.jar
+                       |@maven//:com.github.luben/zstd-jni/1.4.3-1/zstd-jni-1.4.3-1.jar
+                       |@maven//:org.apache.kafka/connect-api/2.4.1/connect-api-2.4.1.jar
+                       |@maven//:org.apache.kafka/connect-json/2.4.1/connect-json-2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-clients/2.4.1/kafka-clients-2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-streams/2.4.1/kafka-streams-2.4.1.jar
+                       |@maven//:org.lz4/lz4-java/1.6.0/lz4-java-1.6.0.jar
+                       |@maven//:org.rocksdb/rocksdbjni/5.18.3/rocksdbjni-5.18.3.jar
+                       |@maven//:org.slf4j/slf4j-api/1.7.28/slf4j-api-1.7.28.jar
+                       |@maven//:org.xerial.snappy/snappy-java/1.1.7.3/snappy-java-1.1.7.3.jar""".stripMargin
   )
 
   checkDeps(
@@ -238,19 +239,19 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queryArgs = allJars("@maven//:kafka-streams-2.4.0"),
-    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/jackson-annotations-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.core/jackson-core/jackson-core-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.core/jackson-databind/jackson-databind-2.10.0.jar
-                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/jackson-datatype-jdk8-2.10.0.jar
-                       |@maven//:com.github.luben/zstd-jni/zstd-jni-1.4.3-1.jar
-                       |@maven//:org.apache.kafka/connect-api/connect-api-2.4.0.jar
-                       |@maven//:org.apache.kafka/connect-json/connect-json-2.4.0.jar
-                       |@maven//:org.apache.kafka/kafka-clients/kafka-clients-2.4.1.jar
-                       |@maven//:org.apache.kafka/kafka-streams/kafka-streams-2.4.0.jar
-                       |@maven//:org.lz4/lz4-java/lz4-java-1.6.0.jar
-                       |@maven//:org.rocksdb/rocksdbjni/rocksdbjni-5.18.3.jar
-                       |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.28.jar
-                       |@maven//:org.xerial.snappy/snappy-java/snappy-java-1.1.7.3.jar
+    expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0/jackson-annotations-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0/jackson-core-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0/jackson-databind-2.10.0.jar
+                       |@maven//:com.fasterxml.jackson.datatype/jackson-datatype-jdk8/2.10.0/jackson-datatype-jdk8-2.10.0.jar
+                       |@maven//:com.github.luben/zstd-jni/1.4.3-1/zstd-jni-1.4.3-1.jar
+                       |@maven//:org.apache.kafka/connect-api/2.4.0/connect-api-2.4.0.jar
+                       |@maven//:org.apache.kafka/connect-json/2.4.0/connect-json-2.4.0.jar
+                       |@maven//:org.apache.kafka/kafka-clients/2.4.1/kafka-clients-2.4.1.jar
+                       |@maven//:org.apache.kafka/kafka-streams/2.4.0/kafka-streams-2.4.0.jar
+                       |@maven//:org.lz4/lz4-java/1.6.0/lz4-java-1.6.0.jar
+                       |@maven//:org.rocksdb/rocksdbjni/5.18.3/rocksdbjni-5.18.3.jar
+                       |@maven//:org.slf4j/slf4j-api/1.7.28/slf4j-api-1.7.28.jar
+                       |@maven//:org.xerial.snappy/snappy-java/1.1.7.3/snappy-java-1.1.7.3.jar
                        |""".stripMargin,
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:6:16 warning: Declared third party dependency 'org.apache.kafka:kafka-clients:2.4.0' is evicted in favor of 'org.apache.kafka:kafka-clients:2.4.1'.
@@ -278,14 +279,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:commons-logging") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:commons-codec") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian") ->
-        """|@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
     )
   )
 
@@ -301,14 +302,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:httpclient") ->
-        """|@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar""".stripMargin,
+        """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar""".stripMargin,
       allJars("@maven//:apiguardian") ->
-        """|@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
     )
   )
 
@@ -323,16 +324,16 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:libthrift") ->
-        """|@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apache.thrift/libthrift/libthrift-0.10.0.jar
-           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.12.jar""".stripMargin,
+        """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
       allJars("@maven//:httpclient") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar""".stripMargin
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar""".stripMargin
     )
   )
 
@@ -350,17 +351,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:libthrift") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.10.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apache.thrift/libthrift/libthrift-0.10.0.jar
-           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.12.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.10/commons-codec-1.10.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
       allJars("@maven//:httpclient") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.10.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar""".stripMargin
+        """|@maven//:commons-codec/commons-codec/1.10/commons-codec-1.10.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar""".stripMargin
     )
   )
 
@@ -377,17 +378,17 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:apiguardian") ->
-        """|@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:libthrift") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.4.1.jar
-           |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apache.thrift/libthrift/libthrift-0.10.0.jar
-           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.12.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
+           |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
       allJars("@maven//:commons-codec") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     )
   )
 
@@ -402,9 +403,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:apiguardian") ->
-        """|@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian-old") ->
-        """|@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     ),
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:15:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
@@ -431,10 +432,10 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:multi-jar") ->
-        """|@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian-old") ->
-        """|@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin
+        """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     ),
     expectedOutput =
       """|/workingDirectory/3rdparty.yaml:27:16 warning: Declared third party dependency 'org.apiguardian:apiguardian-api:1.1.0' is evicted in favor of 'org.apiguardian:apiguardian-api:1.1.1'.
@@ -463,14 +464,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:apiguardian-and-commons-logging") ->
-        """|@maven//:commons-logging/commons-logging/commons-logging-1.2.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:apiguardian-and-commons-codec") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:commons-logging-and-commons-codec") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.9.jar
-           |@maven//:commons-logging/commons-logging/commons-logging-1.2.jar""".stripMargin
+        """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
+           |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar""".stripMargin
     )
   )
 
@@ -483,7 +484,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:with-classifier") ->
-        "@maven//:org.scala-lang/scala-library/scala-library-2.11.7.jar"
+        "@maven//:org.scala-lang/scala-library/2.11.7/scala-library-2.11.7.jar"
     )
   )
 
@@ -500,48 +501,48 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
       allJars("@maven//:parquet-thrift-1.11.0") ->
-        """|@maven//:com.google.code.findbugs/jsr305/jsr305-1.3.9.jar
-            |@maven//:com.google.guava/guava/guava-11.0.1.jar
-            |@maven//:com.google.protobuf/protobuf-java/protobuf-java-2.4.1.jar
-            |@maven//:com.googlecode.json-simple/json-simple/json-simple-1.1.jar
-            |@maven//:com.twitter.elephantbird/elephant-bird-core/elephant-bird-core-4.4.jar
-            |@maven//:com.twitter.elephantbird/elephant-bird-hadoop-compat/elephant-bird-hadoop-compat-4.4.jar
-            |@maven//:com.twitter.elephantbird/elephant-bird-pig/elephant-bird-pig-4.4.jar
-            |@maven//:commons-codec/commons-codec/commons-codec-1.3.jar
-            |@maven//:commons-lang/commons-lang/commons-lang-2.5.jar
-            |@maven//:commons-logging/commons-logging/commons-logging-1.1.1.jar
-            |@maven//:commons-pool/commons-pool/commons-pool-1.6.jar
-            |@maven//:javax.annotation/javax.annotation-api/javax.annotation-api-1.3.2.jar
-            |@maven//:javax.servlet/servlet-api/servlet-api-2.5.jar
-            |@maven//:org.apache.httpcomponents/httpclient/httpclient-4.0.1.jar
-            |@maven//:org.apache.httpcomponents/httpcore/httpcore-4.0.1.jar
-            |@maven//:org.apache.parquet/parquet-column/parquet-column-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-common/parquet-common-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-encoding/parquet-encoding-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-format-structures/parquet-format-structures-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-hadoop/parquet-hadoop-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-jackson/parquet-jackson-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-pig/parquet-pig-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-thrift/parquet-thrift-1.11.0.jar
-            |@maven//:org.apache.thrift/libthrift/libthrift-0.7.0.jar
-            |@maven//:org.apache.yetus/audience-annotations/audience-annotations-0.11.0.jar
-            |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.22.jar
-            |@maven//:org.xerial.snappy/snappy-java/snappy-java-1.1.7.3.jar
+        """|@maven//:com.google.code.findbugs/jsr305/1.3.9/jsr305-1.3.9.jar
+            |@maven//:com.google.guava/guava/11.0.1/guava-11.0.1.jar
+            |@maven//:com.google.protobuf/protobuf-java/2.4.1/protobuf-java-2.4.1.jar
+            |@maven//:com.googlecode.json-simple/json-simple/1.1/json-simple-1.1.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-core/4.4/elephant-bird-core-4.4.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-hadoop-compat/4.4/elephant-bird-hadoop-compat-4.4.jar
+            |@maven//:com.twitter.elephantbird/elephant-bird-pig/4.4/elephant-bird-pig-4.4.jar
+            |@maven//:commons-codec/commons-codec/1.3/commons-codec-1.3.jar
+            |@maven//:commons-lang/commons-lang/2.5/commons-lang-2.5.jar
+            |@maven//:commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar
+            |@maven//:commons-pool/commons-pool/1.6/commons-pool-1.6.jar
+            |@maven//:javax.annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar
+            |@maven//:javax.servlet/servlet-api/2.5/servlet-api-2.5.jar
+            |@maven//:org.apache.httpcomponents/httpclient/4.0.1/httpclient-4.0.1.jar
+            |@maven//:org.apache.httpcomponents/httpcore/4.0.1/httpcore-4.0.1.jar
+            |@maven//:org.apache.parquet/parquet-column/1.11.0/parquet-column-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-common/1.11.0/parquet-common-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-encoding/1.11.0/parquet-encoding-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-format-structures/1.11.0/parquet-format-structures-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-hadoop/1.11.0/parquet-hadoop-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-jackson/1.11.0/parquet-jackson-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-pig/1.11.0/parquet-pig-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-thrift/1.11.0/parquet-thrift-1.11.0.jar
+            |@maven//:org.apache.thrift/libthrift/0.7.0/libthrift-0.7.0.jar
+            |@maven//:org.apache.yetus/audience-annotations/0.11.0/audience-annotations-0.11.0.jar
+            |@maven//:org.slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar
+            |@maven//:org.xerial.snappy/snappy-java/1.1.7.3/snappy-java-1.1.7.3.jar
             |""".stripMargin,
       allJars("@maven//:parquet-thrift-1.9.0") ->
-        s"""|@maven//:commons-pool/commons-pool/commons-pool-1.6.jar
-            |@maven//:javax.annotation/javax.annotation-api/javax.annotation-api-1.3.2.jar
-            |@maven//:org.apache.parquet/parquet-column/parquet-column-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-common/parquet-common-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-encoding/parquet-encoding-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-format-structures/parquet-format-structures-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-hadoop/parquet-hadoop-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-jackson/parquet-jackson-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-pig/parquet-pig-1.11.0.jar
-            |@maven//:org.apache.parquet/parquet-thrift/parquet-thrift-1.11.0.jar
-            |@maven//:org.apache.yetus/audience-annotations/audience-annotations-0.11.0.jar
-            |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.22.jar
-            |@maven//:org.xerial.snappy/snappy-java/snappy-java-1.1.7.3.jar
+        s"""|@maven//:commons-pool/commons-pool/1.6/commons-pool-1.6.jar
+            |@maven//:javax.annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar
+            |@maven//:org.apache.parquet/parquet-column/1.11.0/parquet-column-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-common/1.11.0/parquet-common-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-encoding/1.11.0/parquet-encoding-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-format-structures/1.11.0/parquet-format-structures-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-hadoop/1.11.0/parquet-hadoop-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-jackson/1.11.0/parquet-jackson-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-pig/1.11.0/parquet-pig-1.11.0.jar
+            |@maven//:org.apache.parquet/parquet-thrift/1.11.0/parquet-thrift-1.11.0.jar
+            |@maven//:org.apache.yetus/audience-annotations/0.11.0/audience-annotations-0.11.0.jar
+            |@maven//:org.slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar
+            |@maven//:org.xerial.snappy/snappy-java/1.1.7.3/snappy-java-1.1.7.3.jar
             |""".stripMargin
     ),
     expectedOutput =
@@ -573,9 +574,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
       allScalaLibDeps("@maven//:libthrift") ->
         """|//foo:bar""".stripMargin,
       allJars("@maven//:libthrift") ->
-        """|@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apache.thrift/libthrift/libthrift-0.10.0.jar
-           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.12.jar""".stripMargin,
+        """|@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
     )
   )
 
@@ -599,10 +600,10 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
       allScalaLibDeps("@maven//:libthrift") ->
         """|//foo:bar""".stripMargin,
       allJars("@maven//:libthrift") ->
-        """|@maven//:org.apache.httpcomponents/httpcore/httpcore-4.4.1.jar
-           |@maven//:org.apache.thrift/libthrift/libthrift-0.10.0.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar
-           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.7.12.jar""".stripMargin,
+        """|@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
+           |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar
+           |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
     )
   )
 
@@ -791,13 +792,13 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     queries = List(
       allJars("@maven//:target-0") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.8.jar
-           |@maven//:io.netty/netty/netty-3.10.1.Final.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.8/commons-codec-1.8.jar
+           |@maven//:io.netty/netty/3.10.1.Final/netty-3.10.1.Final.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
       allJars("@maven//:target-1") ->
-        """|@maven//:commons-codec/commons-codec/commons-codec-1.8.jar
-           |@maven//:io.netty/netty/netty-3.10.1.Final.jar
-           |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
+        """|@maven//:commons-codec/commons-codec/1.8/commons-codec-1.8.jar
+           |@maven//:io.netty/netty/3.10.1.Final/netty-3.10.1.Final.jar
+           |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
     )
   )
 }
