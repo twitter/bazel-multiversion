@@ -211,11 +211,14 @@ case class ExportCommand(
   ): ThirdpartyConfig = {
     val updatedDependencies = thirdparty.dependencies
       .map { config =>
-        val overridden = index.dependencies.getOrElse(config.id, Nil).flatMap { dep =>
-          thirdparty.overrideTargetsMap.getOrElse(dep.module, Nil).map { target =>
-            ModuleConfig(dep.module) -> target
-          }
-        }
+        val overridden = for {
+          dep <- index.dependencies.getOrElse(config.id, Nil)
+          target <- thirdparty.overrideTargetsMap.getOrElse(dep.module, Nil)
+          // Target overrides can be used to replace a module by a given target. If the
+          // replacing target is also a 3rdparty dependency D, then we don't apply the override
+          // when resolving D.
+          if !config.targets.contains(target)
+        } yield ModuleConfig(dep.module) -> target
         val depsToExclude = overridden.map(_._1)
         val targetsToAdd = overridden.map(_._2)
 
