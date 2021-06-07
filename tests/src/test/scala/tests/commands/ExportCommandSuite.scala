@@ -801,6 +801,12 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     )
   )
 
+  // coursier-cli:2.0.0 depends on coursier-core:2.0.0, which will be evicted in favor offering
+  // coursier-core:2.0.13. coursier-core:2.0.13 added a dependency on
+  // com.github.alexarchambault:concurrent-reference-hash-map:1.0.0, which coursier-core:2.0.0
+  // didn't have.
+  // We check that the resolution of coursier-cli:2.0.0 with coursier-core:2.0.13 includes the new
+  // dependency.
   checkMultipleDeps(
     "resolution includes any new transitive dependencies introduced by an eviction",
     deps(
