@@ -107,12 +107,24 @@ case class ExportCommand(
 
       for {
         withUrls <- lintUrls(thirdparty, allowUrl)
-        initialResolutions <- runResolutions(withUrls, withUrls.coursierDeps, coursierCache)
+        initialResolutions <- runResolutions(withUrls, None, withUrls.coursierDeps, coursierCache)
         initialIndex = ResolutionIndex.fromResolutions(withUrls, initialResolutions)
         withSelectedVersions = selectVersionsFromIndex(withUrls, initialIndex)
         withOverriddenTargets = overrideTargets(withSelectedVersions, initialIndex)
-        resolutions <-
-          runResolutions(withOverriddenTargets, withOverriddenTargets.coursierDeps, coursierCache)
+        intermediateResolutions <- runResolutions(
+          withOverriddenTargets,
+          None,
+          withOverriddenTargets.coursierDeps,
+          coursierCache
+        )
+        intermediateIndex =
+          ResolutionIndex.fromResolutions(withOverriddenTargets, intermediateResolutions)
+        resolutions <- runResolutions(
+          withOverriddenTargets,
+          Some(intermediateIndex),
+          withOverriddenTargets.coursierDeps,
+          coursierCache
+        )
         index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
         _ <- lintEvictedDeclaredDependencies(
           withUrls,
@@ -577,6 +589,7 @@ case class ExportCommand(
 
   private def runResolutions(
       thirdparty: ThirdpartyConfig,
+      previousIndex: Option[ResolutionIndex],
       dependencies: List[(DependencyConfig, Dependency)],
       cache: FileCache[Task]
   ): Result[List[DependencyResolution]] = {
@@ -590,6 +603,7 @@ case class ExportCommand(
       (dep, cdep) <- dependencies
     } yield thirdparty.toResolve(
       dep,
+      previousIndex,
       cache,
       progressBar,
       cdep,

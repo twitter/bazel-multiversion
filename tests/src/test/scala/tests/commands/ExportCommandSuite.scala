@@ -258,7 +258,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
          |Update the third party declaration to use version '2.4.1' instead of '2.4.0' to reflect the effective dependency graph.
          |Info:
          |  'org.apache.kafka:kafka-clients:2.4.0' is declared in kafka-clients-2.4.0.
-         |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of kafka-clients-2.4.1.
+         |  'org.apache.kafka:kafka-clients:2.4.1' is a transitive dependency of kafka-clients-2.4.1, kafka-streams-2.4.0.
          |  - dependency: org.apache.kafka:kafka-clients:2.4.0
          |                ^
          |warning: 1 warning(s) found.
@@ -818,6 +818,83 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:org.slf4j/slf4j-log4j12/slf4j-log4j12-1.6.1.jar""".stripMargin,
       allJars("@maven//:log4j") ->
         """|@maven//:log4j/log4j/log4j-1.2.17.jar""".stripMargin
+    )
+  )
+
+  // coursier-cli:2.0.0 depends on coursier-core:2.0.0, which will be evicted in favor offering
+  // coursier-core:2.0.13. coursier-core:2.0.13 added a dependency on
+  // com.github.alexarchambault:concurrent-reference-hash-map:1.0.0, which coursier-core:2.0.0
+  // didn't have.
+  // We check that the resolution of coursier-cli:2.0.0 with coursier-core:2.0.13 includes the new
+  // dependency.
+  checkMultipleDeps(
+    "resolution includes any new transitive dependencies introduced by an eviction",
+    deps(
+      dep("io.get-coursier:coursier-cli_2.12:2.0.0")
+        .target("coursier-cli"),
+      dep("io.get-coursier:coursier_2.12:2.0.13")
+        .target("coursier")
+    ),
+    queries = List(
+      allJars("@maven//:coursier-cli") ->
+        """|@maven//:com.chuusai/shapeless_2.12/shapeless_2.12-2.3.3.jar
+           |@maven//:com.github.alexarchambault/argonaut-shapeless_6.2_2.12/argonaut-shapeless_6.2_2.12-1.2.0.jar
+           |@maven//:com.github.alexarchambault/case-app-annotations_2.12/case-app-annotations_2.12-2.0.0.jar
+           |@maven//:com.github.alexarchambault/case-app-util_2.12/case-app-util_2.12-2.0.0.jar
+           |@maven//:com.github.alexarchambault/case-app_2.12/case-app_2.12-2.0.0.jar
+           |@maven//:com.github.mpilquist/simulacrum_2.12/simulacrum_2.12-0.10.0.jar
+           |@maven//:com.github.plokhotnyuk.jsoniter-scala/jsoniter-scala-core_2.12/jsoniter-scala-core_2.12-2.2.4.jar
+           |@maven//:com.google.collections/google-collections/google-collections-1.0.jar
+           |@maven//:com.squareup.okhttp3/okhttp/okhttp-3.13.1.jar
+           |@maven//:com.squareup.okio/okio/okio-1.17.2.jar
+           |@maven//:commons-io/commons-io/commons-io-2.6.jar
+           |@maven//:io.argonaut/argonaut_2.12/argonaut_2.12-6.2.5.jar
+           |@maven//:io.get-coursier/coursier-cache_2.12/coursier-cache_2.12-2.0.13.jar
+           |@maven//:io.get-coursier/coursier-cli_2.12/coursier-cli_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-core_2.12/coursier-core_2.12-2.0.13.jar
+           |@maven//:io.get-coursier/coursier-env_2.12/coursier-env_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-install_2.12/coursier-install_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-jvm_2.12/coursier-jvm_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-launcher_2.12/coursier-launcher_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-publish_2.12/coursier-publish_2.12-2.0.0.jar
+           |@maven//:io.get-coursier/coursier-util_2.12/coursier-util_2.12-2.0.13.jar
+           |@maven//:io.get-coursier/coursier_2.12/coursier_2.12-2.0.13.jar
+           |@maven//:io.github.alexarchambault.windows-ansi/windows-ansi/windows-ansi-0.0.3.jar
+           |@maven//:io.github.alexarchambault/concurrent-reference-hash-map/concurrent-reference-hash-map-1.0.0.jar
+           |@maven//:io.monadless/monadless-cats_2.12/monadless-cats_2.12-0.0.13.jar
+           |@maven//:io.monadless/monadless-core_2.12/monadless-core_2.12-0.0.13.jar
+           |@maven//:io.monadless/monadless-stdlib_2.12/monadless-stdlib_2.12-0.0.13.jar
+           |@maven//:org.apache.commons/commons-compress/commons-compress-1.20.jar
+           |@maven//:org.apache.xbean/xbean-reflect/xbean-reflect-3.7.jar
+           |@maven//:org.codehaus.plexus/plexus-archiver/plexus-archiver-4.2.2.jar
+           |@maven//:org.codehaus.plexus/plexus-classworlds/plexus-classworlds-2.6.0.jar
+           |@maven//:org.codehaus.plexus/plexus-container-default/plexus-container-default-2.1.0.jar
+           |@maven//:org.codehaus.plexus/plexus-io/plexus-io-3.2.0.jar
+           |@maven//:org.codehaus.plexus/plexus-utils/plexus-utils-3.3.0.jar
+           |@maven//:org.fusesource.jansi/jansi/jansi-1.18.jar
+           |@maven//:org.iq80.snappy/snappy/snappy-0.4.jar
+           |@maven//:org.scala-lang.modules/scala-collection-compat_2.12/scala-collection-compat_2.12-2.2.0.jar
+           |@maven//:org.scala-lang.modules/scala-xml_2.12/scala-xml_2.12-1.3.0.jar
+           |@maven//:org.scala-lang/scala-library/scala-library-2.12.12.jar
+           |@maven//:org.scala-lang/scala-reflect/scala-reflect-2.12.10.jar
+           |@maven//:org.scala-sbt/test-interface/test-interface-1.0.jar
+           |@maven//:org.scalacheck/scalacheck_2.12/scalacheck_2.12-1.13.4.jar
+           |@maven//:org.scalamacros/resetallattrs_2.12/resetallattrs_2.12-1.0.0.jar
+           |@maven//:org.scalameta/svm-subs_2.12/svm-subs_2.12-20.1.0.jar
+           |@maven//:org.tukaani/xz/xz-1.8.jar
+           |@maven//:org.typelevel/catalysts-macros_2.12/catalysts-macros_2.12-0.0.5.jar
+           |@maven//:org.typelevel/catalysts-platform_2.12/catalysts-platform_2.12-0.0.5.jar
+           |@maven//:org.typelevel/cats-core_2.12/cats-core_2.12-2.2.0.jar
+           |@maven//:org.typelevel/cats-free_2.12/cats-free_2.12-0.9.0.jar
+           |@maven//:org.typelevel/cats-jvm_2.12/cats-jvm_2.12-0.9.0.jar
+           |@maven//:org.typelevel/cats-kernel-laws_2.12/cats-kernel-laws_2.12-0.9.0.jar
+           |@maven//:org.typelevel/cats-kernel_2.12/cats-kernel_2.12-2.2.0.jar
+           |@maven//:org.typelevel/cats-laws_2.12/cats-laws_2.12-0.9.0.jar
+           |@maven//:org.typelevel/cats-macros_2.12/cats-macros_2.12-0.9.0.jar
+           |@maven//:org.typelevel/cats_2.12/cats_2.12-0.9.0.jar
+           |@maven//:org.typelevel/discipline_2.12/discipline_2.12-0.7.2.jar
+           |@maven//:org.typelevel/machinist_2.12/machinist_2.12-0.6.1.jar
+           |@maven//:org.typelevel/macro-compat_2.12/macro-compat_2.12-1.1.1.jar""".stripMargin
     )
   )
 }
