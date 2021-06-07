@@ -800,4 +800,23 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
            |@maven//:org.apiguardian/apiguardian-api/apiguardian-api-1.1.1.jar""".stripMargin,
     )
   )
+
+  checkMultipleDeps(
+    "override with binary",
+    deps(
+      dep("org.slf4j:slf4j-log4j12:1.6.1")
+        .target("slf4j-log4j"),
+      dep("log4j:log4j:1.2.17")
+        .target("log4j")
+    ) ++ overrideTargets("log4j:log4j" -> "log4j"),
+    arguments = exportCommand,
+    queries = List(
+      allJars("@maven//:slf4j-log4j") ->
+        """|@maven//:log4j/log4j/log4j-1.2.17.jar
+           |@maven//:org.slf4j/slf4j-api/slf4j-api-1.6.1.jar
+           |@maven//:org.slf4j/slf4j-log4j12/slf4j-log4j12-1.6.1.jar""".stripMargin,
+      allJars("@maven//:log4j") ->
+        """|@maven//:log4j/log4j/log4j-1.2.17.jar""".stripMargin
+    )
+  )
 }
