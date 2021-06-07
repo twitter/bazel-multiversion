@@ -113,7 +113,7 @@ object MultidepsEnrichments {
           }
         else ""
 
-      s"@maven//:${org}/${moduleName}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
+      s"@maven//:${org}/${moduleName}/${version}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
     }
 
     def withoutConfig: Dependency =
