@@ -802,7 +802,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
   )
 
   checkMultipleDeps(
-    "transitive dependencies and eviction",
+    "resolution includes any new transitive dependencies introduced by an eviction",
     deps(
       dep("io.get-coursier:coursier-cli_2.12:2.0.0")
         .target("coursier-cli"),
