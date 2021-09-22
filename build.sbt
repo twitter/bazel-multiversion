@@ -3,38 +3,46 @@ lazy val V = new {
   def moped = "0.1.9"
 }
 
-inThisBuild(
-  List(
-    organization := "org.scalameta",
-    homepage := Some(url("https://github.com/twitter/bazel-multiversion")),
-    licenses := List(
-      "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
-    ),
-    developers := List(
-      Developer(
-        "eed3si9n",
-        "Eugene Yokota",
-        "@eed3si9n",
-        url("https://eed3si9n.com")
-      ),
-      Developer(
-        "olafurpg",
-        "Ólafur Páll Geirsson",
-        "olafurpg@gmail.com",
-        url("https://geirsson.com")
-      )
-    ),
-    scalaVersion := V.scala212,
-    scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.4.2",
-    scalafixCaching := true,
-    semanticdbEnabled := true,
-    semanticdbVersion := scalafixSemanticdb.revision,
-    scalacOptions ++= List(
-      "-Ywarn-unused:imports",
-      "-Yrangepos"
-    ),
-    version := "0.1.0-SNAPSHOT"
-  )
+ThisBuild / organization := "com.twitter.multiversion"
+ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / homepage := Some(url("https://github.com/twitter/bazel-multiversion"))
+ThisBuild / licenses := List(
+  "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
+)
+ThisBuild / developers := List(
+  Developer(
+    "eed3si9n",
+    "Eugene Yokota",
+    "@eed3si9n",
+    url("https://eed3si9n.com")
+  ),
+  Developer(
+    "Duhemm",
+    "Martin Duhem",
+    "@Duhemm",
+    url("https://github.com/Duhemm")
+  ),
+  Developer(
+    "AngelaGuardia",
+    "Angela Guardia",
+    "@AngelaGuardia",
+    url("https://github.com/AngelaGuardia")
+  ),
+  Developer(
+    "olafurpg",
+    "Ólafur Páll Geirsson",
+    "olafurpg@gmail.com",
+    url("https://geirsson.com")
+  ),
+)
+ThisBuild / scalaVersion := V.scala212
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.4.2"
+ThisBuild / scalafixCaching := true
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / scalacOptions ++= List(
+  "-Ywarn-unused:imports",
+  "-Yrangepos"
 )
 
 lazy val multiversion = project
