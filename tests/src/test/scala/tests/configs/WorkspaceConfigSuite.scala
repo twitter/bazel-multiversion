@@ -28,13 +28,15 @@ class WorkspaceConfigSuite extends BaseConfigSuite {
 
   check(
     "custom-version",
-    """|dependencies:
+    """|scala: 2.12.12
+       |dependencies:
        |  - organization: org.scalameta
        |    name: munit
        |    version: "0.7.13"
        |    lang: scala
        |""".stripMargin,
     ThirdpartyConfig(
+      scala = VersionsConfig("2.12.12"),
       dependencies = List(
         DependencyConfig(
           organization = JsonString("org.scalameta"),

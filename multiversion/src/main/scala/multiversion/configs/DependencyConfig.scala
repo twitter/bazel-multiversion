@@ -24,6 +24,7 @@ import moped.macros.ClassShape
 import moped.reporters.Diagnostic
 import multiversion.configs.MultidepsJsonDecoders.jsonStringDecoder
 import multiversion.resolvers.DependencyId
+import net.starlark.java.eval.StarlarkValue
 
 final case class DependencyConfig(
     organization: JsonString = JsonString(""),
@@ -43,7 +44,7 @@ final case class DependencyConfig(
     versionPattern: Option[String] = None,
     force: Boolean = true,
     transitive: Boolean = true
-) {
+) extends StarlarkValue {
 
   val id: DependencyId =
     DependencyId(
@@ -82,8 +83,10 @@ final case class DependencyConfig(
   }
   def coursierModule(scalaVersion: VersionsConfig): Module = {
     val suffix = lang match {
-      case JavaLanguagesConfig          => ""
-      case ScalaLanguagesConfig         => "_" + scalaVersion.binaryVersion
+      case JavaLanguagesConfig => ""
+      case ScalaLanguagesConfig =>
+        if (scalaVersion.binaryVersion == "") sys.error("Unspecified Scala version")
+        else "_" + scalaVersion.binaryVersion
       case ScalaCompilerLanguagesConfig => "_" + scalaVersion.default.value
     }
     Module(

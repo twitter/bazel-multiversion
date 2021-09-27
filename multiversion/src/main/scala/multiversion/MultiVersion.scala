@@ -14,6 +14,7 @@ object MultiVersion {
     List(
       CommandParser[VersionCommand],
       CommandParser[HelpCommand],
+      CommandParser[ImportBuildCommand],
       CommandParser[ExportCommand],
       CommandParser[PantsExportCommand],
       CommandParser[LintCommand],

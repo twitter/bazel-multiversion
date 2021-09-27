@@ -68,7 +68,8 @@ lazy val multiversion = project
       "com.lihaoyi" %% "os-lib" % "0.7.1",
       "com.lihaoyi" %% "fansi" % "0.2.9",
       "com.lihaoyi" %% "pprint" % "0.6.0",
-      "com.lihaoyi" %% "requests" % "0.6.5"
+      "com.lihaoyi" %% "requests" % "0.6.5",
+      "com.eed3si9n.starlark" % "starlark" % "4.2.1",
     ),
     buildInfoPackage := "multiversion",
     buildInfoKeys := Seq[BuildInfoKey](

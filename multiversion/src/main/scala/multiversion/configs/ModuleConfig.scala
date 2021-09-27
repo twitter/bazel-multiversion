@@ -6,11 +6,12 @@ import coursier.core.Organization
 import moped.json.JsonCodec
 import moped.json.JsonString
 import multiversion.configs.MultidepsJsonDecoders.jsonStringDecoder
+import net.starlark.java.eval.StarlarkValue
 
 final case class ModuleConfig(
     organization: JsonString = JsonString(""),
     name: JsonString = JsonString("")
-) {
+) extends StarlarkValue {
   def repr = coursierModule.repr
   def coursierModule: Module =
     Module(
