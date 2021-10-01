@@ -7,7 +7,7 @@ $ sbt
 ....
 > exit
 
-$ cs launch org.scalameta:bazel-multiversion_2.12:0.1.0-SNAPSHOT --main-class multiversion.MultiVersion -- help
+$ cs launch com.twitter.multiversion:bazel-multiversion_2.12:0.1.0-SNAPSHOT --main-class multiversion.MultiVersion -- help
 ```
 
 
