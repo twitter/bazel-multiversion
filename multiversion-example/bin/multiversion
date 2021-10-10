@@ -1,6 +1,6 @@
 #!/usr/bin/env bash -e
 
-MULTIVERSION_VER="0.1.0"
+MULTIVERSION_VER="0.1.1"
 DOWNLOAD_BASE_URL="https://github.com/twitter/bazel-multiversion/releases/download"
 X86_LINUX_APP_NAME="multiversion-x86_64-pc-linux"
 X86_DARWIN_APP_NAME="multiversion-x86_64-apple-darwin"
