@@ -20,7 +20,11 @@ jobs:
         with:
           version: "3.x"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: cd multiversion-example && bazel build tricky/...
+      - name: multiversion-example
+        shell: bash
+        run: |
+          cd multiversion-example
+          bazel build tricky/...
       - run: sbt test
   graalnative:
     name: GraalVM Native Image
@@ -46,7 +50,9 @@ jobs:
         version: "3.x"
         repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Build
-      run: sbt -v -Dfile.encoding=UTF8 nativeImage
+      run: |
+        sbt -v -Dfile.encoding=UTF8 nativeImage
+        chmod +x multiversion/target/native-image/multiversion
       shell: bash
     - name: Archive native image artifacts
       uses: actions/upload-artifact@v2
