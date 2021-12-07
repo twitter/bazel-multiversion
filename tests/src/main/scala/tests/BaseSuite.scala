@@ -115,23 +115,22 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
                                      |${bazelWorkspace(extraBuild)}
                                      |""".stripMargin
       )
-      queries.foreach {
-        case (queryArgs, expectedQuery) =>
-          val obtainedQuery =
-            app()
-              .process(
-                ("bazel" :: "query" :: "--notool_deps" :: "--noimplicit_deps" :: queryArgs).map(x =>
-                  (x: Shellable)
-                ): _*
-              )
-              .call()
-              .out
-              .text()
-              .linesIterator
-              .toList
-              .sorted
-              .mkString("\n")
-          assertNoDiff(obtainedQuery, expectedQuery)
+      queries.foreach { case (queryArgs, expectedQuery) =>
+        val obtainedQuery =
+          app()
+            .process(
+              ("bazel" :: "query" :: "--notool_deps" :: "--noimplicit_deps" :: queryArgs).map(x =>
+                (x: Shellable)
+              ): _*
+            )
+            .call()
+            .out
+            .text()
+            .linesIterator
+            .toList
+            .sorted
+            .mkString("\n")
+        assertNoDiff(obtainedQuery, expectedQuery)
       }
       if (buildQuery.nonEmpty) {
         app()

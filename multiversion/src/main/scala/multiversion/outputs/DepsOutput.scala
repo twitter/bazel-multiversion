@@ -40,9 +40,8 @@ final case class DepsOutput(
         index.evictionPairs.toList
           .sortBy(_._1.bazelLabel)
           .distinctBy(_._1.bazelLabel)
-          .map {
-            case (d, w) =>
-              ArtifactOutput.buildEvictedDoc(d, w, index, outputIndex)
+          .map { case (d, w) =>
+            ArtifactOutput.buildEvictedDoc(d, w, index, outputIndex)
           }
       )
       .render(width)

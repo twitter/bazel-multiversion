@@ -69,15 +69,14 @@ case class LintCommand(
     if (conflicts.isEmpty) Nil
     else {
       val pending = isPending(index, targetName)
-      conflicts.map {
-        case ((module, classifier), dependencies) =>
-          LintDiagnostic(
-            target.getRule.getName,
-            module,
-            classifier,
-            dependencies.map(_.version).sorted,
-            pending
-          )
+      conflicts.map { case ((module, classifier), dependencies) =>
+        LintDiagnostic(
+          target.getRule.getName,
+          module,
+          classifier,
+          dependencies.map(_.version).sorted,
+          pending
+        )
       }
     }
   }
@@ -115,28 +114,26 @@ case class LintCommand(
     path
       .foreach { out =>
         val grouped = conflicts.groupBy(_.target).toList.sortBy(_._1)
-        val docs = grouped.map {
-          case (target, conflicts) =>
-            val isFailure = conflicts.exists(!_.isPending)
-            val moduleVersions = conflicts
-              .sortBy(_.module.repr)
-              .map {
-                case LintDiagnostic(_, module, _, versions, _) =>
-                  Docs.obj(
-                    List(
-                      "dependency" -> Docs.literal(module.repr),
-                      "versions" -> Docs.array(versions.sorted: _*)
-                    )
-                  )
-              }
-            Docs.dash + Doc.space + Docs.obj(
-              List(
-                "target" -> Docs.literal(target),
-                "failure" -> Doc.str(isFailure),
-                "conflicts" -> (Docs.openBracket + Doc
-                  .intercalate(Doc.comma + Doc.space, moduleVersions) + Docs.closeBracket)
+        val docs = grouped.map { case (target, conflicts) =>
+          val isFailure = conflicts.exists(!_.isPending)
+          val moduleVersions = conflicts
+            .sortBy(_.module.repr)
+            .map { case LintDiagnostic(_, module, _, versions, _) =>
+              Docs.obj(
+                List(
+                  "dependency" -> Docs.literal(module.repr),
+                  "versions" -> Docs.array(versions.sorted: _*)
+                )
               )
+            }
+          Docs.dash + Doc.space + Docs.obj(
+            List(
+              "target" -> Docs.literal(target),
+              "failure" -> Doc.str(isFailure),
+              "conflicts" -> (Docs.openBracket + Doc
+                .intercalate(Doc.comma + Doc.space, moduleVersions) + Docs.closeBracket)
             )
+          )
         }
         val rendered = Doc.intercalate(Doc.line, docs).render(Int.MaxValue)
         if (out.toString() == "-") {
