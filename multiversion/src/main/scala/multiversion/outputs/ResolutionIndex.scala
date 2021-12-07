@@ -5,11 +5,14 @@ import java.util.Locale
 import scala.collection.mutable
 
 import coursier.core.ArtifactSource
+import coursier.core.Classifier
 import coursier.core.Dependency
 import coursier.core.Module
 import coursier.core.Project
+import coursier.core.Publication
 import coursier.core.Resolution
 import coursier.core.Version
+import coursier.util.Artifact
 import coursier.version.VersionCompatibility
 import coursier.version.VersionInterval
 import coursier.version.VersionParse
@@ -23,7 +26,8 @@ import multiversion.resolvers.ResolvedDependency
 final case class ResolutionIndex(
     thirdparty: ThirdpartyConfig,
     resolutions: List[DependencyResolution],
-    roots: collection.Map[Dependency, collection.Set[Dependency]]
+    roots: collection.Map[Dependency, collection.Set[Dependency]],
+    resolveSources: Boolean,
 ) {
   import ResolutionIndex._
 
@@ -31,14 +35,40 @@ final case class ResolutionIndex(
   val rawArtifacts: List[ResolvedDependency] = for {
     r <- resolutions
     resolutionModule = r.dep.coursierModule(thirdparty.scala)
-    (d, p, a) <- r.res.dependencyArtifacts() if a.url.endsWith(".jar")
+    DependencyArtifact(d, p, a, sa) <- dependencyArtifactsWithSources(r.res)
+    if a.url.endsWith(".jar")
     dependency = ResolutionIndex.actualDependency(d, r.res.projectCache)
     artifact = r.dep.url match {
       case Some(url) if dependency.module == resolutionModule =>
         a.withUrl(url).withChecksumUrls(Map.empty)
       case _ => a
     }
-  } yield ResolvedDependency(r.dep, dependency, p, artifact)
+  } yield ResolvedDependency(r.dep, dependency, p, artifact, sa)
+
+  /**
+   * Optionally resolve the source JARs.
+   */
+  private def dependencyArtifactsWithSources(
+      res: Resolution
+  ): Seq[DependencyArtifact] = {
+    // grab source JARs and turn them into an immutable Map, so we can look them up
+    val sourceArtifacts =
+      if (resolveSources)
+        Map(res.dependencyArtifacts(Some(List(Classifier.sources))).map { case (d, p, a) =>
+          (d, a)
+        }: _*)
+      else Map.empty[Dependency, Artifact]
+    for {
+      (d, p, a) <- res.dependencyArtifacts()
+    } yield DependencyArtifact(d, p, a, sourceArtifacts.get(d))
+  }
+
+  private case class DependencyArtifact(
+      dependency: Dependency,
+      classfilePublication: Publication,
+      classfileArtifact: Artifact,
+      sourcesArtifact: Option[Artifact],
+  )
 
   val resolvedArtifacts: List[ResolvedDependency] = (rawArtifacts
     .groupBy(_.dependency.bazelLabel)
@@ -78,7 +108,7 @@ final case class ResolutionIndex(
   val allDependencies: collection.Map[Module, collection.Set[(Dependency, VersionConfig)]] = {
     val result =
       mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, VersionConfig)]]
-    rawArtifacts.foreach { case ResolvedDependency(config, d, _, _) =>
+    rawArtifacts.foreach { case ResolvedDependency(config, d, _, _, _) =>
       val buf = result.getOrElseUpdate(
         d.module,
         mutable.LinkedHashSet.empty
@@ -150,7 +180,8 @@ final case class ResolutionIndex(
 object ResolutionIndex {
   def fromResolutions(
       thirdparty: ThirdpartyConfig,
-      resolutions: List[DependencyResolution]
+      resolutions: List[DependencyResolution],
+      resolveSources: Boolean,
   ): ResolutionIndex = {
     val roots =
       mutable.LinkedHashMap.empty[Dependency, mutable.LinkedHashSet[Dependency]]
@@ -166,7 +197,8 @@ object ResolutionIndex {
     ResolutionIndex(
       thirdparty,
       resolutions,
-      roots
+      roots,
+      resolveSources,
     )
   }
 

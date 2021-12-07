@@ -25,6 +25,7 @@ final case class ArtifactOutput(
       s"_${dependency.publication.classifier.value}"
     else ""
   val label: String = dependency.bazelLabel
+  val sourcesLabel: String = label + "_sources"
   val repr: String =
     s"""|Artifact(
         |  dep = "${label}",
@@ -36,6 +37,9 @@ final case class ArtifactOutput(
   val version: String = dependency.version
   val mavenLabel: String = dependency.mavenLabel
 
+  def httpFiles: List[TargetOutput] =
+    List(httpFile) ::: sourcesHttpFile.toList
+
   def httpFile: TargetOutput =
     TargetOutput(
       kind = "http_file",
@@ -43,6 +47,20 @@ final case class ArtifactOutput(
       "urls" -> Docs.array(artifact.url),
       "sha256" -> Docs.literal(artifactSha256)
     )
+
+  def sourcesHttpFile: Option[TargetOutput] =
+    (sourcesArtifact, sourcesArtifactSha256) match {
+      case (Some(art), Some(sha)) =>
+        Some(
+          TargetOutput(
+            kind = "http_file",
+            "name" -> Docs.literal(sourcesLabel),
+            "urls" -> Docs.array(art.url),
+            "sha256" -> Docs.literal(sha)
+          )
+        )
+      case _ => None
+    }
 }
 
 object ArtifactOutput {
@@ -59,21 +77,28 @@ object ArtifactOutput {
       val reconciledDependency = index.reconciledDependency(dependency)
       outputIndex
         .get(reconciledDependency.bazelLabel)
-        .map(o => (o.mavenLabel, o.label + cfg.suffix))
+        .map(o =>
+          (
+            o.mavenLabel,
+            o.label + cfg.suffix,
+            o.sourcesArtifactSha256.map { case _ => o.sourcesLabel }
+          )
+        )
     }
 
-    val (jars, depLabels) =
+    val (jars, depLabels, sourceJars) =
       if (jarsAndLabels.nonEmpty) {
-        jarsAndLabels.unzip
+        jarsAndLabels.unzip3
       } else {
         // Some resolutions produce no artifacts because they configure a classifier that
         // doesn't exist. In this case, we return the dependencies that were resolved
         // alongside this non-existent artifact.
         index.unevictedArtifacts.collect {
-          case ResolvedDependency(config, dependency, _, _) if config.targets.contains(target) =>
-            (dependency.mavenLabel, "_" + dependency.bazelLabel)
-        }.unzip
+          case ResolvedDependency(config, dependency, _, _, _) if config.targets.contains(target) =>
+            (dependency.mavenLabel, "_" + dependency.bazelLabel, None: Option[String])
+        }.unzip3
       }
+    val sourceJarOpt = sourceJars.flatten.headOption
 
     val overriddingTargets = for {
       config <- targetConfigs
@@ -82,14 +107,27 @@ object ArtifactOutput {
     } yield dependency
 
     val allLabels = (overriddingTargets ++ depLabels).distinct
-    TargetOutput(
-      kind = "scala_import",
-      "name" -> Docs.literal(name),
-      "jars" -> Docs.array(jars: _*),
-      "deps" -> Docs.array(allLabels: _*),
-      "exports" -> Docs.array(allLabels: _*),
-      "visibility" -> Docs.array("//visibility:public")
-    ).toDoc
+    sourceJarOpt match {
+      case Some(sourceJar) =>
+        TargetOutput(
+          kind = "scala_import",
+          "name" -> Docs.literal(name),
+          "jars" -> Docs.array(jars: _*),
+          "deps" -> Docs.array(allLabels: _*),
+          "exports" -> Docs.array(allLabels: _*),
+          "srcjar" -> Docs.literal(sourceJar),
+          "visibility" -> Docs.array("//visibility:public")
+        ).toDoc
+      case _ =>
+        TargetOutput(
+          kind = "scala_import",
+          "name" -> Docs.literal(name),
+          "jars" -> Docs.array(jars: _*),
+          "deps" -> Docs.array(allLabels: _*),
+          "exports" -> Docs.array(allLabels: _*),
+          "visibility" -> Docs.array("//visibility:public")
+        ).toDoc
+    }
   }
 
   private def buildGenruleAndImportDoc(
