@@ -142,9 +142,8 @@ object MultidepsEnrichments {
   }
   implicit class XtensionTaskIO[T](t: Task[T]) {
     def toResult: Task[Result[T]] =
-      t.map(ValueResult(_)).handle {
-        case ex: ResolutionError =>
-          ErrorResult(Diagnostic.error(ex.getMessage()))
+      t.map(ValueResult(_)).handle { case ex: ResolutionError =>
+        ErrorResult(Diagnostic.error(ex.getMessage()))
       }
   }
 

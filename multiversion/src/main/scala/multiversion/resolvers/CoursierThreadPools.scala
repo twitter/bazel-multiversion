@@ -9,8 +9,10 @@ import scala.concurrent.ExecutionContext
 /**
  * Thread pool used to resolve POM files.
  *
- * @param taskParalleism represents the number of parallel resolution tasks
- * @param downloadParallelism represents the number of parallel downloads
+ * @param taskParalleism
+ *   represents the number of parallel resolution tasks
+ * @param downloadParallelism
+ *   represents the number of parallel downloads
  */
 class CoursierThreadPools(taskParalleism: Int, downloadParallelism: Int) {
 

@@ -78,17 +78,16 @@ final case class ResolutionIndex(
   val allDependencies: collection.Map[Module, collection.Set[(Dependency, VersionConfig)]] = {
     val result =
       mutable.LinkedHashMap.empty[Module, mutable.LinkedHashSet[(Dependency, VersionConfig)]]
-    rawArtifacts.foreach {
-      case ResolvedDependency(config, d, _, _) =>
-        val buf = result.getOrElseUpdate(
-          d.module,
-          mutable.LinkedHashSet.empty
-        )
-        val extractedVersion = thirdparty.versionExtractorByModule(d.module)(d.version)
-        val direct = config.coursierModule(thirdparty.scala) == d.module
-        // weaken the transitive dependencies
-        val version = VersionConfig(d.version, Version(extractedVersion), config.force && direct)
-        buf += d -> version
+    rawArtifacts.foreach { case ResolvedDependency(config, d, _, _) =>
+      val buf = result.getOrElseUpdate(
+        d.module,
+        mutable.LinkedHashSet.empty
+      )
+      val extractedVersion = thirdparty.versionExtractorByModule(d.module)(d.version)
+      val direct = config.coursierModule(thirdparty.scala) == d.module
+      // weaken the transitive dependencies
+      val version = VersionConfig(d.version, Version(extractedVersion), config.force && direct)
+      buf += d -> version
     }
     result
   }
@@ -192,26 +191,24 @@ object ResolutionIndex {
       (!hasOverride(v1) && hasOverride(v2)) || (v1 < v2 && hasOverride(v1) == hasOverride(v2))
     // The "winners" are the highest or forced selected versions
     val winners = mutable.Set.empty[VersionConfig]
-    verForces.foreach {
-      case challenger @ VersionConfig(_, version, force) =>
-        val isCompatible = winners.exists {
-          case w @ VersionConfig(_, wversion, wforce) =>
-            if (isCompat(version.repr, wversion.repr, compat)) {
-              if (
-                (lessThan(wversion, version) && force == wforce)
-                || (force && !wforce)
-              ) {
-                winners.remove(w)
-                winners.add(challenger)
-              }
-              true
-            } else {
-              false
-            }
+    verForces.foreach { case challenger @ VersionConfig(_, version, force) =>
+      val isCompatible = winners.exists { case w @ VersionConfig(_, wversion, wforce) =>
+        if (isCompat(version.repr, wversion.repr, compat)) {
+          if (
+            (lessThan(wversion, version) && force == wforce)
+            || (force && !wforce)
+          ) {
+            winners.remove(w)
+            winners.add(challenger)
+          }
+          true
+        } else {
+          false
         }
-        if (!isCompatible) {
-          winners.add(challenger)
-        }
+      }
+      if (!isCompatible) {
+        winners.add(challenger)
+      }
     }
     winners.toSet
   }

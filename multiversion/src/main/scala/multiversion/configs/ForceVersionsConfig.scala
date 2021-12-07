@@ -22,8 +22,8 @@ object ForceVersionsConfig {
   implicit val encoder: JsonEncoder[ForceVersionsConfig] =
     JsonEncoder
       .iterableJsonEncoder[JsonString, List]
-      .contramap[ForceVersionsConfig](_.overrides.toList.map {
-        case (m, v) => JsonString(m.repr + ":" + v)
+      .contramap[ForceVersionsConfig](_.overrides.toList.map { case (m, v) =>
+        JsonString(m.repr + ":" + v)
       })
   private val OrgArtifact: Regex = "([^:]+):([^:]+):([^:]+)".r
   implicit val decoder: JsonDecoder[ForceVersionsConfig] =

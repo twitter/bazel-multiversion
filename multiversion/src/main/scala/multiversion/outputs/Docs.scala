@@ -23,9 +23,8 @@ object Docs {
   val colon: Doc = Doc.char(':')
   val dash: Doc = Doc.char('-')
   def obj(entries: Iterable[(String, Doc)]): Doc = {
-    val mappings = entries.map {
-      case (key, value) =>
-        literal(key) + colon + Doc.space + value
+    val mappings = entries.map { case (key, value) =>
+      literal(key) + colon + Doc.space + value
     }
     Doc
       .intercalate(Doc.comma + Doc.space, mappings)

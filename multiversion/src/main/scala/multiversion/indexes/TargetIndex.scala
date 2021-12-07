@@ -57,14 +57,14 @@ object TargetIndex {
         getStringAttribute("actual").map(List(_)).getOrElse(Nil)
       else getStringListAttribute("deps")
     val tags = getStringListAttribute("tags")
-    val module = tags.collectFirst {
-      case JvmModule(module) => module
+    val module = tags.collectFirst { case JvmModule(module) =>
+      module
     }
-    val version = tags.collectFirst {
-      case JvmVersion(version) => version
+    val version = tags.collectFirst { case JvmVersion(version) =>
+      version
     }
-    val classifier = tags.collectFirst {
-      case JvmClassifier(classifier) => classifier
+    val classifier = tags.collectFirst { case JvmClassifier(classifier) =>
+      classifier
     }
     val dependency = (module, version) match {
       case (Some(m), Some(v)) =>

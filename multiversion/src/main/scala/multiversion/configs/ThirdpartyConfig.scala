@@ -185,35 +185,34 @@ final case class ThirdpartyConfig(
   private def fromForceVersions(
       dep: DependencyConfig
   ): ForceVersionResult = {
-    dep.forceVersions.overrides.iterator.flatMap {
-      case (module, version) =>
-        depsByModule.get(module.coursierModule) match {
-          case None =>
-            List(
-              ErrorResult(
-                Diagnostic.error(
-                  s"version '$version' not found",
-                  module.name.position
-                )
+    dep.forceVersions.overrides.iterator.flatMap { case (module, version) =>
+      depsByModule.get(module.coursierModule) match {
+        case None =>
+          List(
+            ErrorResult(
+              Diagnostic.error(
+                s"version '$version' not found",
+                module.name.position
               )
             )
-          case Some(depsConfigs) =>
-            depsConfigs.map { depsConfig =>
-              depsConfig.getVersion(version) match {
-                case Some(forcedVersion) =>
-                  ValueResult(
-                    depsConfig.coursierModule(scala) -> forcedVersion
+          )
+        case Some(depsConfigs) =>
+          depsConfigs.map { depsConfig =>
+            depsConfig.getVersion(version) match {
+              case Some(forcedVersion) =>
+                ValueResult(
+                  depsConfig.coursierModule(scala) -> forcedVersion
+                )
+              case None =>
+                ErrorResult(
+                  Diagnostic.error(
+                    s"version '$version' not found",
+                    module.name.position
                   )
-                case None =>
-                  ErrorResult(
-                    Diagnostic.error(
-                      s"version '$version' not found",
-                      module.name.position
-                    )
-                  )
-              }
+                )
             }
-        }
+          }
+      }
     }.toBuffer
   }
 

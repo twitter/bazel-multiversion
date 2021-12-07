@@ -6,7 +6,7 @@ import moped.json.ValueResult
 
 object MultidepsJsonDecoders {
   implicit val jsonStringDecoder: JsonDecoder[JsonString] =
-    JsonDecoder.fromJson[JsonString]("String") {
-      case j: JsonString => ValueResult(j)
+    JsonDecoder.fromJson[JsonString]("String") { case j: JsonString =>
+      ValueResult(j)
     }
 }

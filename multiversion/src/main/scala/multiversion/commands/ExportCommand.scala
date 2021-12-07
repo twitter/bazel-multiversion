@@ -175,14 +175,17 @@ case class ExportCommand(
   )
 
   /**
-   * Report errors for dependencies that set the URL of the JAR to resolve when
-   * `allowUrl` is not set, and report warnings for dependencies that set the URL of the JAR
-   * to resolve, but do not set the intransitive flag.
+   * Report errors for dependencies that set the URL of the JAR to resolve when `allowUrl` is not
+   * set, and report warnings for dependencies that set the URL of the JAR to resolve, but do not
+   * set the intransitive flag.
    *
-   * @param thirdparty The third party configuration
-   * @param allowUrl   Whether setting the URL of the JAR in a dependency is allowed
-   * @return The new third party configuration where dependencies that set the URl of the JAR
-   * to resolve are all marked `intransitive`.
+   * @param thirdparty
+   *   The third party configuration
+   * @param allowUrl
+   *   Whether setting the URL of the JAR in a dependency is allowed
+   * @return
+   *   The new third party configuration where dependencies that set the URl of the JAR to resolve
+   *   are all marked `intransitive`.
    */
   private def lintUrls(
       thirdparty: ThirdpartyConfig,
@@ -209,10 +212,9 @@ case class ExportCommand(
   }
 
   /**
-   * Re-configure the dependencies whose resolution include overridden targets
-   * (artifacts that are published but that are available as source dependency),
-   * so that the published artifacts are excluded, and add the dependency on the
-   * overridding target.
+   * Re-configure the dependencies whose resolution include overridden targets (artifacts that are
+   * published but that are available as source dependency), so that the published artifacts are
+   * excluded, and add the dependency on the overridding target.
    *
    * This is required to support Pants' round-trip dependencies:
    * https://v1.pantsbuild.org/3rdparty_jvm.html#round-trip-dependencies
@@ -251,20 +253,19 @@ case class ExportCommand(
       index: ResolutionIndex
   ): ThirdpartyConfig = {
     val updatedDependencies = thirdparty.dependencies
-      .foldLeft(Map.empty[DependencyId, DependencyConfig]) {
-        case (deps, originalDependency) =>
-          val dep = originalDependency.toCoursierDependency(thirdparty.scala)
-          val reconciledVersion = index.reconciledVersion(dep)
-          val reconciledDependency = originalDependency.copy(version = reconciledVersion)
-          val reconciledId = reconciledDependency.id
-          // Different dependencies may reconcile to the same version. In this case, make sure
-          // we don't lose the targets they originate from.
-          deps.get(reconciledId) match {
-            case None => deps + (reconciledId -> reconciledDependency)
-            case Some(existing) =>
-              val allTargets = (existing.targets ++ reconciledDependency.targets).distinct
-              deps + (reconciledId -> existing.copy(targets = allTargets))
-          }
+      .foldLeft(Map.empty[DependencyId, DependencyConfig]) { case (deps, originalDependency) =>
+        val dep = originalDependency.toCoursierDependency(thirdparty.scala)
+        val reconciledVersion = index.reconciledVersion(dep)
+        val reconciledDependency = originalDependency.copy(version = reconciledVersion)
+        val reconciledId = reconciledDependency.id
+        // Different dependencies may reconcile to the same version. In this case, make sure
+        // we don't lose the targets they originate from.
+        deps.get(reconciledId) match {
+          case None => deps + (reconciledId -> reconciledDependency)
+          case Some(existing) =>
+            val allTargets = (existing.targets ++ reconciledDependency.targets).distinct
+            deps + (reconciledId -> existing.copy(targets = allTargets))
+        }
       }
       .values
       .toList
@@ -303,14 +304,13 @@ case class ExportCommand(
           ).flatten
           policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
         } yield tryFetch(r.artifact.withUrl(url), policy)
-        val shas = shaAttempts.tail.foldLeft(shaAttempts.head) {
-          case (task, nextAttempt) =>
-            task.flatMap {
-              case Left(_) =>
-                // Fetch failed, try next (Url, CachePolicy) combination
-                nextAttempt
-              case success => Task.point(success)
-            }
+        val shas = shaAttempts.tail.foldLeft(shaAttempts.head) { case (task, nextAttempt) =>
+          task.flatMap {
+            case Left(_) =>
+              // Fetch failed, try next (Url, CachePolicy) combination
+              nextAttempt
+            case success => Task.point(success)
+          }
         }
         shas.map {
           case Right(file) =>
@@ -373,20 +373,23 @@ case class ExportCommand(
 
   /**
    * Report dependencies that are declared in `originalThirdParty` but were evicted. If
-   * `failOnEvictedDeclared` is set, then an error will be returned when such
-   * dependencies are found.
+   * `failOnEvictedDeclared` is set, then an error will be returned when such dependencies are
+   * found.
    *
-   * When a declared dependency is evicted and sets the URL of the JAR to resolve, then the
-   * message will always be considered an error, regardless of `failOnEvictedDeclared`.
+   * When a declared dependency is evicted and sets the URL of the JAR to resolve, then the message
+   * will always be considered an error, regardless of `failOnEvictedDeclared`.
    *
-   * @param originalThirdParty    The original third party configuration, as configured in the
-   *                              input file.
-   * @param originalIndex         The resolution index built after the first resolution.
-   * @param index                 The final resolution index, representing the dependencies that are
-   *                              selected for the dependency graph.
-   * @param failOnEvictedDeclared If set, the eviction of a declared dependency will trigger and
-   *                              error, otherwise a warning.
-   * @return The linting report.
+   * @param originalThirdParty
+   *   The original third party configuration, as configured in the input file.
+   * @param originalIndex
+   *   The resolution index built after the first resolution.
+   * @param index
+   *   The final resolution index, representing the dependencies that are selected for the
+   *   dependency graph.
+   * @param failOnEvictedDeclared
+   *   If set, the eviction of a declared dependency will trigger and error, otherwise a warning.
+   * @return
+   *   The linting report.
    */
   private def lintEvictedDeclaredDependencies(
       originalThirdParty: ThirdpartyConfig,
@@ -448,8 +451,10 @@ case class ExportCommand(
    * Such conflicts arise when several dependencies share the same `target`, and these dependencies
    * have conflicting transitive dependencies.
    *
-   * @param index The resolution index
-   * @return The linting report
+   * @param index
+   *   The resolution index
+   * @return
+   *   The linting report
    */
   private def lintIntraTargetConflicts(index: ResolutionIndex): Result[Unit] = {
     val errors = index.unevictedArtifacts
