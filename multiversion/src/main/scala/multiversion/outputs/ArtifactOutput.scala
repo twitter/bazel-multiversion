@@ -36,6 +36,8 @@ final case class ArtifactOutput(
   val moduleName: String = dependency.module.name.value
   val version: String = dependency.version
   val mavenLabel: String = dependency.mavenLabel
+  val mavenSourcesLabel: String = dependency.mavenSourcesLabel
+  def hasSources: Boolean = sourcesArtifact.isDefined && sourcesArtifactSha256.isDefined
 
   def httpFiles: List[TargetOutput] =
     List(httpFile) ::: sourcesHttpFile.toList
@@ -81,7 +83,7 @@ object ArtifactOutput {
           (
             o.mavenLabel,
             o.label + cfg.suffix,
-            o.sourcesArtifactSha256.map { case _ => o.sourcesLabel }
+            if (o.hasSources) Some(o.mavenSourcesLabel) else None,
           )
         )
     }
@@ -133,7 +135,7 @@ object ArtifactOutput {
   private def buildGenruleAndImportDoc(
       o: ArtifactOutput,
   ): Doc = {
-    val genrule =
+    def genrule =
       TargetOutput(
         kind = "genrule",
         "name" -> Docs.literal(s"genrules/${o.label}"),
@@ -143,7 +145,16 @@ object ArtifactOutput {
         "tags" -> Docs.array(tags(o.dependency): _*)
       ).toDoc
 
-    val scalaImport =
+    def sourcesGenrule =
+      TargetOutput(
+        kind = "genrule",
+        "name" -> Docs.literal(s"genrules/${o.sourcesLabel}"),
+        "srcs" -> Docs.array(s"@${o.sourcesLabel}//file"),
+        "outs" -> Docs.array(o.mavenSourcesLabel),
+        "cmd" -> Docs.literal("cp $< $@"),
+      ).toDoc
+
+    def scalaImport =
       TargetOutput(
         kind = "scala_import",
         "name" -> Docs.literal("_" + o.label),
@@ -154,7 +165,20 @@ object ArtifactOutput {
         "visibility" -> Docs.array("//visibility:public")
       ).toDoc
 
-    genrule / scalaImport
+    def scalaImportWithSrcJar =
+      TargetOutput(
+        kind = "scala_import",
+        "name" -> Docs.literal("_" + o.label),
+        "jars" -> Docs.array(o.mavenLabel),
+        "deps" -> Docs.array(),
+        "exports" -> Docs.array(),
+        "srcjar" -> Docs.literal(o.mavenSourcesLabel),
+        "tags" -> Docs.array(tags(o.dependency): _*),
+        "visibility" -> Docs.array("//visibility:public")
+      ).toDoc
+
+    if (o.hasSources) genrule / sourcesGenrule / scalaImportWithSrcJar
+    else genrule / scalaImport
   }
 
   def buildDoc(
