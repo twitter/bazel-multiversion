@@ -85,6 +85,8 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
     List(s"kind(scala_import, allpaths($target, @maven//:all))")
   def allJars(target: String): List[String] =
     List(s"kind(file, allpaths($target, @maven//:all))")
+  def nonEmptySrcjar(target: String): List[String] =
+    List(s"""attr("srcjar", ".+", deps($target))""")
   def allScalaLibDeps(target: String): List[String] =
     List(s"kind(scala_library, deps($target))")
 

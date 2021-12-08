@@ -108,7 +108,11 @@ case class ExportCommand(
       for {
         withUrls <- lintUrls(thirdparty, allowUrl)
         initialResolutions <- runResolutions(withUrls, None, withUrls.coursierDeps, coursierCache)
-        initialIndex = ResolutionIndex.fromResolutions(withUrls, initialResolutions)
+        initialIndex = ResolutionIndex.fromResolutions(
+          withUrls,
+          initialResolutions,
+          resolveSources = false
+        )
         withSelectedVersions = selectVersionsFromIndex(withUrls, initialIndex)
         withOverriddenTargets = overrideTargets(withSelectedVersions, initialIndex)
         intermediateResolutions <- runResolutions(
@@ -118,14 +122,22 @@ case class ExportCommand(
           coursierCache
         )
         intermediateIndex =
-          ResolutionIndex.fromResolutions(withOverriddenTargets, intermediateResolutions)
+          ResolutionIndex.fromResolutions(
+            withOverriddenTargets,
+            intermediateResolutions,
+            resolveSources = false
+          )
         resolutions <- runResolutions(
           withOverriddenTargets,
           Some(intermediateIndex),
           withOverriddenTargets.coursierDeps,
           coursierCache
         )
-        index = ResolutionIndex.fromResolutions(withOverriddenTargets, resolutions)
+        index = ResolutionIndex.fromResolutions(
+          withOverriddenTargets,
+          resolutions,
+          resolveSources = true
+        )
         _ <- lintEvictedDeclaredDependencies(
           withUrls,
           initialIndex,
@@ -285,7 +297,6 @@ case class ExportCommand(
     val files: List[Task[List[Either[Throwable, ArtifactOutput]]]] =
       resolvedArtifacts.map { r =>
         val logger = progressBar.loggers.newCacheLogger(r.dependency)
-        val url = r.artifact.checksumUrls.getOrElse("SHA-256", r.artifact.url)
         type Fetch[T] = Task[Either[ArtifactError, T]]
         def tryFetch(artifact: Artifact, policy: CachePolicy): Fetch[File] =
           cache
@@ -293,7 +304,18 @@ case class ExportCommand(
             .withLogger(logger)
             .file(artifact)
             .run
-        val shaAttempts: List[Fetch[File]] = for {
+        def foldShas(attempts: List[Fetch[File]]): Fetch[File] =
+          if (attempts.isEmpty) Task.point(Left(new ArtifactError.NotFound("")))
+          else
+            attempts.tail.foldLeft(attempts.head) { case (task, nextAttempt) =>
+              task.flatMap {
+                case Left(_) =>
+                  // Fetch failed, try next (Url, CachePolicy) combination
+                  nextAttempt
+                case success => Task.point(success)
+              }
+            }
+        val shas = foldShas(for {
           // Attempt 1: Fetch "*.jar.sha256" URL locally
           // Attempt 2: Fetch "*.jar" URL locally
           // Attempt 3: Fetch "*.jar.sha256" URL remotely
@@ -303,27 +325,34 @@ case class ExportCommand(
             Some(r.artifact.url)
           ).flatten
           policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
-        } yield tryFetch(r.artifact.withUrl(url), policy)
-        val shas = shaAttempts.tail.foldLeft(shaAttempts.head) { case (task, nextAttempt) =>
-          task.flatMap {
-            case Left(_) =>
-              // Fetch failed, try next (Url, CachePolicy) combination
-              nextAttempt
-            case success => Task.point(success)
-          }
-        }
-        shas.map {
+        } yield tryFetch(r.artifact.withUrl(url), policy))
+        val sourcesShas = foldShas(for {
+          url <- List(
+            r.sourcesArtifact.flatMap(_.checksumUrls.get("SHA-256")),
+            r.sourcesArtifact.map(_.url),
+          ).flatten
+          policy <- List(CachePolicy.LocalOnly, CachePolicy.Update)
+        } yield tryFetch(r.artifact.withUrl(url), policy))
+        shas.flatMap {
           case Right(file) =>
-            List(Try {
-              val output = ArtifactOutput(
-                dependency = r.dependency,
-                artifact = r.artifact,
-                artifactSha256 = Sha256.compute(file)
-              )
-              outputIndex.put(r.dependency.bazelLabel, output)
-              output
-            }.toEither)
-
+            (sourcesShas
+              .map {
+                case Right(sourceFile) => Some(sourceFile)
+                case Left(_)           => None
+              })
+              .map { sourceSha =>
+                List(Try {
+                  val output = ArtifactOutput(
+                    dependency = r.dependency,
+                    artifact = r.artifact,
+                    artifactSha256 = Sha256.compute(file),
+                    sourcesArtifact = r.sourcesArtifact,
+                    sourcesArtifactSha256 = sourceSha.map(Sha256.compute)
+                  )
+                  outputIndex.put(r.dependency.bazelLabel, output)
+                  output
+                }.toEither)
+              }
           case Left(value) =>
             // Ignore download failures. It's common that some dependencies have
             // pom files but no jar files. For example,
@@ -332,7 +361,7 @@ case class ExportCommand(
             // helpful to distinguish these kinds of dependencies but they are
             // true by default so I'm not sure if they're intended to be used
             // for that purpose.
-            Nil
+            Task.point(Nil)
         }
       }
     val all = runParallelTasks(files, progressBar, cache.ec).flatten

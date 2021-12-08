@@ -19,7 +19,7 @@ final case class DepsOutput(
     val allTargets = index.thirdparty.dependencies2.flatMap(_.targets).toSet
 
     val httpFiles = Doc
-      .intercalate(Doc.line, artifacts.map(_.httpFile.toDoc))
+      .intercalate(Doc.line, artifacts.flatMap(_.httpFiles.map(_.toDoc)))
       .nested(4)
       .render(width)
     val thirdPartyImports = Doc
