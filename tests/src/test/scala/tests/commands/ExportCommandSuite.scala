@@ -6,7 +6,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     "transitive version ranges do not show up",
     s"""|  - dependency: com.nimbusds:nimbus-jose-jwt:4.41.1
         |""".stripMargin,
-    queryArgs = allGenrules,
+    queryArgs = nonSourceGenrules,
     expectedQuery = """|@maven//:genrules/com.github.stephenc.jcip_jcip-annotations_1.0-1
                        |@maven//:genrules/com.nimbusds_nimbus-jose-jwt_4.41.1
                        |@maven//:genrules/net.minidev_accessors-smart_1.2
@@ -23,7 +23,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    force: false
         |""".stripMargin,
     arguments = exportCommand,
-    queryArgs = allGenrules,
+    queryArgs = nonSourceGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.1
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.1
@@ -38,7 +38,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    targets: [slf4j-1.6.4]
         |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
-    queryArgs = allGenrules,
+    queryArgs = nonSourceGenrules,
     expectedQuery = """|@maven//:genrules/log4j_log4j_1.2.16
                        |@maven//:genrules/org.slf4j_slf4j-api_1.6.4
                        |@maven//:genrules/org.slf4j_slf4j-log4j12_1.6.4
@@ -60,8 +60,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     """|  - dependency: org.scalatest:scalatest_2.12:3.1.2
        |    targets: [scalatest]
        |""".stripMargin,
-    // queryArgs = allScalaImports,
-    queryArgs = allJars("@maven//:scalatest"),
+    queryArgs = nonSourceJars("@maven//:scalatest"),
     expectedQuery =
       """|@maven//:org.scala-lang.modules/scala-xml_2.12/1.2.0/scala-xml_2.12-1.2.0.jar
                        |@maven//:org.scala-lang/scala-library/2.12.11/scala-library-2.12.11.jar
@@ -79,7 +78,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
        |    targets: [netty-37]
        |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
-    queryArgs = allGenrules,
+    queryArgs = nonSourceGenrules,
     expectedQuery = """|@maven//:genrules/io.netty_netty_3.10.1.Final
                        |""".stripMargin,
     expectedOutput =
@@ -152,7 +151,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    targets: [client-2.4.0]
         |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
-    queryArgs = allGenrules,
+    queryArgs = nonSourceGenrules,
     expectedQuery = """|@maven//:genrules/com.github.luben_zstd-jni_1.4.3-1
                        |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1
                        |@maven//:genrules/org.apache.kafka_kafka-clients_2.4.1_test
@@ -208,7 +207,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    versionScheme: pvp
         |    targets: [kafka-streams]
         |""".stripMargin,
-    queryArgs = allJars("@maven//:kafka-streams"),
+    queryArgs = nonSourceJars("@maven//:kafka-streams"),
     expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0/jackson-annotations-2.10.0.jar
                        |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0/jackson-core-2.10.0.jar
                        |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0/jackson-databind-2.10.0.jar
@@ -238,7 +237,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         |    targets: [kafka-streams-2.4.0]
         |""".stripMargin,
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
-    queryArgs = allJars("@maven//:kafka-streams-2.4.0"),
+    queryArgs = nonSourceJars("@maven//:kafka-streams-2.4.0"),
     expectedQuery = """|@maven//:com.fasterxml.jackson.core/jackson-annotations/2.10.0/jackson-annotations-2.10.0.jar
                        |@maven//:com.fasterxml.jackson.core/jackson-core/2.10.0/jackson-core-2.10.0.jar
                        |@maven//:com.fasterxml.jackson.core/jackson-databind/2.10.0/jackson-databind-2.10.0.jar
@@ -278,14 +277,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("apiguardian")
     ),
     queries = List(
-      allJars("@maven//:commons-logging") ->
+      nonSourceJars("@maven//:commons-logging") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:commons-codec") ->
+      nonSourceJars("@maven//:commons-codec") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:apiguardian") ->
+      nonSourceJars("@maven//:apiguardian") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
     )
   )
@@ -301,11 +300,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .exclude("commons-codec:commons-codec")
     ),
     queries = List(
-      allJars("@maven//:httpclient") ->
+      nonSourceJars("@maven//:httpclient") ->
         """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
            |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar""".stripMargin,
-      allJars("@maven//:apiguardian") ->
+      nonSourceJars("@maven//:apiguardian") ->
         """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
            |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
@@ -323,13 +322,13 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("httpclient")
     ),
     queries = List(
-      allJars("@maven//:libthrift") ->
+      nonSourceJars("@maven//:libthrift") ->
         """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
            |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
-      allJars("@maven//:httpclient") ->
+      nonSourceJars("@maven//:httpclient") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
@@ -350,14 +349,14 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("httpclient")
     ),
     queries = List(
-      allJars("@maven//:libthrift") ->
+      nonSourceJars("@maven//:libthrift") ->
         """|@maven//:commons-codec/commons-codec/1.10/commons-codec-1.10.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
            |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
-      allJars("@maven//:httpclient") ->
+      nonSourceJars("@maven//:httpclient") ->
         """|@maven//:commons-codec/commons-codec/1.10/commons-codec-1.10.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
@@ -377,16 +376,16 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("libthrift")
     ),
     queries = List(
-      allJars("@maven//:apiguardian") ->
+      nonSourceJars("@maven//:apiguardian") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:libthrift") ->
+      nonSourceJars("@maven//:libthrift") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apache.httpcomponents/httpclient/4.4.1/httpclient-4.4.1.jar
            |@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
-      allJars("@maven//:commons-codec") ->
+      nonSourceJars("@maven//:commons-codec") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     )
@@ -402,9 +401,9 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
-      allJars("@maven//:apiguardian") ->
+      nonSourceJars("@maven//:apiguardian") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:apiguardian-old") ->
+      nonSourceJars("@maven//:apiguardian-old") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     ),
     expectedOutput =
@@ -431,10 +430,10 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
-      allJars("@maven//:multi-jar") ->
+      nonSourceJars("@maven//:multi-jar") ->
         """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:apiguardian-old") ->
+      nonSourceJars("@maven//:apiguardian-old") ->
         """|@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin
     ),
     expectedOutput =
@@ -463,13 +462,13 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("commons-logging-and-commons-codec")
     ),
     queries = List(
-      allJars("@maven//:apiguardian-and-commons-logging") ->
+      nonSourceJars("@maven//:apiguardian-and-commons-logging") ->
         """|@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:apiguardian-and-commons-codec") ->
+      nonSourceJars("@maven//:apiguardian-and-commons-codec") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:commons-logging-and-commons-codec") ->
+      nonSourceJars("@maven//:commons-logging-and-commons-codec") ->
         """|@maven//:commons-codec/commons-codec/1.9/commons-codec-1.9.jar
            |@maven//:commons-logging/commons-logging/1.2/commons-logging-1.2.jar""".stripMargin
     )
@@ -483,7 +482,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("with-classifier")
     ),
     queries = List(
-      allJars("@maven//:with-classifier") ->
+      nonSourceJars("@maven//:with-classifier") ->
         "@maven//:org.scala-lang/scala-library/2.11.7/scala-library-2.11.7.jar"
     )
   )
@@ -500,7 +499,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     queries = List(
-      allJars("@maven//:parquet-thrift-1.11.0") ->
+      nonSourceJars("@maven//:parquet-thrift-1.11.0") ->
         """|@maven//:com.google.code.findbugs/jsr305/1.3.9/jsr305-1.3.9.jar
             |@maven//:com.google.guava/guava/11.0.1/guava-11.0.1.jar
             |@maven//:com.google.protobuf/protobuf-java/2.4.1/protobuf-java-2.4.1.jar
@@ -529,7 +528,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
             |@maven//:org.slf4j/slf4j-api/1.7.22/slf4j-api-1.7.22.jar
             |@maven//:org.xerial.snappy/snappy-java/1.1.7.3/snappy-java-1.1.7.3.jar
             |""".stripMargin,
-      allJars("@maven//:parquet-thrift-1.9.0") ->
+      nonSourceJars("@maven//:parquet-thrift-1.9.0") ->
         s"""|@maven//:commons-pool/commons-pool/1.6/commons-pool-1.6.jar
             |@maven//:javax.annotation/javax.annotation-api/1.3.2/javax.annotation-api-1.3.2.jar
             |@maven//:org.apache.parquet/parquet-column/1.11.0/parquet-column-1.11.0.jar
@@ -573,7 +572,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     queries = List(
       allScalaLibDeps("@maven//:libthrift") ->
         """|//foo:bar""".stripMargin,
-      allJars("@maven//:libthrift") ->
+      nonSourceJars("@maven//:libthrift") ->
         """|@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
            |@maven//:org.slf4j/slf4j-api/1.7.12/slf4j-api-1.7.12.jar""".stripMargin,
@@ -599,7 +598,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     queries = List(
       allScalaLibDeps("@maven//:libthrift") ->
         """|//foo:bar""".stripMargin,
-      allJars("@maven//:libthrift") ->
+      nonSourceJars("@maven//:libthrift") ->
         """|@maven//:org.apache.httpcomponents/httpcore/4.4.1/httpcore-4.4.1.jar
            |@maven//:org.apache.thrift/libthrift/0.10.0/libthrift-0.10.0.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar
@@ -661,7 +660,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     arguments = exportCommand :+ "--no-fail-on-evicted-declared",
     expectedExit = 0,
     queries = List(
-      allGenrules ->
+      nonSourceGenrules ->
         """|@maven//:genrules/com.google.apis_google-api-services-storage_v1-rev20200326-1.30.9
            |""".stripMargin
     ),
@@ -791,11 +790,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .force(true)
     ),
     queries = List(
-      allJars("@maven//:target-0") ->
+      nonSourceJars("@maven//:target-0") ->
         """|@maven//:commons-codec/commons-codec/1.8/commons-codec-1.8.jar
            |@maven//:io.netty/netty/3.10.1.Final/netty-3.10.1.Final.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
-      allJars("@maven//:target-1") ->
+      nonSourceJars("@maven//:target-1") ->
         """|@maven//:commons-codec/commons-codec/1.8/commons-codec-1.8.jar
            |@maven//:io.netty/netty/3.10.1.Final/netty-3.10.1.Final.jar
            |@maven//:org.apiguardian/apiguardian-api/1.1.1/apiguardian-api-1.1.1.jar""".stripMargin,
@@ -812,11 +811,11 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ) ++ overrideTargets("log4j:log4j" -> "log4j"),
     arguments = exportCommand,
     queries = List(
-      allJars("@maven//:slf4j-log4j") ->
+      nonSourceJars("@maven//:slf4j-log4j") ->
         """|@maven//:log4j/log4j/1.2.17/log4j-1.2.17.jar
            |@maven//:org.slf4j/slf4j-api/1.6.1/slf4j-api-1.6.1.jar
            |@maven//:org.slf4j/slf4j-log4j12/1.6.1/slf4j-log4j12-1.6.1.jar""".stripMargin,
-      allJars("@maven//:log4j") ->
+      nonSourceJars("@maven//:log4j") ->
         """|@maven//:log4j/log4j/1.2.17/log4j-1.2.17.jar""".stripMargin
     )
   )
@@ -836,7 +835,7 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
         .target("coursier")
     ),
     queries = List(
-      allJars("@maven//:coursier-cli") ->
+      nonSourceJars("@maven//:coursier-cli") ->
         """@maven//:com.chuusai/shapeless_2.12/2.3.3/shapeless_2.12-2.3.3.jar
 @maven//:com.github.alexarchambault/argonaut-shapeless_6.2_2.12/1.2.0/argonaut-shapeless_6.2_2.12-1.2.0.jar
 @maven//:com.github.alexarchambault/case-app-annotations_2.12/2.0.0/case-app-annotations_2.12-2.0.0.jar
