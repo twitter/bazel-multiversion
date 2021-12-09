@@ -14,7 +14,10 @@ class JarsCommandTest extends BaseSuite with ConfigSyntax {
     ),
     List(),
     query = "junit:junit",
-    expectedOutput = List("@maven//:junit/junit/4.12/junit-4.12.jar")
+    expectedOutput = List(
+      "@maven//:junit/junit/4.12/junit-4.12.jar",
+      "@maven//:junit/junit/4.12/junit-4.12-sources.jar",
+    )
   )
 
   testJarsResults(

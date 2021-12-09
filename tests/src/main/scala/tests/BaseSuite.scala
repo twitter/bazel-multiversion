@@ -81,10 +81,16 @@ abstract class BaseSuite extends MopedSuite(MultiVersion.app) {
   val allScalaImportsGraph: List[String] =
     List("kind(scala_import, @maven//:all)", "--output", "graph")
   val allGenrules: List[String] = List("kind(genrule, @maven//:all)")
+  val nonSourceGenrules: List[String] =
+    List(s"""filter(".+(\\d+\\.)*(\\d+)(\\.Final)?(_test)?$$", kind(genrule, @maven//:all))""")
   def allScalaImportDeps(target: String): List[String] =
     List(s"kind(scala_import, allpaths($target, @maven//:all))")
   def allJars(target: String): List[String] =
     List(s"kind(file, allpaths($target, @maven//:all))")
+  def nonSourceJars(target: String): List[String] =
+    List(
+      s"""filter(".+/.+-(\\d+\\.)*(\\d+)(\\.Final)?(\\.jar)", kind(file, allpaths($target, @maven//:all)))"""
+    )
   def nonEmptySrcjar(target: String): List[String] =
     List(s"""attr("srcjar", ".+", deps($target))""")
   def allScalaLibDeps(target: String): List[String] =

@@ -99,7 +99,7 @@ object MultidepsEnrichments {
       repr.replaceAll("[^a-zA-Z0-9-\\.]", "_") + classifierRepr
     }
 
-    def mavenLabel: String = {
+    def baseMavenLabel: String = {
       val org = dep.module.organization.value
       val moduleName = dep.module.name.value
       val version = dep.version
@@ -113,8 +113,11 @@ object MultidepsEnrichments {
           }
         else ""
 
-      s"@maven//:${org}/${moduleName}/${version}/${moduleName}-${version}${classifierOrConfigRepr}.jar"
+      s"@maven//:${org}/${moduleName}/${version}/${moduleName}-${version}${classifierOrConfigRepr}"
     }
+
+    def mavenLabel: String = s"$baseMavenLabel.jar"
+    def mavenSourcesLabel: String = s"$baseMavenLabel-sources.jar"
 
     def withoutConfig: Dependency =
       dep.withConfiguration(Configuration.empty)
