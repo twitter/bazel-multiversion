@@ -208,3 +208,14 @@ We include the text of the original license below.
    See the License for the specific language governing permissions and
    limitations under the License.
 ```
+
+# License notice for bazel-distribution
+
+This project contains parts which are derived from
+[bazel-distribution](https://github.com/vaticle/bazel-distribution).
+Specifically rules_jvm_export was copy-pasted from
+https://github.com/vaticle/bazel-distribution/blob/master/maven/rules.bzl
+and adapted to the needs of this project.
+
+bazel-distribution is developed by Vatice, and licensed under Apache License 2.0.
+

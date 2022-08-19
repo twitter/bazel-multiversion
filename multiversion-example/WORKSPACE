@@ -58,3 +58,7 @@ jvm_deps()
 load("@maven//:jvm_deps.bzl", "load_jvm_deps")
 load_jvm_deps()
 
+local_repository(
+    name = "twitter_rules_jvm_export",
+    path = "../rules_jvm_export"
+)
