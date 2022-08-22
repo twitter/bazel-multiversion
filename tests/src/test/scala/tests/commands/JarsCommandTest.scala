@@ -68,7 +68,7 @@ class JarsCommandTest extends BaseSuite with ConfigSyntax {
           modules = List(query),
           app = app()
         ).runCustomQuery()
-      assertEquals(obtainedResult.get, expectedOutput)
+      assertEquals(obtainedResult.get.toSet, expectedOutput.toSet)
     }
   }
 }
