@@ -1,24 +1,23 @@
 workspace(name = "bazel_multideps")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-# bazel-skylib 0.8.0 released 2019.03.20 (https://github.com/bazelbuild/bazel-skylib/releases/tag/0.8.0)
-skylib_version = "0.8.0"
+skylib_version = "1.0.3"
 http_archive(
     name = "bazel_skylib",
+    sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
     type = "tar.gz",
-    url = "https://github.com/bazelbuild/bazel-skylib/releases/download/{}/bazel-skylib.{}.tar.gz".format (skylib_version, skylib_version),
-    sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+    url = "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/{}/bazel-skylib-{}.tar.gz".format(skylib_version, skylib_version),
 )
 
-rules_scala_version="a2f5852902f5b9f0302c727eead52ca2c7b6c3e2" # update this as needed
-
+rules_scala_version = "71d7135808750623b2c9340704a23384de0caefd" # update this as needed
 http_archive(
     name = "io_bazel_rules_scala",
+    sha256 = "120cfcc0823bcd0a2196d0bd9d26d14ad60965f9b71565542a631b412b04715d",
     strip_prefix = "rules_scala-%s" % rules_scala_version,
     type = "zip",
     url = "https://github.com/bazelbuild/rules_scala/archive/%s.zip" % rules_scala_version,
-    sha256 = "8c48283aeb70e7165af48191b0e39b7434b0368718709d1bced5c3781787d8e7",
 )
+
 
 # local_repository(
 #     name = "io_bazel_rules_scala",
@@ -27,6 +26,9 @@ http_archive(
 
 # load("@io_bazel_rules_scala//:version.bzl", "bazel_version")
 # bazel_version(name = "bazel_version")
+
+load("@io_bazel_rules_scala//:scala_config.bzl", "scala_config")
+scala_config()
 
 load("@io_bazel_rules_scala//scala:toolchains.bzl", "scala_register_toolchains")
 scala_register_toolchains()
