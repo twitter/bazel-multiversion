@@ -22,9 +22,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: multiversion-example
         shell: bash
-        run: |
-          cd multiversion-example
-          bazel build tricky/...
+        run: scripts/ci-test.sh
       - run: sbt test
   graalnative:
     name: GraalVM Native Image
