@@ -35,7 +35,7 @@ SRCJAR_PATH = "$SRCJAR_PATH"
 def main():
     args = _parse_args()
     repo_type = "local" if args.local else args.command
-    maven_url = MAVEN_REPOS[repo_type]
+    maven_url = _to_url(args.publish_to) if args.publish_to else MAVEN_REPOS[repo_type]
     pom = ElementTree.parse(POM_FILE_PATH).getroot()
     group_id = _parse_pom(pom, "ns0:groupId")
     artifact_id = _parse_pom(pom, "ns0:artifactId")
@@ -234,6 +234,14 @@ def _curl_options(maven_url, netrc):
         return ["-u", f"{username}:{password}"]
 
 
+def _to_url(publish_to):
+    if (publish_to.startswith("https:") or
+        publish_to.startswith("http:") or
+        publish_to.startswith("file:")):
+        return publish_to
+    return "file:" + publish_to
+
+
 def _parse_args():
     class Formatter(
         argparse.ArgumentDefaultsHelpFormatter, argparse.RawTextHelpFormatter
@@ -256,6 +264,10 @@ def _parse_args():
         action="store_true",
         default=False,
         help="Publish to local M2 repo (~/.m2/repository/).",
+    )
+    parser.add_argument(
+        "--publish_to",
+        help="Specify repository to publish to.",
     )
     return parser.parse_args()
 

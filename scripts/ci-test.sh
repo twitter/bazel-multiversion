@@ -14,14 +14,14 @@ set -o pipefail
 cd multiversion-example
 bazel build tricky/...
 
-rm -rf $HOME/.m2/repository/com/twitter/dpb/
-bazel run export-example:io1.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --local
-ls $HOME/.m2/repository/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom
-cat $HOME/.m2/repository/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom | grep "29\.0"
+rm -rf /tmp/repo/
+bazel run export-example:io1.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
+ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom
+cat /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom | grep "29\.0"
 
-ls $HOME/.m2/repository/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.jar
-ls $HOME/.m2/repository/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-sources.jar
-ls $HOME/.m2/repository/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-javadoc.jar
+ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.jar
+ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-sources.jar
+ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-javadoc.jar
 
-bazel run export-example:io2.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --local
-cat $HOME/.m2/repository/com/twitter/dpb/io2/1.0.0-alpha1/io2-1.0.0-alpha1.pom | grep '\s\s\s\s<version>1.0.0-alpha1</version>'
+bazel run export-example:io2.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
+cat /tmp/repo/com/twitter/dpb/io2/0.1.0-alpha1/io2-0.1.0-alpha1.pom | grep '\s\s\s\s<version>0.1.0-alpha1</version>'
