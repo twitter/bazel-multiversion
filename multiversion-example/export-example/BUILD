@@ -24,3 +24,27 @@ jvm_export(
     snapshot_repo = "https://localhost/",
     # python_path = "/opt/ee/python/3.10/bin/python3.10",
 )
+
+scala_library(
+    name = "io2",
+    srcs = ["IO2.scala"],
+    tags = [
+        "maven_coordinates=com.twitter.dpb:io2:{pom_version}",
+    ],
+    deps = [
+        ":io1",
+    ],
+)
+
+jvm_export(
+    name = "io2.publish",
+    target = ":io2",
+    project_name = "IO 2",
+    project_description = "IO library",
+    project_url = "http://example.com/",
+    license = "Apache-2.0",
+    scm_url = "http://github.com/",
+    release_repo = "https://localhost/",
+    snapshot_repo = "https://localhost/",
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)
