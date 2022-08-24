@@ -137,6 +137,10 @@ $ multiversion export --output-path=3rdparty/jvm_deps.bzl
 $ multiversion pants-export --output-path=3rdparty/jvm_deps.bzl
 ```
 
+## Publishing to external repositories
+
+See [rules_jvm_export](rules_jvm_export/).
+
 ## Building from source
 
 See [DEVELOP](DEVELOP.md).

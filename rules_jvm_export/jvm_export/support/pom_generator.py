@@ -40,13 +40,20 @@ def _dependencies(args, version):
         args.target_deps_coordinates.split(";") if args.target_deps_coordinates else []
     )
     for dep in coordinates:
-        dep_group, dep_name, dep_version = _parse_maven_coordinates(dep)
+        dep_group, dep_name, dep_version0 = _parse_maven_coordinates(dep)
+        dep_version = _dependency_version(dep_version0, version)
         dependency = ET.Element("dependency")
         dependency.append(_elem_text("groupId", dep_group))
         dependency.append(_elem_text("artifactid", dep_name))
         dependency.append(_elem_text("version", dep_version))
         dependencies.append(dependency)
     return dependencies
+
+
+def _dependency_version(original_version, project_version):
+    if original_version == "{pom_version}":
+        return project_version
+    return original_version
 
 
 def _parse_maven_coordinates(coord):
