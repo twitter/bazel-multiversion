@@ -18,6 +18,8 @@ rm -rf /tmp/repo/
 bazel run export-example:io1.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
 ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom
 cat /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom | grep "29\.0"
+dep_count=$(cat /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom | grep '<dependency>' | wc -l | tr -d ' ')
+[[ $dep_count == "1" ]] || (echo "expected only one dependency" && cat /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.pom && exit 1)
 
 ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1.jar
 ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-sources.jar

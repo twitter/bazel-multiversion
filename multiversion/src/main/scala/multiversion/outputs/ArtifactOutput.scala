@@ -82,23 +82,24 @@ object ArtifactOutput {
         .map(o =>
           (
             o.mavenLabel,
+            o.dependency,
             o.label + cfg.suffix,
             if (o.hasSources) Some(o.mavenSourcesLabel) else None,
           )
         )
     }
 
-    val (jars, depLabels, sourceJars) =
+    val (jars, dependencies, depLabels, sourceJars) =
       if (jarsAndLabels.nonEmpty) {
-        jarsAndLabels.unzip3
+        unzip4(jarsAndLabels)
       } else {
         // Some resolutions produce no artifacts because they configure a classifier that
         // doesn't exist. In this case, we return the dependencies that were resolved
         // alongside this non-existent artifact.
-        index.unevictedArtifacts.collect {
+        unzip4(index.unevictedArtifacts.collect {
           case ResolvedDependency(config, dependency, _, _, _) if config.targets.contains(target) =>
-            (dependency.mavenLabel, "_" + dependency.bazelLabel, None: Option[String])
-        }.unzip3
+            (dependency.mavenLabel, dependency, "_" + dependency.bazelLabel, None: Option[String])
+        })
       }
     val sourceJarOpt = sourceJars.flatten.headOption
 
@@ -107,8 +108,8 @@ object ArtifactOutput {
       dependency <- config.dependencies
       if index.thirdparty.overriddingTargets.contains(dependency)
     } yield dependency
-
     val allLabels = (overriddingTargets ++ depLabels).distinct
+    val depTags = dependencies.distinct.flatMap(tags)
     sourceJarOpt match {
       case Some(sourceJar) =>
         TargetOutput(
@@ -118,6 +119,7 @@ object ArtifactOutput {
           "deps" -> Docs.array(allLabels: _*),
           "exports" -> Docs.array(allLabels: _*),
           "srcjar" -> Docs.literal(sourceJar),
+          "tags" -> Docs.array(depTags: _*),
           "visibility" -> Docs.array("//visibility:public")
         ).toDoc
       case _ =>
@@ -127,6 +129,7 @@ object ArtifactOutput {
           "jars" -> Docs.array(jars: _*),
           "deps" -> Docs.array(allLabels: _*),
           "exports" -> Docs.array(allLabels: _*),
+          "tags" -> Docs.array(depTags: _*),
           "visibility" -> Docs.array("//visibility:public")
         ).toDoc
     }
@@ -221,6 +224,22 @@ object ArtifactOutput {
         List(s"jvm_classifier=${dep.publication.classifier.value}")
       else Nil
     }
+
+  def unzip4[A1, A2, A3, A4](
+      xs: List[(A1, A2, A3, A4)]
+  ): (List[A1], List[A2], List[A3], List[A4]) = {
+    val b1 = List.newBuilder[A1]
+    val b2 = List.newBuilder[A2]
+    val b3 = List.newBuilder[A3]
+    val b4 = List.newBuilder[A4]
+    xs.foreach { case (a1, a2, a3, a4) =>
+      b1 += a1
+      b2 += a2
+      b3 += a3
+      b4 += a4
+    }
+    (b1.result, b2.result, b3.result, b4.result)
+  }
 
   def buildEvictedDoc(
       dep: Dependency,

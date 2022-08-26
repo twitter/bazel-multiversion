@@ -1,5 +1,5 @@
 load("@io_bazel_rules_scala//scala:scala.bzl", "scala_library")
-load("@twitter_rules_jvm_export//jvm_export:jvm_export.bzl", "jvm_export")
+load("@twitter_rules_jvm_export//jvm_export:jvm_export.bzl", "jvm_assembly", "jvm_export")
 
 scala_library(
     name = "io1",
@@ -15,6 +15,28 @@ scala_library(
 jvm_export(
     name = "io1.publish",
     target = ":io1",
+    project_name = "IO 1",
+    project_description = "IO library",
+    project_url = "http://example.com/",
+    license = "Apache-2.0",
+    scm_url = "http://github.com/",
+    release_repo = "https://localhost/",
+    snapshot_repo = "https://localhost/",
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)
+
+jvm_assembly(
+    name = "io1.assembly",
+    target = ":io1",
+    tags = [
+        "maven_coordinates=com.twitter.dpb:io1-assembly:{pom_version}",
+    ],
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)
+
+jvm_export(
+    name = "io1.assembly.publish",
+    target = ":io1.assembly",
     project_name = "IO 1",
     project_description = "IO library",
     project_url = "http://example.com/",
