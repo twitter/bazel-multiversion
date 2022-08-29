@@ -173,7 +173,7 @@ def _aggregate_dependency_info_impl(target, ctx):
     if maven_coordinates:
         dependencies = [struct(type="pom", maven_coordinates=maven_coordinates)]
     # include runtime output jars
-    elif target[JavaInfo].runtime_output_jars:
+    elif (JavaInfo in target) and target[JavaInfo].runtime_output_jars:
         jars = target[JavaInfo].runtime_output_jars
         source_jars = target[JavaInfo].source_jars
         dependencies = [
@@ -186,8 +186,6 @@ def _aggregate_dependency_info_impl(target, ctx):
                 jars, source_jars + [None] * (len(jars) - len(source_jars))
             )
         ]
-    else:
-        fail("Unsure how to package dependency for target: %s" % target)
 
     return JarInfo(
         name=maven_coordinates,
