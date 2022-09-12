@@ -26,4 +26,4 @@ ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-sources.jar
 ls /tmp/repo/com/twitter/dpb/io1/0.1.0-alpha1/io1-0.1.0-alpha1-javadoc.jar
 
 bazel run export-example:io2.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
-cat /tmp/repo/com/twitter/dpb/io2/0.1.0-alpha1/io2-0.1.0-alpha1.pom | grep '\s\s\s\s<version>0.1.0-alpha1</version>'
+cat /tmp/repo/com/twitter/dpb/io2/0.1.0-alpha1/io2-0.1.0-alpha1.pom | tr -d ' ' | tr -d '\n' | grep '<dependency><groupId>com.twitter.dpb</groupId><artifactId>io1</artifactId><version>0.1.0-alpha1</version></dependency>'

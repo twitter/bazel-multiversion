@@ -44,7 +44,7 @@ def _dependencies(args, version):
         dep_version = _dependency_version(dep_version0, version)
         dependency = ET.Element("dependency")
         dependency.append(_elem_text("groupId", dep_group))
-        dependency.append(_elem_text("artifactid", dep_name))
+        dependency.append(_elem_text("artifactId", dep_name))
         dependency.append(_elem_text("version", dep_version))
         dependencies.append(dependency)
     return dependencies
