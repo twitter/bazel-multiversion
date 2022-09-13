@@ -40,11 +40,14 @@ def _dependencies(args, version):
         args.target_deps_coordinates.split(";") if args.target_deps_coordinates else []
     )
     for dep in coordinates:
-        dep_group, dep_name, dep_version0 = _parse_maven_coordinates(dep)
-        dep_version = _dependency_version(dep_version0, version)
+        dep_coord = _parse_maven_coordinates(dep)
+        dep_version = _dependency_version(dep_coord["version"], version)
         dependency = ET.Element("dependency")
-        dependency.append(_elem_text("groupId", dep_group))
-        dependency.append(_elem_text("artifactId", dep_name))
+        dependency.append(_elem_text("groupId", dep_coord["group_id"]))
+        dependency.append(_elem_text("artifactId", dep_coord["artifact_id"]))
+        if "classifier" in dep_coord:
+            dependency.append(_elem_text("classifier", dep_coord["classifier"]))
+
         dependency.append(_elem_text("version", dep_version))
         dependencies.append(dependency)
     return dependencies
@@ -56,9 +59,29 @@ def _dependency_version(original_version, project_version):
     return original_version
 
 
-def _parse_maven_coordinates(coord):
-    xs = coord.split(":")
-    return xs[0], xs[1], xs[2]
+def _parse_maven_coordinates(coordinates_string):
+    """
+    Given a string containing a standard Maven coordinate (g:a:[p:[c:]]v),
+    returns a Maven artifact map (see above).
+    See also https://github.com/bazelbuild/rules_jvm_external/blob/4.3/specs.bzl
+    """
+    parts = coordinates_string.split(":")
+    group_id, artifact_id = parts[0:2]
+    if len(parts) == 3:
+        version = parts[2]
+        result = dict(group_id=group_id, artifact_id=artifact_id, version=version)
+    elif len(parts) == 4:
+        packaging = parts[2]
+        version = parts[3]
+        result = dict(group_id=group_id, artifact_id=artifact_id, packaging=packaging, version=version)
+    elif len(parts) == 5:
+        packaging = parts[2]
+        classifier = parts[3]
+        version = parts[4]
+        result = dict(group_id=group_id, artifact_id=artifact_id, packaging=packaging, classifier=classifier, version=version)
+    else:
+        raise ValueError("failed to parse '{}'".format(coordinates_string))
+    return result
 
 
 def _licenses(args):

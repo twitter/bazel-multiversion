@@ -20,7 +20,7 @@ scala_library(
 
 jvm_export(
     name = "io1.publish",
-    target = ":io1",
+    artifacts = [":io1"],
     project_name = "IO 1",
     project_description = "IO library",
     project_url = "http://example.com/",

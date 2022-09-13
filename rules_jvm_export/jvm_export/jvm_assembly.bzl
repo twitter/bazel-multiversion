@@ -22,15 +22,31 @@ def _jvm_assembly_impl(ctx):
 
 
 def parse_maven_coordinates(coordinates_string, enforce_version_template=True):
-    coordinates = coordinates_string.split(":")
-    # Maven coordinates in the bazel ecosystem can include more than three fields.
-    # The group and artifact IDs are always the first 2 and the version is always the last field.
-    group_id, artifact_id = coordinates[0:2]
-    version = coordinates[-1]
+    """
+    Given a string containing a standard Maven coordinate (g:a:[p:[c:]]v),
+    returns a Maven artifact map (see above).
+    See also https://github.com/bazelbuild/rules_jvm_external/blob/4.3/specs.bzl
+    """
+    parts = coordinates_string.split(":")
+    group_id, artifact_id = parts[0:2]
+    if len(parts) == 3:
+        version = parts[2]
+        result = struct(group_id=group_id, artifact_id=artifact_id, version=version)
+    elif len(parts) == 4:
+        packaging = parts[2]
+        version = parts[3]
+        result = struct(group_id=group_id, artifact_id=artifact_id, packaging=packaging, version=version)
+    elif len(parts) == 5:
+        packaging = parts[2]
+        classifier = parts[3]
+        version = parts[4]
+        result = struct(group_id=group_id, artifact_id=artifact_id, packaging=packaging, classifier=classifier, version=version)
+    else:
+        fail("failed to parse '{}'".format(coordinates_string))
+
     if enforce_version_template and version != "{pom_version}":
         fail("should assign {pom_version} as Maven version via `tags` attribute")
-    return struct(group_id=group_id, artifact_id=artifact_id, version=version)
-
+    return result
 
 def jar_assembler(ctx):
     script = ctx.actions.declare_file(

@@ -12,42 +12,59 @@ load(":jvm_assembly.bzl",
 
 JvmExportInfo = provider(
     fields={
-        "jar": "JAR file to deploy",
-        "srcjar": "JAR file with sources",
+        "artifacts": "JAR file to deploy",
         "pom": "Accompanying pom.xml file",
     }
 )
 
 
+SOURCES_CLASSIFIER = "sources"
+JAVADOC_CLASSIFIER = "javadoc"
+
 def _jvm_export_impl(ctx):
     version = ctx.attr.version[VersionInfo].value
     pom_file = _generate_pom_file(ctx, version)
-    class_jar = runtime_output_jar(ctx.attr.target)
-    source_jar = _source_jar(ctx.attr.target)
+    output_files = [pom_file]
+    pom_xml_link = pom_file.basename
+    symlinks = {
+        pom_xml_link: pom_file,
+    }
+    source_jar = None
+    # create a dictionary of class_jar symlinks and classifier
+    artifacts = {}
+    for artifact in ctx.attr.artifacts:
+        this_coordinate = parse_maven_coordinates(artifact[JarInfo].name)
+        classifier = getattr(this_coordinate, "classifier", "")
+        class_jar = runtime_output_jar(artifact)
+        output_files.append(class_jar)
+        symlinks[class_jar.basename] = class_jar
+        artifacts[classifier] = class_jar.basename
+        if not classifier:
+            source_jar = _source_jar(artifact)
+            output_files.append(source_jar)
+            src_jar_link = "lib.srcjar"
+            symlinks[src_jar_link] = source_jar
+            artifacts[SOURCES_CLASSIFIER] = src_jar_link
+
+    # TODO(vmax): use real Javadoc instead of srcjar
+    if (SOURCES_CLASSIFIER in artifacts) and (JAVADOC_CLASSIFIER not in artifacts):
+        artifacts[JAVADOC_CLASSIFIER] = artifacts[SOURCES_CLASSIFIER]
+
     deploy_script = ctx.actions.declare_file(
         "jvm-export/{}-deploy.py".format(ctx.attr.name)
     )
-    lib_jar_link = "lib.jar"
-    src_jar_link = "lib.srcjar"
     pom_xml_link = pom_file.basename
     ctx.actions.expand_template(
         template=ctx.file._deployment,
         output=deploy_script,
         substitutions={
-            "$JAR_PATH": lib_jar_link,
-            "$SRCJAR_PATH": src_jar_link,
+            "$ARTIFACTS": str(artifacts),
             "$POM_PATH": pom_xml_link,
             "$PYTHON_PATH": ctx.attr.python_path,
             "{snapshot}": ctx.attr.snapshot_repo,
             "{release}": ctx.attr.release_repo,
         },
     )
-    output_files = [pom_file, class_jar]
-
-    symlinks = {
-        lib_jar_link: class_jar,
-        pom_xml_link: pom_file,
-    }
     if source_jar:
         output_files.append(source_jar)
         symlinks[src_jar_link] = source_jar
@@ -59,40 +76,52 @@ def _jvm_export_impl(ctx):
             runfiles=ctx.runfiles(files=output_files, symlinks=symlinks),
         ),
         JvmExportInfo(
-            jar=class_jar,
+            artifacts=artifacts,
             pom=pom_file,
-            srcjar=source_jar,
         ),
     ]
 
 
 def _generate_pom_file(ctx, version):
-    target = ctx.attr.target
-    if not target[JarInfo].name:
-        fail("{} missing 'maven_coordinates=' tags".format(target))
+    artifacts = ctx.attr.artifacts
+    for artifact in artifacts:
+        if not artifact[JarInfo].name:
+            fail("{} missing 'maven_coordinates=' tags".format(artifact))
 
-    maven_coordinates = parse_maven_coordinates(target[JarInfo].name)
     pom_file = ctx.actions.declare_file("{}_pom.xml".format(ctx.attr.name))
+    maven_coordinates0 = parse_maven_coordinates(artifacts[0][JarInfo].name)
 
     pom_deps = []
-    for pom_dependency in [
-        dep[JarInfo] for dep in target[JarInfo].deps if dep[JarInfo].name
-    ]:
-        pom_dependency = pom_dependency.name
-        if pom_dependency == target[JarInfo].name:
-            continue
-        pom_dependency_coordinates = parse_maven_coordinates(pom_dependency, False)
-        pom_dependency_artifact = (
-            pom_dependency_coordinates.group_id
-            + ":"
-            + pom_dependency_coordinates.artifact_id
-        )
-        pom_dependency_version = pom_dependency_coordinates.version
 
-        v = ctx.attr.version_overrides.get(
-            pom_dependency_artifact, pom_dependency_version
-        )
-        pom_deps.append(pom_dependency_artifact + ":" + v)
+    # Note that all dependencies in all artifacts will be appended to
+    # the same POM as dependencies.
+    for artifact in artifacts:
+        this_coordinate = parse_maven_coordinates(artifact[JarInfo].name)
+        for pom_dependency in [
+            dep[JarInfo] for dep in artifact[JarInfo].deps if dep[JarInfo].name
+        ]:
+            pom_dependency_coordinates = parse_maven_coordinates(pom_dependency.name, False)
+            if pom_dependency == this_coordinate:
+                continue
+            pom_dependency_artifact = (
+                pom_dependency_coordinates.group_id
+                + ":"
+                + pom_dependency_coordinates.artifact_id
+            )
+            pom_dependency_version = pom_dependency_coordinates.version
+            pom_dependency_classifier = getattr(pom_dependency_coordinates, "classifier", "")
+            pom_dependency_packaging = getattr(pom_dependency_coordinates, "packaging", "jar")
+            v = ctx.attr.version_overrides.get(
+                pom_dependency_artifact, pom_dependency_version
+            )
+            pom_dep = "{}:{}".format(pom_dependency_artifact, v)
+            if pom_dependency_classifier:
+                pom_dep = "{}:{}:{}:{}".format(
+                    pom_dependency_artifact,
+                    pom_dependency_packaging,
+                    pom_dependency_classifier,
+                    v)
+            pom_deps.append(pom_dep)
 
     pom_gen_script = ctx.actions.declare_file(
         "jvm-export/{}-pom-gen.py".format(ctx.attr.name)
@@ -109,8 +138,8 @@ def _generate_pom_file(ctx, version):
         inputs=[],
         outputs=[pom_file],
         arguments=[
-            "--group_id=" + maven_coordinates.group_id,
-            "--artifact_id=" + maven_coordinates.artifact_id,
+            "--group_id=" + maven_coordinates0.group_id,
+            "--artifact_id=" + maven_coordinates0.artifact_id,
             "--version=" + version,
             "--project_name=" + ctx.attr.project_name,
             "--project_description=" + ctx.attr.project_description,
@@ -131,9 +160,11 @@ def _source_jar(target):
     else:
         return target[JavaInfo].source_jars[0]
 
-jvm_export = rule(
+
+def make_jvm_export_rule():
+  return rule(
     attrs={
-        "target": attr.label(
+        "artifacts": attr.label_list(
             mandatory=True,
             doc="Java target for subsequent deployment",
             aspects=[
@@ -202,6 +233,9 @@ jvm_export = rule(
     implementation=_jvm_export_impl,
     doc="Publish Java package to a Maven repo",
 )
+
+
+jvm_export = make_jvm_export_rule()
 
 
 def _jvm_export_version_impl(ctx):
