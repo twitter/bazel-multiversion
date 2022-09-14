@@ -27,7 +27,7 @@ MAVEN_REPOS = {
     "release": "{release}",
     "local": "file:~/.m2/repository/",
 }
-JAR_PATH = "$JAR_PATH"
+ARTIFACTS = $ARTIFACTS
 POM_FILE_PATH = "$POM_PATH"
 SRCJAR_PATH = "$SRCJAR_PATH"
 
@@ -65,85 +65,25 @@ def main():
         coordinates=group_id.replace(".", "/"), version=version, artifact=artifact_id
     )
 
-    upload(maven_url, curl_opts, JAR_PATH, filename_base + ".jar")
-    if args.gpg:
-        upload(maven_url, curl_opts, sign(JAR_PATH), filename_base + ".jar.asc")
-    upload(maven_url, curl_opts, POM_FILE_PATH, filename_base + ".pom")
-    if args.gpg:
-        upload(maven_url, curl_opts, sign(POM_FILE_PATH), filename_base + ".pom.asc")
-    if os.path.exists(SRCJAR_PATH):
-        upload(maven_url, curl_opts, SRCJAR_PATH, filename_base + "-sources.jar")
-        if args.gpg:
-            upload(
-                maven_url,
-                curl_opts,
-                sign(SRCJAR_PATH),
-                filename_base + "-sources.jar.asc",
-            )
-        # TODO(vmax): use real Javadoc instead of srcjar
-        upload(maven_url, curl_opts, SRCJAR_PATH, filename_base + "-javadoc.jar")
-        if args.gpg:
-            upload(
-                maven_url,
-                curl_opts,
-                sign(SRCJAR_PATH),
-                filename_base + "-javadoc.jar.asc",
-            )
+    for classifier, artifact_path in ARTIFACTS.items():
+        remote_path = f"{filename_base}-{classifier}.jar" if classifier else f"{filename_base}.jar"
+        upload_with_sig(maven_url, curl_opts, args.gpg, artifact_path, remote_path)        
 
-    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as pom_md5:
-        pom_md5.write(md5(POM_FILE_PATH))
-        pom_md5.flush()
-        upload(maven_url, curl_opts, pom_md5.name, filename_base + ".pom.md5")
+    upload_with_sig(maven_url, curl_opts, args.gpg, POM_FILE_PATH, filename_base + ".pom")
 
-    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as pom_sha1:
-        pom_sha1.write(sha1(POM_FILE_PATH))
-        pom_sha1.flush()
-        upload(maven_url, curl_opts, pom_sha1.name, filename_base + ".pom.sha1")
 
-    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as jar_md5:
-        jar_md5.write(md5(JAR_PATH))
-        jar_md5.flush()
-        upload(maven_url, curl_opts, jar_md5.name, filename_base + ".jar.md5")
-
-    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as jar_sha1:
-        jar_sha1.write(sha1(JAR_PATH))
-        jar_sha1.flush()
-        upload(maven_url, curl_opts, jar_sha1.name, filename_base + ".jar.sha1")
-
-    if os.path.exists(SRCJAR_PATH):
-        with tempfile.NamedTemporaryFile(mode="wt", delete=True) as srcjar_md5:
-            srcjar_md5.write(md5(SRCJAR_PATH))
-            srcjar_md5.flush()
-            upload(
-                maven_url,
-                curl_opts,
-                srcjar_md5.name,
-                filename_base + "-sources.jar.md5",
-            )
-            # TODO(vmax): use checksum of real Javadoc instead of srcjar
-            upload(
-                maven_url,
-                curl_opts,
-                srcjar_md5.name,
-                filename_base + "-javadoc.jar.md5",
-            )
-
-        with tempfile.NamedTemporaryFile(mode="wt", delete=True) as srcjar_sha1:
-            srcjar_sha1.write(sha1(SRCJAR_PATH))
-            srcjar_sha1.flush()
-            upload(
-                maven_url,
-                curl_opts,
-                srcjar_sha1.name,
-                filename_base + "-sources.jar.sha1",
-            )
-            # TODO(vmax): use checksum of real Javadoc instead of srcjar
-            upload(
-                maven_url,
-                curl_opts,
-                srcjar_sha1.name,
-                filename_base + "-javadoc.jar.sha1",
-            )
+def upload_with_sig(maven_url, curl_opts, gpg, local_path, remote_path):
+    upload(maven_url, curl_opts, local_path, remote_path)
+    if gpg:
+        upload(maven_url, curl_opts, sign(local_path), remote_path + ".asc")
+    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as md5_temp:
+        md5_temp.write(md5(local_path))
+        md5_temp.flush()
+        upload(maven_url, curl_opts, md5_temp.name, remote_path + ".md5")
+    with tempfile.NamedTemporaryFile(mode="wt", delete=True) as sha1_temp:
+        sha1_temp.write(sha1(local_path))
+        sha1_temp.flush()
+        upload(maven_url, curl_opts, sha1_temp.name, remote_path + ".sha1")
 
 
 def _parse_pom(pom, elem_name):
