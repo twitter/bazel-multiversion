@@ -41,10 +41,11 @@ def _jvm_export_impl(ctx):
         artifacts[classifier] = class_jar.basename
         if not classifier:
             source_jar = _source_jar(artifact)
-            output_files.append(source_jar)
-            src_jar_link = "lib.srcjar"
-            symlinks[src_jar_link] = source_jar
-            artifacts[SOURCES_CLASSIFIER] = src_jar_link
+            if source_jar:
+                output_files.append(source_jar)
+                src_jar_link = "lib.srcjar"
+                symlinks[src_jar_link] = source_jar
+                artifacts[SOURCES_CLASSIFIER] = src_jar_link
 
     # TODO(vmax): use real Javadoc instead of srcjar
     if (SOURCES_CLASSIFIER in artifacts) and (JAVADOC_CLASSIFIER not in artifacts):
@@ -65,10 +66,6 @@ def _jvm_export_impl(ctx):
             "{release}": ctx.attr.release_repo,
         },
     )
-    if source_jar:
-        output_files.append(source_jar)
-        symlinks[src_jar_link] = source_jar
-
     return [
         DefaultInfo(
             executable=deploy_script,
@@ -155,10 +152,10 @@ def _generate_pom_file(ctx, version):
 
 
 def _source_jar(target):
-    if len(target[JavaInfo].source_jars) < 1:
-        fail("Could not find source JAR to deploy in {}".format(target))
-    else:
+    if JavaInfo in target:
         return target[JavaInfo].source_jars[0]
+    else:
+        return None
 
 
 def make_jvm_export_rule():

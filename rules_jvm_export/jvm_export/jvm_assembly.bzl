@@ -63,14 +63,18 @@ def jar_assembler(ctx):
 
 
 def runtime_output_jar(target):
-    if len(target[JavaInfo].runtime_output_jars) == 1:
-        return target[JavaInfo].runtime_output_jars[0]
-    else:
-        fail(
-            "expected size 1, but runtime_output_jars in {} was {}".format(
-                target, target[JavaInfo].runtime_output_jars
+    if JavaInfo in target:
+        if len(target[JavaInfo].runtime_output_jars) == 1:
+            return target[JavaInfo].runtime_output_jars[0]
+        else:
+            fail(
+                "expected size 1, but runtime_output_jars in {} was {}".format(
+                    target, target[JavaInfo].runtime_output_jars
+                )
             )
-        )
+    else:
+        outputs = target[DefaultInfo].files.to_list()
+        return outputs[0]
 
 
 def generate_class_jar(ctx, pom_file):
