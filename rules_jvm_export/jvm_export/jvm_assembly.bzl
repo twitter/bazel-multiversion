@@ -66,6 +66,16 @@ def runtime_output_jar(target):
     if JavaInfo in target:
         if len(target[JavaInfo].runtime_output_jars) == 1:
             return target[JavaInfo].runtime_output_jars[0]
+        elif len(target[JavaInfo].runtime_output_jars) == 2:
+            for jar in target[JavaInfo].runtime_output_jars:
+                if jar.path.endswith("_java.jar"):
+                    return jar
+
+            fail(
+                "expected size 1, or the file name ends with _java.jar, but runtime_output_jars in {} was {}".format(
+                    target, target[JavaInfo].runtime_output_jars
+                )
+            )
         else:
             fail(
                 "expected size 1, but runtime_output_jars in {} was {}".format(
