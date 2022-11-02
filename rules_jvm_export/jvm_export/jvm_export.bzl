@@ -108,6 +108,9 @@ def _generate_pom_file(ctx, version):
             pom_dependency_version = pom_dependency_coordinates.version
             pom_dependency_classifier = getattr(pom_dependency_coordinates, "classifier", "")
             pom_dependency_packaging = getattr(pom_dependency_coordinates, "packaging", "jar")
+            pom_dependency_neverlink = getattr(pom_dependency, "neverlink", False)
+            if pom_dependency_neverlink:
+                pom_dependency_classifier = "provided"
             v = ctx.attr.version_overrides.get(
                 pom_dependency_artifact, pom_dependency_version
             )
