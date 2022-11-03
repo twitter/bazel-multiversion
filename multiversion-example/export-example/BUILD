@@ -94,3 +94,49 @@ jvm_export(
     snapshot_repo = "https://localhost/",
     # python_path = "/opt/ee/python/3.10/bin/python3.10",
 )
+
+scala_library(
+    name = "io4",
+    srcs = ["IO4.scala"],
+    tags = [
+        "maven_coordinates=com.twitter.dpb:io4:{pom_version}",
+    ],
+    neverlink = True,
+)
+
+jvm_export(
+    name = "io4.publish",
+    artifacts = [":io4"],
+    project_name = "IO 4",
+    project_description = "IO library",
+    project_url = "http://example.com/",
+    license = "Apache-2.0",
+    scm_url = "http://github.com/",
+    release_repo = "https://localhost/",
+    snapshot_repo = "https://localhost/",
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)
+
+scala_library(
+    name = "io5",
+    srcs = ["IO5.scala"],
+    tags = [
+        "maven_coordinates=com.twitter.dpb:io5:{pom_version}",
+    ],
+    deps = [
+        ":io4",
+    ],
+)
+
+jvm_export(
+    name = "io5.publish",
+    artifacts = [":io5"],
+    project_name = "IO 5",
+    project_description = "IO library",
+    project_url = "http://example.com/",
+    license = "Apache-2.0",
+    scm_url = "http://github.com/",
+    release_repo = "https://localhost/",
+    snapshot_repo = "https://localhost/",
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)

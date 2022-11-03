@@ -185,6 +185,7 @@ JarInfo = provider(
         "name": "The name of a the JAR (Maven coordinates)",
         "deps": "Direct dependencies",
         "jar_infos": "The list of dependencies of this JAR. A dependency may be of two types, POM or JAR.",
+        "neverlink": "Forward neverlink from target",
     },
 )
 
@@ -195,6 +196,7 @@ def _aggregate_dependency_info_impl(target, ctx):
     runtime_deps = getattr(ctx.rule.attr, "runtime_deps", [])
     exports = getattr(ctx.rule.attr, "exports", [])
     deps_all = deps + exports + runtime_deps
+    neverlink = getattr(ctx.rule.attr, "neverlink", False)
 
     maven_coordinates = find_maven_coordinates(target, tags)
     dependencies = []
@@ -238,6 +240,7 @@ def _aggregate_dependency_info_impl(target, ctx):
                 for jar in deps_all
             ],
         ),
+        neverlink=neverlink,
     )
 
 

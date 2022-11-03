@@ -8,6 +8,9 @@ USAGE_STR = """This program generates POM file for publishing to Maven.
 """
 
 
+MAVEN_SCOPES = ["compile", "provided", "runtime", "test"]
+
+
 def main():
     args = _parse_args()
     version = args.version
@@ -46,7 +49,11 @@ def _dependencies(args, version):
         dependency.append(_elem_text("groupId", dep_coord["group_id"]))
         dependency.append(_elem_text("artifactId", dep_coord["artifact_id"]))
         if "classifier" in dep_coord:
-            dependency.append(_elem_text("classifier", dep_coord["classifier"]))
+            dep_classifier = dep_coord["classifier"]
+            if dep_classifier in MAVEN_SCOPES:
+                dependency.append(_elem_text("scope", dep_classifier))
+            else:
+                dependency.append(_elem_text("classifier", dep_classifier))
 
         dependency.append(_elem_text("version", dep_version))
         dependencies.append(dependency)
