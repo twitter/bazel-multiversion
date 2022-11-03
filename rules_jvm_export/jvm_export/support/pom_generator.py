@@ -8,7 +8,7 @@ USAGE_STR = """This program generates POM file for publishing to Maven.
 """
 
 
-MAVEN_SCOPES = ["comiple", "provided", "runtime", "test"]
+MAVEN_SCOPES = ["compile", "provided", "runtime", "test"]
 
 
 def main():
