@@ -1,5 +1,5 @@
 lazy val V = new {
-  def scala212 = "2.12.12"
+  def scala212 = "2.12.17"
   def moped = "0.1.9"
 }
 
@@ -70,7 +70,7 @@ lazy val multiversion = project
       baseDirectory.in(ThisBuild).value / "multiversion-example"
     },
     libraryDependencies ++= List(
-      "io.get-coursier" %% "coursier" % "2.0.0",
+      "io.get-coursier" %% "coursier" % "2.1.0-RC1",
       "io.get-coursier" %% "versions" % "0.3.1",
       "org.scalameta" %% "moped" % V.moped,
       "org.scalameta" %% "moped-yaml" % V.moped,
