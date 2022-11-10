@@ -616,10 +616,10 @@ class ExportCommandSuite extends tests.BaseSuite with tests.ConfigSyntax {
     ),
     expectedExit = 1,
     expectedOutput =
-      """|/workingDirectory/3rdparty.yaml:15:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
+      """|/workingDirectory/3rdparty.yaml:3:16 error: Within 'broken-target', the module 'com.google.guava:guava' is resolved multiple times with incompatible versions 16.0.1, 30.1.1-jre.
          |To fix this problem, update your dependencies to compatible versions, or add exclusion rules to force compatible versions of 'com.google.guava:guava'.
          |
-         |  - dependency: com.google.inject:guice:4.0
+         |  - dependency: com.google.auto:auto-common:1.0
          |                ^""".stripMargin
   )
 
