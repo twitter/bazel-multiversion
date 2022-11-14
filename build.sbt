@@ -85,10 +85,10 @@ lazy val multiversion = project
       version
     ),
     name.in(NativeImage) := "multiversion",
+    nativeImageVersion := "22.0",
     nativeImageOptions ++= List(
       "--initialize-at-build-time=scala.collection.immutable.VM",
       "--initialize-at-run-time=multiversion,moped.cli.Environment$",
-      "-H:+TraceClassInitialization",
       s"-H:ReflectionConfigurationFiles=${baseDirectory.value}/reflect.config",
       "--enable-http",
       "--enable-https",
