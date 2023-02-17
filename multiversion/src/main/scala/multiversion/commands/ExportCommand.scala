@@ -56,6 +56,7 @@ import multiversion.resolvers.Sha256
 @CommandName("export")
 case class ExportCommand(
     lint: Boolean = true,
+    inputPath: Path = Paths.get("3rdparty.yaml"),
     outputPath: Path = Paths.get("/tmp", "jvm_deps.bzl"),
     cache: Option[Path] = None,
     @Inline
@@ -165,13 +166,15 @@ case class ExportCommand(
 
   private def parseThirdpartyConfig(): Result[ThirdpartyConfig] = {
     val configPath =
-      app.env.workingDirectory.resolve("3rdparty.yaml")
+      app.env.workingDirectory.resolve(inputPath)
     if (!Files.isRegularFile(configPath)) {
       ErrorResult(
         Diagnostic.error(
           s"no such file: $configPath\n\tTo fix this problem, change your working directory or create this file"
         )
       )
+    } else if (configPath.getFileName.toString.endsWith(".json")) {
+      ThirdpartyConfig.parseJson(Input.path(configPath))
     } else {
       ThirdpartyConfig.parseYaml(Input.path(configPath))
     }

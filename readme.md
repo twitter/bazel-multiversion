@@ -120,7 +120,7 @@ load("@maven//:jvm_deps.bzl", "load_jvm_deps")
 load_jvm_deps()
 ```
 
-### YAML
+### YAML or JSON
 
 If you prefer to configure the dependencies in one file, create `3rdparty.yaml`
 at the root of monorepo instead
@@ -129,6 +129,13 @@ runt the following inside the `multiversion-example/` directory:
 
 ```sh
 $ multiversion export --output-path=3rdparty/jvm_deps.bzl
+```
+
+You can also specify a different path or format for the input configuration using
+`--input-path`:
+
+```sh
+$ multiversion export --input-path=config/3rdparty.json --output-path=3rdparty/jvm_deps.bzl
 ```
 
 ### Pants
