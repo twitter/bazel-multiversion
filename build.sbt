@@ -4,16 +4,7 @@ lazy val V = new {
 }
 
 ThisBuild / organization := "com.twitter.multiversion"
-ThisBuild / version := {
-  val snapshotV = "0.1.0-SNAPSHOT"
-  val old = (ThisBuild / version).value
-  (sys.env.get("BUILD_VERSION") orElse sys.props.get("sbt.build.version")) match {
-    case Some(v) => v
-    case _ =>
-      if ((ThisBuild / isSnapshot).value) snapshotV
-      else old
-  }
-}
+ThisBuild / version := "0.2.3"
 ThisBuild / homepage := Some(url("https://github.com/twitter/bazel-multiversion"))
 ThisBuild / licenses := List(
   "Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")
