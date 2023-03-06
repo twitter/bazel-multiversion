@@ -140,3 +140,24 @@ jvm_export(
     snapshot_repo = "https://localhost/",
     # python_path = "/opt/ee/python/3.10/bin/python3.10",
 )
+
+scala_library(
+    name = "no-sources",
+    srcs = [],
+    tags = [
+        "maven_coordinates=com.twitter.dpb:no-sources:{pom_version}",
+    ],
+)
+
+jvm_export(
+    name = "no-sources.publish",
+    artifacts = [":no-sources"],
+    project_name = "IO 6",
+    project_description = "IO library",
+    project_url = "http://example.com/",
+    license = "Apache-2.0",
+    scm_url = "http://github.com/",
+    release_repo = "https://localhost/",
+    snapshot_repo = "https://localhost/",
+    # python_path = "/opt/ee/python/3.10/bin/python3.10",
+)

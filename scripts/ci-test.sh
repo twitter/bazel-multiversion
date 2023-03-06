@@ -31,3 +31,5 @@ bazel run export-example:io3.publish --@twitter_rules_jvm_export//jvm_export:ver
 cat /tmp/repo/com/twitter/dpb/io3/0.1.0-alpha1/io3-0.1.0-alpha1.pom | tr -d ' ' | tr -d '\n' | grep '<dependency><groupId>com.twitter.dpb</groupId><artifactId>io2</artifactId><classifier>abc</classifier><version>0.1.0-alpha1</version></dependency>'
 bazel run export-example:io5.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
 cat /tmp/repo/com/twitter/dpb/io5/0.1.0-alpha1/io5-0.1.0-alpha1.pom | tr -d ' ' | tr -d '\n' | grep '<dependency><groupId>com.twitter.dpb</groupId><artifactId>io4</artifactId><scope>provided</scope><version>0.1.0-alpha1</version></dependency>'
+
+bazel run export-example:no-sources.publish --@twitter_rules_jvm_export//jvm_export:version=0.1.0-alpha1 -- release --publish_to=/tmp/repo
