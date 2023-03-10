@@ -155,7 +155,7 @@ def _generate_pom_file(ctx, version):
 
 
 def _source_jar(target):
-    if JavaInfo in target:
+    if JavaInfo in target and target[JavaInfo].source_jars:
         return target[JavaInfo].source_jars[0]
     else:
         return None
